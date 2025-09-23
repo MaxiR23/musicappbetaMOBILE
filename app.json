@@ -7,23 +7,41 @@
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "audio"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.myApp"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+    "newArchEnabled": false,
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 24,
+            "buildToolsVersion": "35.0.0",
+            "kotlinVersion": "2.0.21"
+          }
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
@@ -33,10 +51,21 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "EXPO_PUBLIC_API_URL": "http://66.55.75.224:8000/api",
+      "EXPO_PUBLIC_SUPABASE_URL": "https://lhcwugikmhjpcfxxatgc.supabase.co",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxoY3d1Z2lrbWhqcGNmeHhhdGdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4MDY2NzQsImV4cCI6MjA3MTM4MjY3NH0.NLF3JnkW7Z0xazot_lKN8RaLXxaWEnGfVpLYjhSZ9zo",
+      "router": {},
+      "eas": {
+        "projectId": "021b87fc-e986-4d71-965a-0b483a5d3308"
+      }
     }
   }
 }
