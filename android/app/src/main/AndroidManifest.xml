@@ -21,7 +21,8 @@
     android:allowBackup="true"
     android:theme="@style/AppTheme"
     android:supportsRtl="true"
-    android:usesCleartextTraffic="true">
+    android:usesCleartextTraffic="true"
+    android:networkSecurityConfig="@xml/network_security_config">
     <meta-data android:name="expo.modules.updates.ENABLED" android:value="false"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="ALWAYS"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value="0"/>
