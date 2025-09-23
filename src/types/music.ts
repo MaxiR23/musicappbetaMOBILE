@@ -79,7 +79,10 @@ export interface AlbumDetails {
   }[];
 }
 
-const BASE_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL;
+const BASE_URL =
+  (Constants?.expoConfig as any)?.extra?.EXPO_PUBLIC_API_URL
+  ?? process.env.EXPO_PUBLIC_API_URL
+  ?? "http://66.55.75.224:8000/api";
 
 // === Públicos (no requieren auth) ===
 export async function searchSongs(fetchFn: typeof fetch, query: string): Promise<Song[]> {
