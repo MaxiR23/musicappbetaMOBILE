@@ -1,3 +1,4 @@
+import TrackActionsSheet from "@/src/components/TrackActionsSheet";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { LinearGradient } from "expo-linear-gradient";
@@ -21,6 +22,8 @@ import {
 import { getThemeFromImage } from "../../utils/colorUtils.native";
 import { upgradeYtmImage } from "../../utils/ytmImage";
 import { useMusic } from "./../../hooks/use-music";
+// 👇 NUEVO import (usado solo para repeat)
+import TrackPlayer, { RepeatMode } from "react-native-track-player";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 const PROGRESS_HEIGHT = 2;
@@ -63,6 +66,22 @@ export default function MusicPlayer({
     "rgba(0,0,0,0.85)",
   ]);
 
+  // NUEVO: sheet “Agregar a playlist”
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState<any | null>(null);
+
+  // 👇 NUEVO: estado + toggle para repetir el tema actual
+  const [repeatOne, setRepeatOne] = useState(false);
+  const toggleRepeatOne = async () => {
+    const next = !repeatOne;
+    setRepeatOne(next);
+    try {
+      await TrackPlayer.setRepeatMode(next ? RepeatMode.Track : RepeatMode.Off);
+    } catch (e) {
+      console.warn("Repeat no soportado por RNTP, quedó en:", next ? "Track" : "Off", e);
+    }
+  };
+
   // ⬅️ MOVIDO ARRIBA (hooks siempre en el mismo orden)
   const pathname = usePathname();
   const _params = useLocalSearchParams<{ id?: string }>(); // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -78,31 +97,23 @@ export default function MusicPlayer({
 
   // Si está expandido, consumir el "atrás" (gesto o botón) y minimizar
   useEffect(() => {
-    if (!isExpanded) return; // activo solo cuando está expandido
-
-    // Navegación (gesto/back del stack)
+    if (!isExpanded) return;
     const unsubNav = navigation.addListener?.("beforeRemove", (e: any) => {
-      e.preventDefault();           // cancela el pop
-      setIsExpanded(false);         // minimiza
+      e.preventDefault();
+      setIsExpanded(false);
     });
-
-    // Botón físico de back en Android
     const hw = BackHandler.addEventListener("hardwareBackPress", () => {
-      setIsExpanded(false); // minimiza
-      return true;          // consumimos el evento
+      setIsExpanded(false);
+      return true;
     });
-
-    return () => {
-      unsubNav && unsubNav();
-      hw.remove();
-    };
+    return () => { unsubNav && unsubNav(); hw.remove(); };
   }, [isExpanded, navigation]);
 
   useEffect(() => {
     if (!currentSong?.thumbnail) return;
     (async () => {
       try {
-        const src = upgradeYtmImage(currentSong.thumbnail, 512); // mejor fuente para extraer colores
+        const src = upgradeYtmImage(currentSong.thumbnail, 512);
         const theme = await getThemeFromImage(src || currentSong.thumbnail);
         setGradient(theme.gradient);
       } catch {
@@ -113,10 +124,10 @@ export default function MusicPlayer({
 
   if (!currentSong) return null;
 
-  // URLs en alta para cada uso
-  const thumbUrl = upgradeYtmImage(currentSong.thumbnail, 256);   // mini player / íconos
-  const coverUrl = upgradeYtmImage(currentSong.thumbnail, 600);   // cover del expandido
-  const bgUrl = upgradeYtmImage(currentSong.thumbnail, 1200);  // fondo blur del expandido
+  // URLs en alta
+  const thumbUrl = upgradeYtmImage(currentSong.thumbnail, 256);
+  const coverUrl = upgradeYtmImage(currentSong.thumbnail, 600);
+  const bgUrl = upgradeYtmImage(currentSong.thumbnail, 1200);
 
   const hasNext = queueIndex >= 0 && queueIndex < queue.length - 1;
   const hasPrev = queueIndex > 0;
@@ -131,25 +142,18 @@ export default function MusicPlayer({
 
   const goToArtist = (artistId?: string) => {
     if (!artistId || navigatingRef.current) return;
-
     const match = pathname?.match(/\/artist\/([^/]+)/);
     const currentArtistInPath = match?.[1];
-
     if (currentArtistInPath && String(currentArtistInPath) === String(artistId)) {
       if (isExpanded) setIsExpanded(false);
       return;
     }
-
     const doNav = () => {
       navigatingRef.current = true;
-      if (pathname && pathname.includes("/artist/")) {
-        router.replace(`/artist/${artistId}`);
-      } else {
-        router.push(`/artist/${artistId}`);
-      }
+      if (pathname && pathname.includes("/artist/")) router.replace(`/artist/${artistId}`);
+      else router.push(`/artist/${artistId}`);
       setTimeout(() => { navigatingRef.current = false; }, 250);
     };
-
     if (isExpanded) {
       setIsExpanded(false);
       InteractionManager.runAfterInteractions(doNav);
@@ -186,17 +190,14 @@ export default function MusicPlayer({
         <View style={stylesMini.container}>
           <Image source={{ uri: thumbUrl || currentSong.thumbnail }} style={stylesMini.thumbnail} />
 
-          {/* INFO: Título (expande) y Artista (navega) como zonas separadas */}
+          {/* INFO */}
           <View style={stylesMini.info}>
             <Pressable onPress={() => setIsExpanded(true)} hitSlop={6}>
               <Text style={stylesMini.title} numberOfLines={1}>
                 {currentSong.title}
               </Text>
             </Pressable>
-            <Pressable
-              onPress={() => goToArtist(currentSong?.artistId)}
-              style={{ alignSelf: "flex-start" }}
-            >
+            <Pressable onPress={() => goToArtist(currentSong?.artistId)} style={{ alignSelf: "flex-start" }}>
               <Text style={stylesMini.artist}>{currentSong.artistName}</Text>
             </Pressable>
           </View>
@@ -217,7 +218,7 @@ export default function MusicPlayer({
         pointerEvents={isExpanded ? "auto" : "none"}
         style={[stylesExp.container, { transform: [{ translateY: slideAnim }] }]}
       >
-        {/* Fondo = portada blur + scrim */}
+        {/* Fondo */}
         <ImageBackground
           source={{ uri: bgUrl || currentSong.thumbnail }}
           style={StyleSheet.absoluteFill}
@@ -239,12 +240,21 @@ export default function MusicPlayer({
           <TouchableOpacity onPress={() => setIsExpanded(false)}>
             <ChevronDown size={28} color="#fff" />
           </TouchableOpacity>
+
           <Text style={stylesExp.source} numberOfLines={1}>
             {playSource?.type === "playlist" && `Desde playlist: ${playSource.name}`}
             {playSource?.type === "album" && `Desde álbum: ${playSource.name}`}
             {playSource?.type === "artist" && `Canciones de ${playSource.name}`}
           </Text>
-          <View style={{ width: 28 }} />
+
+          {/* botón “más” */}
+          <TouchableOpacity
+            onPress={() => { setSelectedTrack(currentSong); setActionsOpen(true); }}
+            style={{ padding: 4, width: 28, alignItems: "flex-end" }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
+          </TouchableOpacity>
         </View>
 
         <View style={stylesExp.coverContainer}>
@@ -253,17 +263,9 @@ export default function MusicPlayer({
 
         <View style={stylesExp.meta}>
           <Text style={stylesExp.title} numberOfLines={2}>{currentSong.title}</Text>
-
-          {/* En expandido: tocar artista → navega (solo acá) */}
-          <Pressable
-            onPress={() => goToArtist(currentSong?.artistId)}
-            style={{ alignSelf: 'center' }}
-          >
-            <Text style={stylesExp.artist} numberOfLines={1}>
-              {currentSong.artistName}
-            </Text>
+          <Pressable onPress={() => goToArtist(currentSong?.artistId)} style={{ alignSelf: 'center' }}>
+            <Text style={stylesExp.artist} numberOfLines={1}>{currentSong.artistName}</Text>
           </Pressable>
-
         </View>
 
         <View style={stylesExp.sliderContainer}>
@@ -284,6 +286,7 @@ export default function MusicPlayer({
 
         <View style={stylesExp.controls}>
           <TouchableOpacity><Shuffle color="#fff" size={28} /></TouchableOpacity>
+
           <TouchableOpacity onPress={hasPrev ? onPrev : undefined} disabled={!hasPrev}>
             <SkipBack color={hasPrev ? "#fff" : "#888"} size={32} />
           </TouchableOpacity>
@@ -295,9 +298,23 @@ export default function MusicPlayer({
           <TouchableOpacity onPress={hasNext ? onNext : undefined} disabled={!hasNext}>
             <SkipForward color={hasNext ? "#fff" : "#888"} size={32} />
           </TouchableOpacity>
-          <TouchableOpacity><Repeat color="#fff" size={28} /></TouchableOpacity>
+
+          {/* 👇 NUEVO: Repeat (repetir tema actual) */}
+          <TouchableOpacity onPress={toggleRepeatOne}>
+            <View style={stylesExp.repeatWrap}>
+              <Repeat size={28} color={repeatOne ? ACCENT : "#fff"} />
+              {repeatOne && <Text style={stylesExp.repeatBadge}>1</Text>}
+            </View>
+          </TouchableOpacity>
         </View>
       </Animated.View>
+
+      {/* Sheet acciones */}
+      <TrackActionsSheet
+        open={actionsOpen}
+        onOpenChange={setActionsOpen}
+        track={selectedTrack}
+      />
     </>
   );
 }
@@ -359,4 +376,8 @@ const stylesExp = StyleSheet.create({
   time: { color: "#ccc", fontSize: 12 },
   controls: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 24, paddingHorizontal: 10 },
   playButton: { borderRadius: 999, width: 64, height: 64, justifyContent: "center", alignItems: "center" },
+
+  // NUEVO: decorado del ícono Repeat "1"
+  repeatWrap: { position: "relative", width: 28, height: 28, alignItems: "center", justifyContent: "center" },
+  repeatBadge: { position: "absolute", bottom: -2, right: -2, fontSize: 10, color: "#fff" },
 });
