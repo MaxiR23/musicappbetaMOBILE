@@ -28,6 +28,18 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     );
   }
 
+  // 🔁 RESOLVER REDIRECCIÓN PARA RNTP (307 manual)
+  async function resolveStreamUrl(id: string, baseUrl: string): Promise<string> {
+    const url = `${baseUrl}/music/play?id=${encodeURIComponent(id)}&redir=0`;
+    const res = await fetch(url, { method: "GET", redirect: "manual" });
+
+    if (res.status === 307 || res.status === 302) {
+      const location = res.headers.get("location");
+      if (location) return location;
+    }
+    throw new Error("No se pudo obtener la URL de stream");
+  }
+
   async function syncWithTrackPlayer(list: Song[], startIndex: number) {
     await ensureTrackPlayer();
 
@@ -48,10 +60,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     // asegurar startIndex válido
     const idx = Math.max(0, Math.min(startIndex, tracks.length - 1));
 
-    // --- 2) reset y carga SOLO del primer track ---
+    const resolvedUrl = await resolveStreamUrl(list[idx].id, BASE_URL);
+
     const firstTrack = {
       ...tracks[idx],
-      url: `${BASE_URL}/music/play?id=${encodeURIComponent(list[idx].id)}&redir=0`, // proxy+range
+      url: resolvedUrl, // directo a googlevideo
     };
 
     syncingRef.current = true;
@@ -96,7 +109,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     // 3) el resto de la cola se agrega en background dentro de syncWithTrackPlayer
     syncWithTrackPlayer(list, startIndex)
       .then(() => TrackPlayer.play())
-      .catch(() => {});
+      .catch(() => { });
   }
 
   function next() {
@@ -109,7 +122,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       }
       return i;
     });
-    TrackPlayer.skipToNext().catch(() => {});
+    TrackPlayer.skipToNext().catch(() => { });
   }
 
   function prev() {
@@ -119,7 +132,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       setCurrentSong(queue[ni]);
       return ni;
     });
-    TrackPlayer.skipToPrevious().catch(() => {});
+    TrackPlayer.skipToPrevious().catch(() => { });
   }
 
   // Mantener provider en sync con cambios externos (lockscreen / fin de tema)
