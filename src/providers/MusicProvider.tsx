@@ -1,9 +1,9 @@
 import Constants from "expo-constants";
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import TrackPlayer, { Event, TrackType } from "react-native-track-player";
+import { ensureTrackPlayer } from "../components/player/setupTrackPlayer";
 import { MusicContext } from "./../context/MusicContext";
 import { Song } from "./../types/music";
-import { ensureTrackPlayer } from "./setupTrackPlayer";
 
 export function MusicProvider({ children }: { children: ReactNode }) {
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
