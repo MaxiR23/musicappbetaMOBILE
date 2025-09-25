@@ -1,6 +1,6 @@
 import Constants from "expo-constants";
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import TrackPlayer, { Event } from "react-native-track-player";
+import TrackPlayer, { Event, TrackType } from "react-native-track-player";
 import { ensureTrackPlayer } from "../components/player/setupTrackPlayer";
 import { MusicContext } from "./../context/MusicContext";
 import { Song } from "./../types/music";
@@ -28,16 +28,19 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // 🔁 RESOLVER REDIRECCIÓN PARA RNTP (307 manual)
+  // 🔁 RESOLVER STREAM PARA RNTP (JSON limpio desde backend)
   async function resolveStreamUrl(id: string, baseUrl: string): Promise<string> {
     const url = `${baseUrl}/music/play?id=${encodeURIComponent(id)}&redir=0`;
-    const res = await fetch(url, { method: "GET", redirect: "manual" });
+    console.log("[RNTP] resolviendo stream JSON:", url);
 
-    if (res.status === 307 || res.status === 302) {
-      const location = res.headers.get("location");
-      if (location) return location;
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`[resolveStreamUrl] status ${res.status}`);
     }
-    throw new Error("No se pudo obtener la URL de stream");
+
+    const data = await res.json();
+    console.log("[RNTP] streamUrl =", data.url);
+    return data.url;
   }
 
   async function syncWithTrackPlayer(list: Song[], startIndex: number) {
@@ -50,44 +53,50 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     const tracks = list.map((s) => ({
       id: String(s.id),
       // ⚠️ primer track SIN redir para usar PROXY+Range y sonar ya;
-      // el resto con redir=1 (liviano, directo al CDN)
-      url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=1`,
+      // el resto con redir=0 acá (mantenemos lo tuyo)
+      url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=0`,
       title: s.title,
       artist: (s as any).artistName ?? s.artist ?? "",
       artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
+      type: TrackType.Default,     // ← añade tipo explícito
+      contentType: "audio/mp4",    // ← MIME correcto
     }));
 
     // asegurar startIndex válido
     const idx = Math.max(0, Math.min(startIndex, tracks.length - 1));
 
-    const resolvedUrl = await resolveStreamUrl(list[idx].id, BASE_URL);
+    const resolvedUrl = `${BASE_URL}/music/play?id=${encodeURIComponent(list[idx].id)}&redir=2`;
 
     const firstTrack = {
-      ...tracks[idx],
-      url: resolvedUrl, // directo a googlevideo
+      id: String(list[idx].id),
+      url: resolvedUrl,
+      title: list[idx].title || "Unknown",
+      artist: (list[idx] as any).artistName ?? list[idx].artist ?? "Unknown",
+      artwork: (list[idx] as any).thumbnail ?? (list[idx] as any).thumbnail_url ?? undefined,
+
+      // 👇 usar enum correcto en lugar de string
+      type: TrackType.Default,
+      contentType: "audio/mp4",
     };
 
     syncingRef.current = true;
     try {
       await TrackPlayer.reset();
-      await TrackPlayer.add(firstTrack);
+      console.log("[RNTP] firstTrack.url =", firstTrack.url);
+      await TrackPlayer.add([firstTrack]);
+      await TrackPlayer.play();
     } finally {
       syncingRef.current = false;
     }
 
     // --- 3) en background, hidratar el resto de la cola ---
-    //    - primero los que están ANTES del índice (para poder retroceder)
-    //    - luego los que están DESPUÉS del índice
     (async () => {
       try {
         const before = tracks.slice(0, idx);
         const after = tracks.slice(idx + 1);
 
         if (before.length) {
-          // Insertar antes del actual
-          // RNTP no tiene "insertAt" universal en todas las versiones;
-          // estrategia: agregar y luego reordenar saltando al índice actual si hiciera falta.
-          await TrackPlayer.add(before, 0); // algunos forks soportan index, si no, igual agrega a cola
+          await TrackPlayer.add(before, 0);
         }
         if (after.length) {
           await TrackPlayer.add(after);
@@ -109,7 +118,9 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     // 3) el resto de la cola se agrega en background dentro de syncWithTrackPlayer
     syncWithTrackPlayer(list, startIndex)
       .then(() => TrackPlayer.play())
-      .catch(() => { });
+      .catch((err) => {
+        console.error("[RNTP] error en syncWithTrackPlayer:", err);
+      });
   }
 
   function next() {
@@ -122,7 +133,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       }
       return i;
     });
-    TrackPlayer.skipToNext().catch(() => { });
+    TrackPlayer.skipToNext().catch(() => {});
   }
 
   function prev() {
@@ -132,7 +143,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       setCurrentSong(queue[ni]);
       return ni;
     });
-    TrackPlayer.skipToPrevious().catch(() => { });
+    TrackPlayer.skipToPrevious().catch(() => {});
   }
 
   // Mantener provider en sync con cambios externos (lockscreen / fin de tema)
