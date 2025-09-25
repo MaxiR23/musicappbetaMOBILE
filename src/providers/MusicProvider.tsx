@@ -13,6 +13,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
   // 👇 Flag para evitar que eventos externos pisen el índice mientras sincronizamos
   const syncingRef = useRef(false);
+  // 👇 Evita solapar cambios de cola
+  const switchingRef = useRef(false);
 
   type PlaySource =
     | { type: "playlist"; name?: string | null }
@@ -28,19 +30,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // 🔁 RESOLVER STREAM PARA RNTP (JSON limpio desde backend)
-  async function resolveStreamUrl(id: string, baseUrl: string): Promise<string> {
+  // 🔁 Hit que calienta el cache del backend SIN bloquear el primer play
+  function warmResolve(id: string, baseUrl: string) {
     const url = `${baseUrl}/music/play?id=${encodeURIComponent(id)}&redir=0`;
-    console.log("[RNTP] resolviendo stream JSON:", url);
-
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`[resolveStreamUrl] status ${res.status}`);
-    }
-
-    const data = await res.json();
-    console.log("[RNTP] streamUrl =", data.url);
-    return data.url;
+    // no await: que corra en paralelo
+    fetch(url).catch(() => {});
   }
 
   async function syncWithTrackPlayer(list: Song[], startIndex: number) {
@@ -52,19 +46,21 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     // --- 1) armar objetos de track ---
     const tracks = list.map((s) => ({
       id: String(s.id),
-      // ⚠️ primer track SIN redir para usar PROXY+Range y sonar ya;
-      // el resto con redir=0 acá (mantenemos lo tuyo)
       url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=0`,
       title: s.title,
       artist: (s as any).artistName ?? s.artist ?? "",
       artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
-      type: TrackType.Default,     // ← añade tipo explícito
-      contentType: "audio/mp4",    // ← MIME correcto
+      type: TrackType.Default,
+      contentType: "audio/mp4",
     }));
 
     // asegurar startIndex válido
     const idx = Math.max(0, Math.min(startIndex, tracks.length - 1));
 
+    // 🔥 calentá el cache del servidor en paralelo (NO bloquea)
+    warmResolve(list[idx].id, BASE_URL);
+
+    // Primer tema reproduce vía proxy con Range
     const resolvedUrl = `${BASE_URL}/music/play?id=${encodeURIComponent(list[idx].id)}&redir=2`;
 
     const firstTrack = {
@@ -73,8 +69,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       title: list[idx].title || "Unknown",
       artist: (list[idx] as any).artistName ?? list[idx].artist ?? "Unknown",
       artwork: (list[idx] as any).thumbnail ?? (list[idx] as any).thumbnail_url ?? undefined,
-
-      // 👇 usar enum correcto en lugar de string
       type: TrackType.Default,
       contentType: "audio/mp4",
     };
@@ -101,26 +95,30 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         if (after.length) {
           await TrackPlayer.add(after);
         }
-      } catch {
-        // no rompas el primer play si falla la hidratación
-      }
+      } catch {}
     })();
   }
 
-  function playFromList(list: Song[], startIndex: number, source?: PlaySource) {
+  // ⬇️ Pausa inmediata + evita dobles clics
+  async function playFromList(list: Song[], startIndex: number, source?: PlaySource) {
+    if (switchingRef.current) return;
+    switchingRef.current = true;
+
+    await TrackPlayer.pause().catch(() => {});
+
     setQueue(list);
     setQueueIndex(startIndex);
     setCurrentSong(list[startIndex] ?? null);
     setPlaySource(source ?? { type: "queue", name: null });
 
-    // 1) sincroniza cola mínima (sólo 1er tema)
-    // 2) reproduce YA
-    // 3) el resto de la cola se agrega en background dentro de syncWithTrackPlayer
-    syncWithTrackPlayer(list, startIndex)
-      .then(() => TrackPlayer.play())
-      .catch((err) => {
-        console.error("[RNTP] error en syncWithTrackPlayer:", err);
-      });
+    try {
+      await syncWithTrackPlayer(list, startIndex);
+      await TrackPlayer.play();
+    } catch (err) {
+      console.error("[RNTP] error en syncWithTrackPlayer]:", err);
+    } finally {
+      switchingRef.current = false;
+    }
   }
 
   function next() {
@@ -148,7 +146,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
   // Mantener provider en sync con cambios externos (lockscreen / fin de tema)
   useEffect(() => {
-    // Helper: encontrar índice del track activo por ID (no por índice interno del player)
     const findActiveIndex = async (): Promise<number | null> => {
       try {
         const getActiveTrack = (TrackPlayer as any).getActiveTrack?.bind(TrackPlayer);
@@ -157,7 +154,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
         let active: any = getActiveTrack ? await getActiveTrack() : null;
 
-        // Compat: si solo tenemos índice, resolvemos el objeto
         if (!active && getCurrentTrack) {
           const idx = await getCurrentTrack();
           if (typeof idx === "number" && idx >= 0 && getTrack) {
@@ -176,7 +172,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     };
 
     const onActiveChanged = async () => {
-      if (syncingRef.current) return; // ignorar durante hydration
+      if (syncingRef.current) return;
       const pos = await findActiveIndex();
       if (pos == null) return;
       setQueueIndex((prev) => (prev !== pos ? pos : prev));
@@ -193,7 +189,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // Compat para builds que emiten este evento
     const subLegacy = TrackPlayer.addEventListener(Event.PlaybackTrackChanged as any, onActiveChanged);
 
     return () => {
