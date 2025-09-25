@@ -1,9 +1,9 @@
 import Constants from "expo-constants";
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import TrackPlayer, { Event, TrackType } from "react-native-track-player";
-import { ensureTrackPlayer } from "../components/player/setupTrackPlayer";
 import { MusicContext } from "./../context/MusicContext";
 import { Song } from "./../types/music";
+import { ensureTrackPlayer } from "./setupTrackPlayer";
 
 export function MusicProvider({ children }: { children: ReactNode }) {
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
@@ -30,73 +30,84 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // 🔁 Hit que calienta el cache del backend SIN bloquear el primer play
+  // 🔁 Calienta el backend SIN bloquear
   function warmResolve(id: string, baseUrl: string) {
     const url = `${baseUrl}/music/play?id=${encodeURIComponent(id)}&redir=0`;
-    // no await: que corra en paralelo
     fetch(url).catch(() => {});
   }
 
+  // ✅ Carga determinista: agrega TODA la cola, salta al índice y reproduce.
   async function syncWithTrackPlayer(list: Song[], startIndex: number) {
+    console.log("[sync] IN → startIndex:", startIndex, "list.len:", list?.length);
+
     await ensureTrackPlayer();
 
     const BASE_URL = getBaseUrl();
-    if (!BASE_URL || !list.length) return;
+    if (!BASE_URL || !list?.length) {
+      console.warn("[sync] BASE_URL o lista inválidos");
+      return;
+    }
 
-    // --- 1) armar objetos de track ---
-    const tracks = list.map((s) => ({
+    // Usamos proxy (redir=2) para todas; NO seteamos contentType para evitar mismatch.
+    const tracks = list.map((s, i) => ({
       id: String(s.id),
-      url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=0`,
+      url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
       title: s.title,
       artist: (s as any).artistName ?? s.artist ?? "",
       artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
       type: TrackType.Default,
-      contentType: "audio/mp4",
-    }));
+      __idx: i, // debug
+    })) as any[];
 
-    // asegurar startIndex válido
     const idx = Math.max(0, Math.min(startIndex, tracks.length - 1));
+    const doSkip = (TrackPlayer as any).skip?.bind(TrackPlayer);
 
-    // 🔥 calentá el cache del servidor en paralelo (NO bloquea)
-    warmResolve(list[idx].id, BASE_URL);
+    // (opcional) calentar actual
+    try { warmResolve(list[idx].id, BASE_URL); } catch {}
 
-    // Primer tema reproduce vía proxy con Range
-    const resolvedUrl = `${BASE_URL}/music/play?id=${encodeURIComponent(list[idx].id)}&redir=2`;
-
-    const firstTrack = {
-      id: String(list[idx].id),
-      url: resolvedUrl,
-      title: list[idx].title || "Unknown",
-      artist: (list[idx] as any).artistName ?? list[idx].artist ?? "Unknown",
-      artwork: (list[idx] as any).thumbnail ?? (list[idx] as any).thumbnail_url ?? undefined,
-      type: TrackType.Default,
-      contentType: "audio/mp4",
+    // Debug helpers
+    const getQueue = (TrackPlayer as any).getQueue?.bind(TrackPlayer);
+    const getActiveTrack = (TrackPlayer as any).getActiveTrack?.bind(TrackPlayer);
+    const getCurrentTrack = (TrackPlayer as any).getCurrentTrack?.bind(TrackPlayer);
+    const getTrack = (TrackPlayer as any).getTrack?.bind(TrackPlayer);
+    const dumpQueue = async (label: string) => {
+      try {
+        const q = getQueue ? await getQueue() : null;
+        console.log(`[sync] ${label} queue.len:`, q?.length, q?.map((t: any, i: number) => ({ i, id: t?.id })));
+        let active: any = getActiveTrack ? await getActiveTrack() : null;
+        if (!active && getCurrentTrack && getTrack) {
+          const ci = await getCurrentTrack();
+          if (typeof ci === "number" && ci >= 0) active = await getTrack(ci);
+        }
+        console.log(`[sync] ${label} activeTrack:`, active ? { id: active.id, url: active.url } : null);
+      } catch (e) {
+        console.warn(`[sync] ${label} dumpQueue ERROR:`, e);
+      }
     };
 
     syncingRef.current = true;
     try {
       await TrackPlayer.reset();
-      console.log("[RNTP] firstTrack.url =", firstTrack.url);
-      await TrackPlayer.add([firstTrack]);
+      await TrackPlayer.add(tracks);
+      console.log("[sync] added all. total:", tracks.length);
+
+      if (doSkip) {
+        await doSkip(idx);
+        console.log("[sync] skip →", idx);
+      } else {
+        for (let i = 0; i < idx; i++) await TrackPlayer.skipToNext();
+        console.log("[sync] skipToNext x", idx);
+      }
+
+      await dumpQueue("post-add");
       await TrackPlayer.play();
+      console.log("[sync] play() dispatched");
+    } catch (e) {
+      console.error("[sync] ERROR reset/add/skip/play:", e);
+      throw e;
     } finally {
       syncingRef.current = false;
     }
-
-    // --- 3) en background, hidratar el resto de la cola ---
-    (async () => {
-      try {
-        const before = tracks.slice(0, idx);
-        const after = tracks.slice(idx + 1);
-
-        if (before.length) {
-          await TrackPlayer.add(before, 0);
-        }
-        if (after.length) {
-          await TrackPlayer.add(after);
-        }
-      } catch {}
-    })();
   }
 
   // ⬇️ Pausa inmediata + evita dobles clics
@@ -121,30 +132,60 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // NEXT determinista por índice + play
   function next() {
-    setQueueIndex((i) => {
-      if (i < 0) return i;
-      const ni = i + 1;
-      if (ni < queue.length) {
-        setCurrentSong(queue[ni]);
-        return ni;
+    if (queueIndex < 0) return;
+    const ni = queueIndex + 1;
+    if (ni >= queue.length) return;
+
+    setQueueIndex(ni);
+    setCurrentSong(queue[ni]);
+
+    const doSkip = (TrackPlayer as any).skip?.bind(TrackPlayer);
+    (async () => {
+      try {
+        if (doSkip) {
+          await doSkip(ni);
+          console.log("[next] skip →", ni);
+        } else {
+          await TrackPlayer.skipToNext();
+          console.log("[next] skipToNext()");
+        }
+        await TrackPlayer.play();
+        console.log("[next] play()");
+      } catch (e) {
+        console.error("[next] ERROR:", e);
       }
-      return i;
-    });
-    TrackPlayer.skipToNext().catch(() => {});
+    })();
   }
 
+  // PREV determinista por índice + play
   function prev() {
-    setQueueIndex((i) => {
-      if (i <= 0) return i;
-      const ni = i - 1;
-      setCurrentSong(queue[ni]);
-      return ni;
-    });
-    TrackPlayer.skipToPrevious().catch(() => {});
+    if (queueIndex <= 0) return;
+    const ni = queueIndex - 1;
+
+    setQueueIndex(ni);
+    setCurrentSong(queue[ni]);
+
+    const doSkip = (TrackPlayer as any).skip?.bind(TrackPlayer);
+    (async () => {
+      try {
+        if (doSkip) {
+          await doSkip(ni);
+          console.log("[prev] skip →", ni);
+        } else {
+          await TrackPlayer.skipToPrevious();
+          console.log("[prev] skipToPrevious()");
+        }
+        await TrackPlayer.play();
+        console.log("[prev] play()");
+      } catch (e) {
+        console.error("[prev] ERROR:", e);
+      }
+    })();
   }
 
-  // Mantener provider en sync con cambios externos (lockscreen / fin de tema)
+  // Mantener provider en sync con cambios externos y PRE-WARM del siguiente
   useEffect(() => {
     const findActiveIndex = async (): Promise<number | null> => {
       try {
@@ -175,8 +216,21 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       if (syncingRef.current) return;
       const pos = await findActiveIndex();
       if (pos == null) return;
+
       setQueueIndex((prev) => (prev !== pos ? pos : prev));
       setCurrentSong((prev) => (queue[pos] && prev?.id !== queue[pos].id ? queue[pos] : prev));
+
+      // 🔥 pre-warm del siguiente tema para reducir lag en Next
+      try {
+        const BASE_URL = getBaseUrl();
+        const nextItem = queue[pos + 1];
+        if (BASE_URL && nextItem?.id) {
+          warmResolve(String(nextItem.id), BASE_URL);
+          console.log("[prefetch] warmed next:", nextItem.id);
+        }
+      } catch (e) {
+        console.warn("[prefetch] warm next failed:", e);
+      }
     };
 
     const subActive = TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, onActiveChanged);

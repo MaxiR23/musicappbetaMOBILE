@@ -1,26 +1,26 @@
+import { Ionicons } from "@expo/vector-icons";
+import Slider from "@react-native-community/slider";
+import { LinearGradient } from "expo-linear-gradient";
+import { router, useLocalSearchParams, useNavigation, usePathname } from "expo-router";
+import { ChevronDown, Pause, Play, Repeat, Shuffle, SkipBack, SkipForward } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  Dimensions,
   Animated,
-  StatusBar,
+  BackHandler,
+  Dimensions,
+  Image,
   ImageBackground,
   InteractionManager,
   Pressable,
-  BackHandler
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
-import Slider from "@react-native-community/slider";
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { ChevronDown, Shuffle, SkipBack, SkipForward, Repeat, Play, Pause } from "lucide-react-native";
-import { router, usePathname, useLocalSearchParams, useNavigation } from "expo-router";
-import { useMusic } from "./../../hooks/use-music";
 import { getThemeFromImage } from "../../utils/colorUtils.native";
 import { upgradeYtmImage } from "../../utils/ytmImage";
+import { useMusic } from "./../../hooks/use-music";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 const PROGRESS_HEIGHT = 2;
