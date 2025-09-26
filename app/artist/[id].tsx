@@ -31,7 +31,6 @@ export default function ArtistScreen() {
     getArtist(id as string)
       .then((data) => {
         setArtist(data);
-        console.log(data);
         setLoading(false);
       })
       .catch((err) => {
@@ -48,26 +47,19 @@ export default function ArtistScreen() {
       const artistsArr = Array.isArray(s.artists) ? s.artists : [];
       const primary = artistsArr[0] || null;
 
-      // nombre de artista (fallback al header del artista actual)
       const artistName =
         s.artistName ??
         (artistsArr.length ? artistsArr.map((a: any) => a.name).join(", ") : artist.header.name);
 
-      // ⬅️ CLAVE: asegurar artistId siempre (para que el Provider loguee el contexto una sola vez)
       const artistId =
         s.artistId ??
         primary?.id ??
-        artistIdFromRoute ?? // fallback fuerte: el artista de esta pantalla
+        artistIdFromRoute ??
         null;
 
-      // id de track robusto
       const trackId = s.videoId ?? s.id;
 
-      // albumId si viene (no obligatorio, ayuda si algún tema lo trae)
-      const albumId =
-        s.albumId ??
-        s.album?.id ??
-        null;
+      const albumId = s.albumId ?? s.album?.id ?? null;
 
       return {
         id: trackId,
@@ -77,10 +69,10 @@ export default function ArtistScreen() {
         durationSeconds: s.durationSeconds,
 
         artistName,
-        artistId,      // ⬅️ importante para el contexto
+        artistId,
         artists: artistsArr,
 
-        albumId,       // opcional (sirve si el provider quiere inferir)
+        albumId,
         url: "",
       };
     });
@@ -122,8 +114,7 @@ export default function ArtistScreen() {
     );
   }
 
-  const heroRaw =
-    artist?.header?.thumbnails?.[artist?.header?.thumbnails.length - 1]?.url;
+  const heroRaw = artist?.header?.thumbnails?.[artist?.header?.thumbnails.length - 1]?.url;
   const heroUrl = upgradeYtmImage(heroRaw, 1200);
 
   return (
@@ -172,7 +163,12 @@ export default function ArtistScreen() {
               key={song.id || song.videoId || `${index}`}
               style={styles.songRow}
               onPress={() =>
-                playFromList(mappedTop, index, { type: "artist", name: artist.header?.name })
+                // 👇 PASAMOS thumb en el source para que el Provider lo loguee en metadata
+                playFromList(
+                  mappedTop,
+                  index,
+                  { type: "artist", name: artist.header?.name, thumb: heroUrl }
+                )
               }
             >
               <Text style={styles.songIndex}>{index + 1}</Text>

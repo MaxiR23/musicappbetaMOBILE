@@ -19,18 +19,13 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import TrackPlayer, { RepeatMode } from "react-native-track-player";
+import { useMusicApi } from "../../hooks/use-music-api";
 import { getThemeFromImage } from "../../utils/colorUtils.native";
 import { upgradeYtmImage } from "../../utils/ytmImage";
 import { useMusic } from "./../../hooks/use-music";
-// 👇 NUEVO import (usado solo para repeat)
-import TrackPlayer, { RepeatMode } from "react-native-track-player";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
-const PROGRESS_HEIGHT = 2;
-const PROGRESS_BG = "#444";
-const TOUCH_HEIGHT = 28;
-const SIDE_OVERFLOW = 16;
-
 const ACCENT = "#ffffff" as const;
 const ACCENT_TEXT = "#000" as const;
 
@@ -45,6 +40,8 @@ interface Props {
   onPrev: () => void;
 }
 
+const first = (...vals: any[]) => vals.find(v => v !== undefined && v !== null && v !== "");
+
 export default function MusicPlayer({
   isPlaying,
   progress,
@@ -57,6 +54,7 @@ export default function MusicPlayer({
 }: Props) {
   const { currentSong, queue, queueIndex, playSource } = useMusic();
   const navigation = useNavigation();
+  const { likeTrack, unlikeTrack, isTrackLiked } = useMusicApi() as any;
 
   const [isExpanded, setIsExpanded] = useState(false);
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
@@ -66,11 +64,9 @@ export default function MusicPlayer({
     "rgba(0,0,0,0.85)",
   ]);
 
-  // NUEVO: sheet “Agregar a playlist”
   const [actionsOpen, setActionsOpen] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<any | null>(null);
 
-  // 👇 NUEVO: estado + toggle para repetir el tema actual
   const [repeatOne, setRepeatOne] = useState(false);
   const toggleRepeatOne = async () => {
     const next = !repeatOne;
@@ -82,10 +78,92 @@ export default function MusicPlayer({
     }
   };
 
-  // ⬅️ MOVIDO ARRIBA (hooks siempre en el mismo orden)
   const pathname = usePathname();
   const _params = useLocalSearchParams<{ id?: string }>(); // eslint-disable-line @typescript-eslint/no-unused-vars
   const navigatingRef = useRef(false);
+
+  // ❤️ like/unlike (estado + init remota + toggle con API)
+  const [isLiked, setIsLiked] = useState<boolean>(false);
+  const [liking, setLiking] = useState<boolean>(false);
+
+  // helpers de metadatos robustos
+  const artistId =
+    first((currentSong as any)?.artistId, (currentSong as any)?.artist_id, (currentSong as any)?.artists?.[0]?.id) ||
+    null;
+  const artistName =
+    first(
+      (currentSong as any)?.artistName,
+      (currentSong as any)?.artist,
+      Array.isArray((currentSong as any)?.artists)
+        ? (currentSong as any)?.artists.map((a: any) => a?.name).filter(Boolean).join(", ")
+        : null
+    ) || "";
+  const rawThumb =
+    first(
+      (currentSong as any)?.thumbnail,
+      (currentSong as any)?.thumbnail_url,
+      (currentSong as any)?.albumCover,
+      (currentSong as any)?.thumbnails?.[0]?.url
+    ) || "";
+
+  // URLs mejoradas
+  const thumbUrl = upgradeYtmImage(rawThumb, 256) || rawThumb;
+  const coverUrl = upgradeYtmImage(rawThumb, 600) || rawThumb;
+  const bgUrl = upgradeYtmImage(rawThumb, 1200) || rawThumb;
+
+  // estado inicial de repeat (lee de RNTP)
+  useEffect(() => {
+    (async () => {
+      try {
+        const mode = await (TrackPlayer as any).getRepeatMode?.();
+        setRepeatOne(mode === RepeatMode.Track);
+      } catch {}
+    })();
+  }, []);
+
+  // Lee del backend si el tema actual está likeado
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const id = currentSong?.id ? String(currentSong.id) : null;
+      if (!id || !isTrackLiked) {
+        const init =
+          Boolean((currentSong as any)?.liked) ||
+          Boolean((currentSong as any)?.is_liked) ||
+          Boolean((currentSong as any)?.extra?.liked);
+        if (!cancelled) setIsLiked(init);
+        return;
+      }
+      try {
+        const resp = await isTrackLiked(id); // { track_id, liked }
+        if (!cancelled) setIsLiked(Boolean(resp?.liked));
+      } catch {
+        const init =
+          Boolean((currentSong as any)?.liked) ||
+          Boolean((currentSong as any)?.is_liked) ||
+          Boolean((currentSong as any)?.extra?.liked);
+        if (!cancelled) setIsLiked(init);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [currentSong?.id, isTrackLiked]);
+
+  const toggleLike = async () => {
+    if (!currentSong?.id || liking) return;
+    const id = String(currentSong.id);
+    const next = !isLiked;
+    setIsLiked(next); // optimista
+    setLiking(true);
+    try {
+      if (next) await likeTrack(id);
+      else await unlikeTrack(id);
+    } catch (e) {
+      setIsLiked(!next); // revert
+      console.warn("like/unlike failed:", e);
+    } finally {
+      setLiking(false);
+    }
+  };
 
   useEffect(() => {
     Animated.timing(slideAnim, {
@@ -95,7 +173,7 @@ export default function MusicPlayer({
     }).start();
   }, [isExpanded]);
 
-  // Si está expandido, consumir el "atrás" (gesto o botón) y minimizar
+  // back minimiza cuando está expandido
   useEffect(() => {
     if (!isExpanded) return;
     const unsubNav = navigation.addListener?.("beforeRemove", (e: any) => {
@@ -109,25 +187,21 @@ export default function MusicPlayer({
     return () => { unsubNav && unsubNav(); hw.remove(); };
   }, [isExpanded, navigation]);
 
+  // tema visual desde portada
   useEffect(() => {
-    if (!currentSong?.thumbnail) return;
+    if (!rawThumb) return;
     (async () => {
       try {
-        const src = upgradeYtmImage(currentSong.thumbnail, 512);
-        const theme = await getThemeFromImage(src || currentSong.thumbnail);
+        const src = upgradeYtmImage(rawThumb, 512) || rawThumb;
+        const theme = await getThemeFromImage(src);
         setGradient(theme.gradient);
       } catch {
         setGradient(["rgba(0,0,0,0.2)", "rgba(0,0,0,0.85)"]);
       }
     })();
-  }, [currentSong?.thumbnail]);
+  }, [rawThumb]);
 
   if (!currentSong) return null;
-
-  // URLs en alta
-  const thumbUrl = upgradeYtmImage(currentSong.thumbnail, 256);
-  const coverUrl = upgradeYtmImage(currentSong.thumbnail, 600);
-  const bgUrl = upgradeYtmImage(currentSong.thumbnail, 1200);
 
   const hasNext = queueIndex >= 0 && queueIndex < queue.length - 1;
   const hasPrev = queueIndex > 0;
@@ -140,18 +214,18 @@ export default function MusicPlayer({
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const goToArtist = (artistId?: string) => {
-    if (!artistId || navigatingRef.current) return;
+  const goToArtist = (aid?: string | null) => {
+    if (!aid || navigatingRef.current) return;
     const match = pathname?.match(/\/artist\/([^/]+)/);
     const currentArtistInPath = match?.[1];
-    if (currentArtistInPath && String(currentArtistInPath) === String(artistId)) {
+    if (currentArtistInPath && String(currentArtistInPath) === String(aid)) {
       if (isExpanded) setIsExpanded(false);
       return;
     }
     const doNav = () => {
       navigatingRef.current = true;
-      if (pathname && pathname.includes("/artist/")) router.replace(`/artist/${artistId}`);
-      else router.push(`/artist/${artistId}`);
+      if (pathname && pathname.includes("/artist/")) router.replace(`/artist/${aid}`);
+      else router.push(`/artist/${aid}`);
       setTimeout(() => { navigatingRef.current = false; }, 250);
     };
     if (isExpanded) {
@@ -166,7 +240,7 @@ export default function MusicPlayer({
     <>
       {/* MINI PLAYER */}
       <View style={stylesMini.wrapper}>
-        {/* barra de progreso NO intercepta toques */}
+        {/* barra de progreso (no intercepta toques) */}
         <View style={stylesMini.progressContainer} pointerEvents="none">
           <View style={stylesMini.progressBg} />
           <View
@@ -188,17 +262,17 @@ export default function MusicPlayer({
         </View>
 
         <View style={stylesMini.container}>
-          <Image source={{ uri: thumbUrl || currentSong.thumbnail }} style={stylesMini.thumbnail} />
+          <Image source={{ uri: thumbUrl }} style={stylesMini.thumbnail} />
 
           {/* INFO */}
           <View style={stylesMini.info}>
             <Pressable onPress={() => setIsExpanded(true)} hitSlop={6}>
               <Text style={stylesMini.title} numberOfLines={1}>
-                {currentSong.title}
+                {(currentSong as any)?.title ?? ""}
               </Text>
             </Pressable>
-            <Pressable onPress={() => goToArtist(currentSong?.artistId)} style={{ alignSelf: "flex-start" }}>
-              <Text style={stylesMini.artist}>{currentSong.artistName}</Text>
+            <Pressable onPress={() => goToArtist(artistId || undefined)} style={{ alignSelf: "flex-start" }}>
+              <Text style={stylesMini.artist} numberOfLines={1}>{artistName}</Text>
             </Pressable>
           </View>
 
@@ -220,7 +294,7 @@ export default function MusicPlayer({
       >
         {/* Fondo */}
         <ImageBackground
-          source={{ uri: bgUrl || currentSong.thumbnail }}
+          source={{ uri: bgUrl }}
           style={StyleSheet.absoluteFill}
           blurRadius={50}
           resizeMode="cover"
@@ -242,10 +316,24 @@ export default function MusicPlayer({
           </TouchableOpacity>
 
           <Text style={stylesExp.source} numberOfLines={1}>
-            {playSource?.type === "playlist" && `Desde playlist: ${playSource.name}`}
-            {playSource?.type === "album" && `Desde álbum: ${playSource.name}`}
-            {playSource?.type === "artist" && `Canciones de ${playSource.name}`}
+            {playSource?.type === "playlist" && `Desde playlist: ${playSource.name ?? ""}`}
+            {playSource?.type === "album" && `Desde álbum: ${playSource.name ?? ""}`}
+            {playSource?.type === "artist" && `Canciones de ${playSource.name ?? ""}`}
           </Text>
+
+          {/* ❤️ like/unlike */}
+          <TouchableOpacity
+            onPress={toggleLike}
+            disabled={liking}
+            style={{ padding: 4, width: 28, alignItems: "center", marginRight: 6 }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons
+              name={isLiked ? "heart" : "heart-outline"}
+              size={22}
+              color="#fff"
+            />
+          </TouchableOpacity>
 
           {/* botón “más” */}
           <TouchableOpacity
@@ -258,13 +346,13 @@ export default function MusicPlayer({
         </View>
 
         <View style={stylesExp.coverContainer}>
-          <Image source={{ uri: coverUrl || currentSong.thumbnail }} style={stylesExp.coverImage} resizeMode="cover" />
+          <Image source={{ uri: coverUrl }} style={stylesExp.coverImage} resizeMode="cover" />
         </View>
 
         <View style={stylesExp.meta}>
-          <Text style={stylesExp.title} numberOfLines={2}>{currentSong.title}</Text>
-          <Pressable onPress={() => goToArtist(currentSong?.artistId)} style={{ alignSelf: 'center' }}>
-            <Text style={stylesExp.artist} numberOfLines={1}>{currentSong.artistName}</Text>
+          <Text style={stylesExp.title} numberOfLines={2}>{(currentSong as any)?.title ?? ""}</Text>
+          <Pressable onPress={() => goToArtist(artistId)} style={{ alignSelf: 'center' }}>
+            <Text style={stylesExp.artist} numberOfLines={1}>{artistName}</Text>
           </Pressable>
         </View>
 
@@ -299,7 +387,7 @@ export default function MusicPlayer({
             <SkipForward color={hasNext ? "#fff" : "#888"} size={32} />
           </TouchableOpacity>
 
-          {/* 👇 NUEVO: Repeat (repetir tema actual) */}
+          {/* Repeat (repetir tema actual) */}
           <TouchableOpacity onPress={toggleRepeatOne}>
             <View style={stylesExp.repeatWrap}>
               <Repeat size={28} color={repeatOne ? ACCENT : "#fff"} />
@@ -377,7 +465,7 @@ const stylesExp = StyleSheet.create({
   controls: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 24, paddingHorizontal: 10 },
   playButton: { borderRadius: 999, width: 64, height: 64, justifyContent: "center", alignItems: "center" },
 
-  // NUEVO: decorado del ícono Repeat "1"
+  // deco Repeat "1"
   repeatWrap: { position: "relative", width: 28, height: 28, alignItems: "center", justifyContent: "center" },
   repeatBadge: { position: "absolute", bottom: -2, right: -2, fontSize: 10, color: "#fff" },
 });

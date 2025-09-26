@@ -6,6 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,12 +17,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import SearchBar from "./../SearchBar";
 
 import CreatePlaylistModal from "@/src/components/CreatePlaylistModal";
-
-// 🆕 supabase para cerrar sesión y leer usuario
+import TrackActionsSheet from "@/src/components/TrackActionsSheet";
 import { supabase } from "@/src/lib/supabase";
 
-// 🆕 Sheet genérico (DRY) para el submenú del avatar
-import TrackActionsSheet from "@/src/components/TrackActionsSheet";
+type RecentItem = {
+  type: "album" | "artist";
+  id: string;
+  occurred_at: string;
+  name?: string | null;
+  thumbnail_url?: string | null;
+};
 
 // ───────── helpers avatar (gradiente + iniciales) ─────────
 const GRADIENTS: [string, string][] = [
@@ -56,19 +61,23 @@ function getInitials(nameOrEmail: string) {
 export default function HomeScreen() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
-  const { searchSongs, getPlaylists } = useMusicApi();
+  const { searchSongs, getPlaylists, getRecentPlays } = useMusicApi();
   const [playlists, setPlaylists] = useState<any[]>([]);
   const router = useRouter();
 
   const [createOpen, setCreateOpen] = useState(false);
 
-  // 🆕 user para avatar e iniciales (no hace falta provider)
+  // user para avatar e iniciales
   const [userName, setUserName] = useState<string>("");
   const [userEmail, setUserEmail] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
 
-  // 🆕 control del submenú del avatar
+  // submenú del avatar
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+
+  // recientes
+  const [recent, setRecent] = useState<RecentItem[]>([]);
+  const [recentLoading, setRecentLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -97,21 +106,46 @@ export default function HomeScreen() {
   const refreshPlaylists = useCallback(async () => {
     try {
       const pls = await getPlaylists();
-      console.log("[API] playlists:", pls);
       setPlaylists(pls);
     } catch (e: any) {
       console.warn("[API] getPlaylists error:", e?.message || e);
     }
   }, [getPlaylists]);
 
+  const refreshRecent = useCallback(async () => {
+    try {
+      setRecentLoading(true);
+      const resp = await getRecentPlays(12); // álbumes/artistas recientes
+      console.log('resp')
+      console.log(resp)
+      setRecent(resp?.items ?? []);
+    } catch (e: any) {
+      console.warn("[API] getRecentPlays error:", e?.message || e);
+      setRecent([]);
+    } finally {
+      setRecentLoading(false);
+    }
+  }, [getRecentPlays]);
+
   useEffect(() => {
     refreshPlaylists();
-  }, [refreshPlaylists]);
+    refreshRecent();
+  }, [refreshPlaylists, refreshRecent]);
 
   useFocusEffect(
     useCallback(() => {
       refreshPlaylists();
-    }, [refreshPlaylists])
+      refreshRecent();
+    }, [refreshPlaylists, refreshRecent])
+  );
+
+  // Solo mostramos recientes con info visible (evita cajas vacías)
+  const recentVisible = useMemo(
+    () =>
+      (recent || [])
+        .filter((it) => Boolean(it.name) || Boolean(it.thumbnail_url))
+        .slice(0, 12),
+    [recent]
   );
 
   async function handleSearch() {
@@ -119,11 +153,11 @@ export default function HomeScreen() {
     setResults(data.songs || []);
   }
 
-  // 🆕 cerrar sesión (usado por el submenú)
   const handleSignOut = useCallback(async () => {
     try {
       await supabase.auth.signOut();
       setPlaylists([]);
+      setRecent([]);
       setProfileSheetOpen(false);
       router.replace("/login");
     } catch (err) {
@@ -133,16 +167,14 @@ export default function HomeScreen() {
 
   return (
     <>
-      {/* 🔍 Barra de búsqueda (protegida con SafeAreaView) */}
+      {/* 🔍 Barra de búsqueda */}
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#0e0e0e" }}>
         <View style={{ paddingTop: 16, paddingHorizontal: 16, paddingBottom: 0 }}>
-          {/* 🆕 Search + avatar en fila */}
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
             <View style={{ flex: 1 }}>
               <SearchBar />
             </View>
 
-            {/* 🆕 Botón redondito → abre submenú (no cierra sesión directo) */}
             <TouchableOpacity
               onPress={() => setProfileSheetOpen(true)}
               activeOpacity={0.9}
@@ -168,7 +200,7 @@ export default function HomeScreen() {
         </View>
       </SafeAreaView>
 
-      {/* 🔽 Contenido scrolleable */}
+      {/* 🔽 Contenido */}
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
         {/* 🎵 Banner */}
         <LinearGradient
@@ -189,25 +221,13 @@ export default function HomeScreen() {
         {/* 🎛️ Categorías */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Seleccionar Categorías</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.categories}
-          >
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categories}>
             {["All", "Relax", "Sad", "Party", "Romance"].map((cat, index) => (
               <TouchableOpacity
                 key={index}
-                style={[
-                  styles.categoryButton,
-                  cat === "All" && styles.categoryButtonActive,
-                ]}
+                style={[styles.categoryButton, cat === "All" && styles.categoryButtonActive]}
               >
-                <Text
-                  style={[
-                    styles.categoryText,
-                    cat === "All" && styles.categoryTextActive,
-                  ]}
-                >
+                <Text style={[styles.categoryText, cat === "All" && styles.categoryTextActive]}>
                   {cat}
                 </Text>
               </TouchableOpacity>
@@ -215,7 +235,7 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
 
-        {/* 🔥 Tus playlists */}
+        {/* 🔥 Tus playlists (tu sección actual “Canciones Populares”) */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Canciones Populares</Text>
           <View style={styles.popularRow}>
@@ -245,6 +265,60 @@ export default function HomeScreen() {
             })}
           </View>
         </View>
+
+        {/* 🆕 Escuchados recientemente — SOLO si hay items visibles */}
+        {recentVisible.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Escuchados recientemente</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {recentVisible.map((it) => (
+                <TouchableOpacity
+                  key={`${it.type}:${it.id}:${it.occurred_at}`}
+                  style={[styles.songCard, { marginRight: 16 }]}
+                  onPress={() =>
+                    router.push(
+                      it.type === "album"
+                        ? `/album/${encodeURIComponent(it.id)}`
+                        : `/artist/${encodeURIComponent(it.id)}`
+                    )
+                  }
+                  activeOpacity={0.85}
+                >
+                  {it.thumbnail_url ? (
+                    <Image
+                      source={{ uri: it.thumbnail_url }}
+                      style={{ width: 160, height: 160, borderRadius: 20 }}
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        width: 160,
+                        height: 160,
+                        borderRadius: 20,
+                        backgroundColor: "#222",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Ionicons name="musical-notes-outline" size={28} color="#777" />
+                    </View>
+                  )}
+                  {!!it.name && (
+                    <Text
+                      numberOfLines={1}
+                      style={{ color: "#fff", marginTop: 8, width: 160, fontWeight: "600" }}
+                    >
+                      {it.name}
+                    </Text>
+                  )}
+                  <Text style={{ color: "#aaa", width: 160, fontSize: 12 }}>
+                    {it.type === "album" ? "Álbum" : "Artista"}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
       </ScrollView>
 
       {/* Modal crear playlist */}
@@ -256,34 +330,25 @@ export default function HomeScreen() {
         }}
       />
 
-      {/* 🆕 Submenú del avatar reutilizando TrackActionsSheet */}
+      {/* Submenú avatar */}
       <TrackActionsSheet
         open={profileSheetOpen}
         onOpenChange={setProfileSheetOpen}
-        track={null} // modo genérico
+        track={null}
         headerTitle="Cuenta"
         subtitle={`${userName || "Usuario"}${userEmail ? " • " + userEmail : ""}`}
         showAddTo={false}
         showRemove={false}
         showShare={false}
         extraActions={[
-          {
-            key: "logout",
-            label: "Cerrar sesión",
-            icon: "log-out-outline",
-            onPress: handleSignOut,
-          },
-          // más adelante podés sumar “Configuración”, etc.
+          { key: "logout", label: "Cerrar sesión", icon: "log-out-outline", onPress: handleSignOut },
         ]}
       />
-
-      {/* 🎶 Player fijo abajo */}
-      {/* <MusicPlayer /> */}
     </>
   );
 }
 
-// 🎨 ESTILOS (sin cambios)
+// 🎨 ESTILOS
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0e0e0e", padding: 16 },
   searchBar: {

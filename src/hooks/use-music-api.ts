@@ -87,19 +87,27 @@ const toTrackPayload = (song: any) => {
 };
 /* =========================================================== */
 
+type SourcePayload = {
+  name?: string | null;   // display name para UI
+  thumb?: string | null;  // thumbnail url
+};
+
+type RecentItem = {
+  type: "album" | "artist";
+  id: string;
+  occurred_at: string;
+  name?: string | null;
+  thumbnail_url?: string | null;
+};
+
 export function useMusicApi() {
   // 🔎 públicos
-
-  //TODO: MOVE TO PRIVATE {
-
   const searchSongs = useCallback(
     async (query: string): Promise<Song[]> => {
       return authFetch(`${BASE_URL}/music/search?q=${encodeURIComponent(query)}`);
     },
     []
   );
-
-  //TODO MOVE TO PRIVATE }
 
   const playSongUrl = useCallback(
     (id: string): string => {
@@ -178,7 +186,6 @@ export function useMusicApi() {
     []
   );
 
-  // 🗑️ eliminar playlist
   const deletePlaylist = useCallback(
     async (playlistId: string) => {
       return authFetch(
@@ -189,7 +196,6 @@ export function useMusicApi() {
     []
   );
 
-  // 🗑️ NUEVO: quitar track de una playlist (trackId interno de DB)
   const removeTrackFromPlaylist = useCallback(
     async (playlistId: string, trackId: string) => {
       return authFetch(
@@ -200,29 +206,35 @@ export function useMusicApi() {
     []
   );
 
-  // 🔒 registrar "play" de álbum
+  // 🔒 registrar "play" de álbum — enviar claves que el backend lee (NO anidar todo en source)
   const logPlayAlbum = useCallback(
-    async (albumId: string) => {
+    async (albumId: string, source?: SourcePayload) => {
+      const body: any = {};
+      if (source?.name) body.display_name = source.name;
+      if (source?.thumb) body.thumbnail_url = source.thumb;
       return authFetch(
         `${BASE_URL}/music/plays/albums/${encodeURIComponent(albumId)}`,
-        { method: "POST" }
+        { method: "POST", body: JSON.stringify(body) }
       );
     },
     []
   );
 
-  // 🔒 registrar "play" de artista (Top Songs)
+  // 🔒 registrar "play" de artista — idem
   const logPlayArtist = useCallback(
-    async (artistId: string) => {
+    async (artistId: string, source?: SourcePayload) => {
+      const body: any = {};
+      if (source?.name) body.display_name = source.name;
+      if (source?.thumb) body.thumbnail_url = source.thumb;
       return authFetch(
         `${BASE_URL}/music/plays/artists/${encodeURIComponent(artistId)}`,
-        { method: "POST" }
+        { method: "POST", body: JSON.stringify(body) }
       );
     },
     []
   );
 
-  // ❤️ Likes / Unlikes (auth) — usa endpoints nuevos del backend
+  // ❤️ Likes / Unlikes (auth)
   const likeTrack = useCallback(
     async (trackId: string) => {
       return authFetch(
@@ -303,6 +315,25 @@ export function useMusicApi() {
     []
   );
 
+  // Checker disponible en tu backend
+  const isTrackLiked = useCallback(
+    async (trackId: string): Promise<{ track_id: string; liked: boolean }> => {
+      return authFetch(
+        `${BASE_URL}/music/likes/tracks/${encodeURIComponent(trackId)}`,
+        { method: "GET" }
+      );
+    },
+    []
+  );
+
+  // 🔥 NUEVO: recientes del usuario (álbumes/artistas)
+  const getRecentPlays = useCallback(
+    async (limit = 20): Promise<{ items: RecentItem[] }> => {
+      return authFetch(`${BASE_URL}/music/me/recent?limit=${encodeURIComponent(limit)}`, { method: "GET" });
+    },
+    []
+  );
+
   return {
     searchSongs,
     playSongUrl,
@@ -326,5 +357,7 @@ export function useMusicApi() {
     unlikeArtist,
     likePlaylist,
     unlikePlaylist,
+    isTrackLiked,
+    getRecentPlays, // ← export nuevo
   };
 }
