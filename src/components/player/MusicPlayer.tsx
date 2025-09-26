@@ -69,15 +69,16 @@ export default function MusicPlayer({
   const isExpandedRef = useRef(isExpanded);
   useEffect(() => { isExpandedRef.current = isExpanded; }, [isExpanded]);
 
-  //swipe down = mismo recorrido que el botón de bajar
-  // swipe down = mismo recorrido que el botón de bajar
+  // swipe down = mismo recorrido que el botón de bajar (sin bloquear taps)
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => isExpandedRef.current,
-      onStartShouldSetPanResponderCapture: () => isExpandedRef.current,
-      onMoveShouldSetPanResponderCapture: () => isExpandedRef.current,
+      // NO capturar taps: solo activar con movimiento vertical real
+      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponderCapture: () => false,
       onMoveShouldSetPanResponder: (_e, g) =>
-        isExpandedRef.current && g.dy > 5 && Math.abs(g.dx) < 12,
+        isExpandedRef.current && g.dy > 8 && Math.abs(g.dx) < 8,
+      onMoveShouldSetPanResponderCapture: (_e, g) =>
+        isExpandedRef.current && g.dy > 8 && Math.abs(g.dx) < 8,
 
       onPanResponderGrant: () => {
         slideAnim.stopAnimation();
@@ -341,7 +342,6 @@ export default function MusicPlayer({
 
       {/* EXPANDIDO */}
       <Animated.View
-        {...panResponder.panHandlers}
         pointerEvents={isExpanded ? "auto" : "none"}
         style={[stylesExp.container, { transform: [{ translateY: slideAnim }] }]}
       >
