@@ -81,6 +81,8 @@ export default function AlbumScreen() {
 
   const mappedSongs = useMemo(() => {
     if (!album) return [];
+    const albumIdFromRoute = (id ?? null) as string | null;
+
     return album.tracks.map((s: any) => {
       const artists = Array.isArray(s.artists) ? s.artists : [];
       const primary = artists[0] || null;
@@ -89,22 +91,25 @@ export default function AlbumScreen() {
         s.artistName ??
         (artists.length ? artists.map((a: any) => a.name).join(", ") : "");
 
+      // ⬅️ asegurar artistId y usar siempre el albumId de la ruta
       const artistId =
         s.artistId ??
-        (primary && primary.id ? primary.id : "");
+        (primary && primary.id ? primary.id : null);
+
+      const trackId = s.videoId || s.id;
 
       return {
-        id: s.videoId || s.id,
+        id: trackId,
         title: s.title,
         artistName,
         artistId,
         artists,
-        albumId: album.info?.title ? id : null,
+        albumId: albumIdFromRoute, // ← Fijo al browseId del álbum
         duration: s.duration || null,
         durationSeconds: s.durationSeconds || null,
         thumbnail:
-          album.info.thumbnails?.[0]?.url ||
-          album.info.thumbnails?.[album.info.thumbnails.length - 1]?.url ||
+          album.info?.thumbnails?.[0]?.url ||
+          album.info?.thumbnails?.[album.info?.thumbnails?.length - 1]?.url ||
           "",
       };
     });
@@ -190,7 +195,7 @@ export default function AlbumScreen() {
             <Text style={styles.softButtonText}>Reproducir</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
+        <TouchableOpacity
             style={styles.softButtonAlt}
             onPress={() => {
               const randomIndex = Math.floor(Math.random() * mappedSongs.length);

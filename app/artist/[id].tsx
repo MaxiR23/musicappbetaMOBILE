@@ -1,20 +1,20 @@
-import React, { useEffect, useState, useMemo } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  View,
-  Text,
   Image,
   ScrollView,
-  TouchableOpacity,
-  StyleSheet,
   StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { ArtistSkeletonLayout } from "./../../src/components/skeletons/Skeleton";
 import { useMusic } from "./../../src/hooks/use-music";
 import { useMusicApi } from "./../../src/hooks/use-music-api";
 import { upgradeYtmImage } from "./../../src/utils/ytmImage";
-
-import { ArtistSkeletonLayout } from "./../../src/components/skeletons/Skeleton";
 
 export default function ArtistScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -31,7 +31,7 @@ export default function ArtistScreen() {
     getArtist(id as string)
       .then((data) => {
         setArtist(data);
-        console.log(data)
+        console.log(data);
         setLoading(false);
       })
       .catch((err) => {
@@ -42,39 +42,50 @@ export default function ArtistScreen() {
 
   const mappedTop = useMemo(() => {
     if (!artist) return [];
+    const artistIdFromRoute = (id ?? null) as string | null;
+
     return artist.topSongs.map((s: any) => {
       const artistsArr = Array.isArray(s.artists) ? s.artists : [];
       const primary = artistsArr[0] || null;
 
-      // Mostrar TODOS en el player (A, B, …)
+      // nombre de artista (fallback al header del artista actual)
       const artistName =
         s.artistName ??
         (artistsArr.length ? artistsArr.map((a: any) => a.name).join(", ") : artist.header.name);
 
-      // Navegación: usamos el primero como principal
-      const artistId = s.artistId ?? (primary?.id ?? null);
+      // ⬅️ CLAVE: asegurar artistId siempre (para que el Provider loguee el contexto una sola vez)
+      const artistId =
+        s.artistId ??
+        primary?.id ??
+        artistIdFromRoute ?? // fallback fuerte: el artista de esta pantalla
+        null;
+
+      // id de track robusto
+      const trackId = s.videoId ?? s.id;
+
+      // albumId si viene (no obligatorio, ayuda si algún tema lo trae)
+      const albumId =
+        s.albumId ??
+        s.album?.id ??
+        null;
 
       return {
-        id: s.id,
+        id: trackId,
         title: s.title,
         thumbnail: s.thumbnail || artist.header.thumbnails?.[0]?.url,
         duration: s.duration,
         durationSeconds: s.durationSeconds,
-        albumId: s.albumId,
 
-        // ✅ claves que usa el MusicPlayer
         artistName,
-        artistId,
-
-        // preservamos el array completo por si lo querés usar en UI
+        artistId,      // ⬅️ importante para el contexto
         artists: artistsArr,
 
+        albumId,       // opcional (sirve si el provider quiere inferir)
         url: "",
       };
     });
-  }, [artist]);
+  }, [artist, id]);
 
-  // debajo de mappedTop
   const related = useMemo(() => {
     const src = artist?.related;
     const list = Array.isArray(src) ? src : (src?.items ?? []);
@@ -87,7 +98,6 @@ export default function ArtistScreen() {
         const name = r.name ?? r.title ?? r.artist ?? "";
         const subtitle = r.subtitle ?? r.subTitle ?? r.subtext ?? "";
 
-        // Acepta thumbnail string o array de thumbnails
         const img =
           r.thumbnail?.url ??
           r.thumbnail ??
@@ -99,7 +109,6 @@ export default function ArtistScreen() {
       .filter((x: any) => x.id && x.name);
   }, [artist]);
 
-  // Skeleton
   if (loading || !artist) {
     return (
       <>
@@ -113,7 +122,6 @@ export default function ArtistScreen() {
     );
   }
 
-  // Real
   const heroRaw =
     artist?.header?.thumbnails?.[artist?.header?.thumbnails.length - 1]?.url;
   const heroUrl = upgradeYtmImage(heroRaw, 1200);
@@ -133,9 +141,23 @@ export default function ArtistScreen() {
           ) : (
             <View style={[styles.heroImage, styles.darkBg]} />
           )}
+
+          {/* Gradiente inferior */}
+          <LinearGradient
+            colors={[
+              "transparent",
+              "rgba(0,0,0,0.35)",
+              "rgba(0,0,0,0.75)",
+              "#0e0e0e",
+            ]}
+            locations={[0.55, 0.80, 0.95, 1]}
+            style={styles.heroGradient}
+          />
+
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
+
           <View style={styles.heroInfo}>
             <Text style={styles.artistName}>{artist?.header?.name}</Text>
             <Text style={styles.listeners}>{artist?.header?.monthlyListeners}</Text>
@@ -147,7 +169,7 @@ export default function ArtistScreen() {
           <Text style={styles.sectionTitle}>Canciones Populares</Text>
           {artist.topSongs.map((song: any, index: number) => (
             <TouchableOpacity
-              key={song.id}
+              key={song.id || song.videoId || `${index}`}
               style={styles.songRow}
               onPress={() =>
                 playFromList(mappedTop, index, { type: "artist", name: artist.header?.name })
@@ -183,7 +205,6 @@ export default function ArtistScreen() {
         </View>
 
         {/* Related */}
-        {/* Related */}
         {related.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Artistas Relacionados</Text>
@@ -197,18 +218,18 @@ export default function ArtistScreen() {
                     router.push(`/artist/${rel.id}`);
                   }}
                 >
-                  {rel.img ? (
-                    <Image
-                      source={{ uri: upgradeYtmImage(rel.img, 256) }}
-                      style={styles.relatedImage}
-                    />
-                  ) : (
-                    <View style={[styles.relatedImage, styles.darkBg]} />
-                  )}
-                  <Text style={styles.relatedName}>{rel.name}</Text>
-                  {!!rel.subtitle && (
-                    <Text style={styles.relatedSubtitle}>{rel.subtitle}</Text>
-                  )}
+                {rel.img ? (
+                  <Image
+                    source={{ uri: upgradeYtmImage(rel.img, 256) }}
+                    style={styles.relatedImage}
+                  />
+                ) : (
+                  <View style={[styles.relatedImage, styles.darkBg]} />
+                )}
+                <Text style={styles.relatedName}>{rel.name}</Text>
+                {!!rel.subtitle && (
+                  <Text style={styles.relatedSubtitle}>{rel.subtitle}</Text>
+                )}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -226,6 +247,8 @@ const styles = StyleSheet.create({
   // Hero
   hero: { height: 300, position: "relative" },
   heroImage: { width: "100%", height: "100%", resizeMode: "cover" },
+  heroGradient: { position: "absolute", left: 0, right: 0, bottom: 0, height: "65%" },
+
   backButton: {
     position: "absolute", top: 40, left: 20, backgroundColor: "#0008", padding: 8, borderRadius: 20,
   },

@@ -89,12 +89,17 @@ const toTrackPayload = (song: any) => {
 
 export function useMusicApi() {
   // 🔎 públicos
+
+  //TODO: MOVE TO PRIVATE {
+
   const searchSongs = useCallback(
     async (query: string): Promise<Song[]> => {
-      return publicFetch(`${BASE_URL}/music/search?q=${encodeURIComponent(query)}`);
+      return authFetch(`${BASE_URL}/music/search?q=${encodeURIComponent(query)}`);
     },
     []
   );
+
+  //TODO MOVE TO PRIVATE }
 
   const playSongUrl = useCallback(
     (id: string): string => {
@@ -195,6 +200,109 @@ export function useMusicApi() {
     []
   );
 
+  // 🔒 registrar "play" de álbum
+  const logPlayAlbum = useCallback(
+    async (albumId: string) => {
+      return authFetch(
+        `${BASE_URL}/music/plays/albums/${encodeURIComponent(albumId)}`,
+        { method: "POST" }
+      );
+    },
+    []
+  );
+
+  // 🔒 registrar "play" de artista (Top Songs)
+  const logPlayArtist = useCallback(
+    async (artistId: string) => {
+      return authFetch(
+        `${BASE_URL}/music/plays/artists/${encodeURIComponent(artistId)}`,
+        { method: "POST" }
+      );
+    },
+    []
+  );
+
+  // ❤️ Likes / Unlikes (auth) — usa endpoints nuevos del backend
+  const likeTrack = useCallback(
+    async (trackId: string) => {
+      return authFetch(
+        `${BASE_URL}/music/likes/tracks/${encodeURIComponent(trackId)}`,
+        { method: "POST" }
+      );
+    },
+    []
+  );
+
+  const unlikeTrack = useCallback(
+    async (trackId: string) => {
+      return authFetch(
+        `${BASE_URL}/music/unlikes/tracks/${encodeURIComponent(trackId)}`,
+        { method: "POST" }
+      );
+    },
+    []
+  );
+
+  const likeAlbum = useCallback(
+    async (albumId: string) => {
+      return authFetch(
+        `${BASE_URL}/music/likes/albums/${encodeURIComponent(albumId)}`,
+        { method: "POST" }
+      );
+    },
+    []
+  );
+
+  const unlikeAlbum = useCallback(
+    async (albumId: string) => {
+      return authFetch(
+        `${BASE_URL}/music/unlikes/albums/${encodeURIComponent(albumId)}`,
+        { method: "POST" }
+      );
+    },
+    []
+  );
+
+  const likeArtist = useCallback(
+    async (artistId: string) => {
+      return authFetch(
+        `${BASE_URL}/music/likes/artists/${encodeURIComponent(artistId)}`,
+        { method: "POST" }
+      );
+    },
+    []
+  );
+
+  const unlikeArtist = useCallback(
+    async (artistId: string) => {
+      return authFetch(
+        `${BASE_URL}/music/unlikes/artists/${encodeURIComponent(artistId)}`,
+        { method: "POST" }
+      );
+    },
+    []
+  );
+
+  const likePlaylist = useCallback(
+    async (playlistId: string) => {
+      return authFetch(
+        `${BASE_URL}/music/likes/playlists/${encodeURIComponent(playlistId)}`,
+        { method: "POST" }
+      );
+    },
+    []
+  );
+
+  const unlikePlaylist = useCallback(
+    async (playlistId: string) => {
+      return authFetch(
+        `${BASE_URL}/music/unlikes/playlists/${encodeURIComponent(playlistId)}`,
+        { method: "POST" }
+      );
+    },
+    []
+  );
+
   return {
     searchSongs,
     playSongUrl,
@@ -207,6 +315,16 @@ export function useMusicApi() {
     createPlaylist,
     addTrackToPlaylist,
     deletePlaylist,
-    removeTrackFromPlaylist, // ← export nuevo
+    removeTrackFromPlaylist,
+    logPlayAlbum,
+    logPlayArtist,
+    likeTrack,
+    unlikeTrack,
+    likeAlbum,
+    unlikeAlbum,
+    likeArtist,
+    unlikeArtist,
+    likePlaylist,
+    unlikePlaylist,
   };
 }
