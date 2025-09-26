@@ -12,6 +12,7 @@ import {
   Image,
   ImageBackground,
   InteractionManager,
+  PanResponder,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -58,6 +59,49 @@ export default function MusicPlayer({
 
   const [isExpanded, setIsExpanded] = useState(false);
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+
+  const dimOpacity = slideAnim.interpolate({
+    inputRange: [0, SCREEN_HEIGHT],
+    outputRange: [0.6, 0],
+    extrapolate: 'clamp',
+  });
+
+  const isExpandedRef = useRef(isExpanded);
+  useEffect(() => { isExpandedRef.current = isExpanded; }, [isExpanded]);
+
+  //swipe down = mismo recorrido que el botón de bajar
+  // swipe down = mismo recorrido que el botón de bajar
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => isExpandedRef.current,
+      onStartShouldSetPanResponderCapture: () => isExpandedRef.current,
+      onMoveShouldSetPanResponderCapture: () => isExpandedRef.current,
+      onMoveShouldSetPanResponder: (_e, g) =>
+        isExpandedRef.current && g.dy > 5 && Math.abs(g.dx) < 12,
+
+      onPanResponderGrant: () => {
+        slideAnim.stopAnimation();
+      },
+
+      onPanResponderMove: (_e, g) => {
+        if (!isExpandedRef.current) return;
+        const y = Math.min(Math.max(g.dy, 0), SCREEN_HEIGHT);
+        slideAnim.setValue(y);
+      },
+
+      onPanResponderRelease: (_e, g) => {
+        if (!isExpandedRef.current) return;
+        const shouldClose = g.vy > 0.7 || g.dy > SCREEN_HEIGHT * 0.2;
+        Animated.timing(slideAnim, {
+          toValue: shouldClose ? SCREEN_HEIGHT : 0,
+          duration: 220,
+          useNativeDriver: true,
+        }).start(() => {
+          if (shouldClose) setIsExpanded(false);
+        });
+      },
+    })
+  ).current;
 
   const [gradient, setGradient] = useState<[string, string]>([
     "rgba(0,0,0,0.2)",
@@ -117,7 +161,7 @@ export default function MusicPlayer({
       try {
         const mode = await (TrackPlayer as any).getRepeatMode?.();
         setRepeatOne(mode === RepeatMode.Track);
-      } catch {}
+      } catch { }
     })();
   }, []);
 
@@ -287,8 +331,17 @@ export default function MusicPlayer({
         </View>
       </View>
 
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFillObject,
+          { backgroundColor: '#000', opacity: dimOpacity, zIndex: 9998 }
+        ]}
+      />
+
       {/* EXPANDIDO */}
       <Animated.View
+        {...panResponder.panHandlers}
         pointerEvents={isExpanded ? "auto" : "none"}
         style={[stylesExp.container, { transform: [{ translateY: slideAnim }] }]}
       >
