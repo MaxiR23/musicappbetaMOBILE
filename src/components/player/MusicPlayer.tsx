@@ -510,7 +510,7 @@ export default function MusicPlayer({
 /* ───────── STYLES ───────── */
 
 const stylesMini = StyleSheet.create({
-  wrapper: { position: "relative", backgroundColor: "#111" },
+  wrapper: { position: "relative", backgroundColor: "rgba(17,17,17,0.25)" },
   progressContainer: {
     position: "absolute",
     top: 0, left: 0, right: 0,
