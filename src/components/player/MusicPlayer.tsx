@@ -420,8 +420,15 @@ export default function MusicPlayer({
           </TouchableOpacity>
         </View>
 
-        <View style={stylesExp.coverContainer}>
+        {/* ── PORTADA con estilo Apple */}
+        <View style={stylesExp.coverCard}>
           <Image source={{ uri: coverUrl }} style={stylesExp.coverImage} resizeMode="cover" />
+          <LinearGradient
+            pointerEvents="none"
+            colors={["rgba(255,255,255,0.06)", "rgba(0,0,0,0)", "rgba(0,0,0,0.35)"]}
+            locations={[0, 0.45, 1]}
+            style={StyleSheet.absoluteFill}
+          />
         </View>
 
         <View style={stylesExp.meta}>
@@ -481,7 +488,6 @@ export default function MusicPlayer({
           <TouchableOpacity onPress={onTogglePlay} style={stylesExp.playButton}>
             {isPlaying ? <Pause color="#fff" size={32} /> : <Play color="#fff" size={32} />}
           </TouchableOpacity>
-
 
           <TouchableOpacity onPress={hasNext ? onNext : undefined} disabled={!hasNext}>
             <SkipForward color={hasNext ? "#fff" : "#888"} size={32} />
@@ -554,8 +560,26 @@ const stylesExp = StyleSheet.create({
   },
   topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
   source: { color: "#ccc", fontSize: 12, textAlign: "center", flex: 1, marginHorizontal: 10 },
-  coverContainer: { alignItems: "center", marginBottom: 20 },
-  coverImage: { width: 320, height: 340, borderRadius: 16 },
+  coverContainer: { alignItems: "center", marginBottom: 20 }, // (queda por compatibilidad, no se usa)
+  // NUEVO contenedor estilo Apple
+  coverCard: {
+    width: 320,
+    height: 340,
+    borderRadius: 20,
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    shadowColor: "#000",
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 14 },
+    elevation: 10,
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  // la imagen ahora ocupa todo el card
+  coverImage: { width: "100%", height: "100%" },
   meta: { alignItems: "center", marginBottom: 20 },
   title: { color: "#fff", fontSize: 22, fontWeight: "bold", textAlign: "center" },
   artist: { color: "#ccc", fontSize: 16 },
