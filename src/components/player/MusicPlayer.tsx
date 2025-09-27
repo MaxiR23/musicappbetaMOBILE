@@ -342,9 +342,15 @@ export default function MusicPlayer({
 
       {/* EXPANDIDO */}
       <Animated.View
+        {...panResponder.panHandlers}
         pointerEvents={isExpanded ? "auto" : "none"}
         style={[stylesExp.container, { transform: [{ translateY: slideAnim }] }]}
       >
+        {/* área de agarre arriba (no roba taps; el pan solo se activa con swipe vertical real) */}
+        <View style={stylesExp.dragHandleArea} pointerEvents="box-none">
+          <View style={stylesExp.dragHandle} />
+        </View>
+
         {/* Fondo */}
         <ImageBackground
           source={{ uri: bgUrl }}
@@ -521,4 +527,21 @@ const stylesExp = StyleSheet.create({
   // deco Repeat "1"
   repeatWrap: { position: "relative", width: 28, height: 28, alignItems: "center", justifyContent: "center" },
   repeatBadge: { position: "absolute", bottom: -2, right: -2, fontSize: 10, color: "#fff" },
+
+  dragHandleArea: {
+    position: "absolute",
+    top: 6,
+    left: 0,
+    right: 0,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1,
+  },
+  dragHandle: {
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: "rgba(255,255,255,0.5)",
+  },
 });
