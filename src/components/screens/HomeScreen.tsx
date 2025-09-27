@@ -241,9 +241,22 @@ export default function HomeScreen() {
 
           <View style={styles.popularRow}>
             {/* NO TOCAR: botón crear */}
-            <TouchableOpacity style={styles.createCard} onPress={() => setCreateOpen(true)}>
-              <Ionicons name="add" size={24} color="#fff" />
-              <Text style={styles.createText}>Crear playlist</Text>
+            <TouchableOpacity
+              style={{
+                width: 140,
+                height: 140,
+                borderRadius: 16,
+                backgroundColor: "#1a1a1a",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onPress={() => setCreateOpen(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={28} color="#fff" />
+              <Text style={{ color: "#fff", marginTop: 8, fontWeight: "600", fontSize: 13 }}>
+                Crear playlist
+              </Text>
             </TouchableOpacity>
 
             {/* Tarjetas de playlists (140px de alto + título) */}

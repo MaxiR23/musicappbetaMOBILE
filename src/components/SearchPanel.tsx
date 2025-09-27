@@ -201,7 +201,7 @@ export default function SearchPanel({
             <View style={styles.centerEmpty}>
               <Ionicons name="search" size={72} color="#3a3a3a" />
               <Text style={styles.centerTitle}>Sin búsquedas recientes</Text>
-              <Text style={styles.centerSubtitle}>Empezá escribiendo arriba</Text>
+              <Text style={styles.centerSubtitle}>Tus busquedas recientes van a aparecer aqui</Text>
             </View>
           ) : (
             <FlatList
