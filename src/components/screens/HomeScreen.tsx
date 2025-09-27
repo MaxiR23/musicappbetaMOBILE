@@ -169,7 +169,7 @@ export default function HomeScreen() {
     <>
       {/* 🔍 Barra de búsqueda */}
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#0e0e0e" }}>
-        <View style={{ paddingTop: 16, paddingHorizontal: 16, paddingBottom: 0 }}>
+        <View style={{ paddingTop: 10, paddingHorizontal: 16, paddingBottom: 0 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
             <View style={{ flex: 1 }}>
               <SearchBar />
