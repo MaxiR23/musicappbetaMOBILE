@@ -17,12 +17,33 @@ import {
 
 import PlaylistCover from "@/src/components/PlaylistCover";
 import { PlaylistSkeletonLayout } from "@/src/components/skeletons/Skeleton";
-import TrackActionsSheet from "@/src/components/TrackActionsSheet"; // 🆕
+import TrackActionsSheet from "@/src/components/TrackActionsSheet";
 import { useMusic } from "@/src/hooks/use-music";
 import { useMusicApi } from "@/src/hooks/use-music-api";
 import { SCRIM_GRADIENT } from "@/src/utils/colorUtils.native";
 
 const HERO_HEIGHT = 320;
+
+// Helpers para total y parseo mm:ss / hh:mm:ss
+function formatTotal(ms: number) {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return h > 0
+    ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+    : `${m}:${String(s).padStart(2, "0")}`;
+}
+function parseDurationToMs(d?: string) {
+  if (!d || d === "--:--") return 0;
+  const parts = d.split(":").map((n) => parseInt(n, 10) || 0);
+  if (parts.length === 3) {
+    const [h, m, s] = parts;
+    return ((h * 3600) + (m * 60) + s) * 1000;
+  }
+  const [m, s] = parts;
+  return ((m * 60) + s) * 1000;
+}
 
 export default function PlaylistScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -31,7 +52,7 @@ export default function PlaylistScreen() {
     getPlaylistById,
     prefetchSongs,
     deletePlaylist,
-    removeTrackFromPlaylist, // 🆕
+    removeTrackFromPlaylist,
   } = useMusicApi();
   const { playFromList } = useMusic();
 
@@ -43,7 +64,7 @@ export default function PlaylistScreen() {
   const openMenu = () => setMenuOpen(true);
   const closeMenu = () => setMenuOpen(false);
 
-  // sheet por-canción 🆕
+  // sheet por-canción
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<any | null>(null);
 
@@ -57,19 +78,9 @@ export default function PlaylistScreen() {
         0
       );
 
-      const formatTotal = (ms: number) => {
-        const totalSec = Math.floor(ms / 1000);
-        const h = Math.floor(totalSec / 3600);
-        const m = Math.floor((totalSec % 3600) / 60);
-        const s = totalSec % 60;
-        return h > 0
-          ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
-          : `${m}:${String(s).padStart(2, "0")}`;
-      };
-
       const songs = (data.tracks || []).map((t: any) => ({
         id: t.track_id,
-        internalId: t.id, // 🆕 id interno de tabla tracks (lo usa el DELETE)
+        internalId: t.id, // id interno de la fila en la tabla (para borrar)
         title: t.title,
         artist: t.artist,
         artistId: t.artist_id ?? null,
@@ -113,7 +124,7 @@ export default function PlaylistScreen() {
     if (!playlist) return [];
     return playlist.songs.map((s: any) => ({
       id: s.id,
-      internalId: s.internalId, // 🆕 mantenerlo para pasar al Sheet
+      internalId: s.internalId,
       title: s.title,
       artistName: s.artist,
       artistId: s.artistId ?? null,
@@ -250,7 +261,7 @@ export default function PlaylistScreen() {
             <Text style={styles.softButtonText}>Reproducir</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={handleShuffleAll} style={styles.softButtonAlt} activeOpacity={0.85}>
+        <TouchableOpacity onPress={handleShuffleAll} style={styles.softButtonAlt} activeOpacity={0.85}>
             <Ionicons name="shuffle" size={18} color="#fff" />
             <Text style={styles.softButtonText}>Shuffle</Text>
           </TouchableOpacity>
@@ -290,7 +301,7 @@ export default function PlaylistScreen() {
 
               <Text style={styles.duration}>{song.duration}</Text>
 
-              {/* 3 puntitos por canción → abre el Sheet reutilizable */}
+              {/* 3 puntitos por canción */}
               <TouchableOpacity
                 style={styles.moreBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -331,33 +342,41 @@ export default function PlaylistScreen() {
         </View>
       </Modal>
 
-      {/* Sheet DRY para acciones de track (incluye Quitar de esta playlist) 🆕 */}
+      {/* Sheet acciones de track */}
       <TrackActionsSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         track={selectedTrack}
         playlistId={playlist.id}
         onRemove={async (playlistId, trackIdMaybe) => {
-          // el sheet ya intenta usar internalId; por las dudas, preferimos el que nos pasó el track seleccionado
           const internalId = String(selectedTrack?.internalId ?? trackIdMaybe);
           try {
             await removeTrackFromPlaylist(playlistId, internalId);
 
-            // update optimista: sacar el tema de la lista local por internalId
+            // ✅ Actualización optimista: temas, contador y duración total
             setPlaylist((prev: any) =>
               prev
-                ? {
-                    ...prev,
-                    songCount: Math.max(0, (prev.songCount ?? 1) - 1),
-                    songs: (prev.songs || []).filter((s: any) => String(s.internalId) !== internalId),
-                  }
+                ? (() => {
+                    const nextSongs = (prev.songs || []).filter(
+                      (s: any) => String(s.internalId) !== internalId
+                    );
+                    const nextTotalMs = nextSongs.reduce(
+                      (acc: number, s: any) => acc + parseDurationToMs(s.duration),
+                      0
+                    );
+                    return {
+                      ...prev,
+                      songs: nextSongs,
+                      songCount: nextSongs.length,
+                      duration: formatTotal(nextTotalMs),
+                    };
+                  })()
                 : prev
             );
           } catch (e: any) {
             Alert.alert("Error", e?.message || "No se pudo quitar el tema.");
           }
         }}
-        // extraActions={[]} // si quisieras ocultar extras, lo podés dejar vacío
       />
     </>
   );
