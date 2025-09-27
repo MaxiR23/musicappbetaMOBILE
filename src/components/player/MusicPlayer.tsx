@@ -478,9 +478,10 @@ export default function MusicPlayer({
             <SkipBack color={hasPrev ? "#fff" : "#888"} size={32} />
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={onTogglePlay} style={[stylesExp.playButton, { backgroundColor: ACCENT }]}>
-            {isPlaying ? <Pause color={ACCENT_TEXT} size={32} /> : <Play color={ACCENT_TEXT} size={32} />}
+          <TouchableOpacity onPress={onTogglePlay} style={stylesExp.playButton}>
+            {isPlaying ? <Pause color="#fff" size={32} /> : <Play color="#fff" size={32} />}
           </TouchableOpacity>
+
 
           <TouchableOpacity onPress={hasNext ? onNext : undefined} disabled={!hasNext}>
             <SkipForward color={hasNext ? "#fff" : "#888"} size={32} />
@@ -561,7 +562,7 @@ const stylesExp = StyleSheet.create({
   sliderContainer: { width: "100%", marginBottom: 12 },
   timeRow: { flexDirection: "row", justifyContent: "space-between" },
   time: { color: "#ccc", fontSize: 12 },
-  controls: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 24, paddingHorizontal: 10 },
+  controls: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8, paddingHorizontal: 10 },
   playButton: { borderRadius: 999, width: 64, height: 64, justifyContent: "center", alignItems: "center" },
 
   // deco Repeat "1"
