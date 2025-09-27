@@ -2,9 +2,9 @@ import { useAuth } from "@/src/hooks/use-auth";
 import { Check, Music } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import {
-    ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet,
-    Text, TextInput, TouchableOpacity,
-    View
+  ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet,
+  Text, TextInput, TouchableOpacity,
+  View
 } from "react-native";
 
 type Props = { onSwitchToLogin: () => void };
@@ -123,7 +123,7 @@ export default function RegisterForm({ onSwitchToLogin }: Props) {
           </Text>
         </View>
 
-        <Text style={s.footer}>© 2024 MusicApp. Todos los derechos reservados.</Text>
+        <Text style={s.footer}>© 2025 MusicApp. Todos los derechos reservados.</Text>
       </View>
     </KeyboardAvoidingView>
   );

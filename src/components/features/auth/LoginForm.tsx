@@ -3,9 +3,9 @@ import { useRouter } from "expo-router";
 import { Music } from "lucide-react-native";
 import { useState } from "react";
 import {
-    ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet,
-    Text, TextInput, TouchableOpacity,
-    View
+  ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet,
+  Text, TextInput, TouchableOpacity,
+  View
 } from "react-native";
 
 type Props = { onSwitchToRegister: () => void };
@@ -91,7 +91,7 @@ export default function LoginForm({ onSwitchToRegister }: Props) {
           </Text>
         </View>
 
-        <Text style={s.footer}>© 2024 MusicApp. Todos los derechos reservados.</Text>
+        <Text style={s.footer}>© 2025 MusicApp. Todos los derechos reservados.</Text>
       </View>
     </KeyboardAvoidingView>
   );
