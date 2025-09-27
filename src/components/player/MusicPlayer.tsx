@@ -281,6 +281,22 @@ export default function MusicPlayer({
     }
   };
 
+  // ── Apple-like progress (solo estado/anim para el slider expandido)
+  const [dragging, setDragging] = useState(false);
+  const [localVal, setLocalVal] = useState(0);
+  const knobScale = useRef(new Animated.Value(1)).current;
+  useEffect(() => { if (!dragging) setLocalVal(clamped); }, [clamped, dragging]);
+  const startDrag = () => {
+    setDragging(true);
+    Animated.spring(knobScale, { toValue: 1.25, useNativeDriver: true, friction: 6 }).start();
+  };
+  const endDrag = (v: number) => {
+    Animated.spring(knobScale, { toValue: 1, useNativeDriver: true, friction: 6 }).start();
+    setDragging(false);
+    onSeek(v);
+  };
+  const displayCurrentMs = dragging ? Math.round(localVal * (duration || 0)) : currentTime;
+
   return (
     <>
       {/* MINI PLAYER */}
@@ -415,18 +431,42 @@ export default function MusicPlayer({
           </Pressable>
         </View>
 
+        {/* Apple-like progress */}
         <View style={stylesExp.sliderContainer}>
-          <Slider
-            value={clamped}
-            onSlidingComplete={onSeek}
-            minimumValue={0}
-            maximumValue={1}
-            minimumTrackTintColor={ACCENT}
-            maximumTrackTintColor="rgba(255,255,255,0.35)"
-            thumbTintColor={ACCENT}
-          />
+          <View style={appleStyles.wrap}>
+            {/* Track */}
+            <View style={appleStyles.track} />
+            {/* Fill */}
+            <View style={[appleStyles.fill, { width: `${localVal * 100}%` }]} />
+            {/* Knob animado (solo visible al arrastrar) */}
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                appleStyles.knob,
+                {
+                  left: `${localVal * 100}%`,
+                  transform: [{ translateX: -7 }, { scale: knobScale }],
+                  opacity: dragging ? 1 : 0,
+                },
+              ]}
+            />
+            {/* Slider transparente para gestos nativos */}
+            <Slider
+              value={localVal}
+              onSlidingStart={startDrag}
+              onValueChange={(v) => setLocalVal(v)}
+              onSlidingComplete={endDrag}
+              minimumValue={0}
+              maximumValue={1}
+              minimumTrackTintColor="transparent"
+              maximumTrackTintColor="transparent"
+              thumbTintColor="transparent"
+              style={StyleSheet.absoluteFill}
+            />
+          </View>
+
           <View style={stylesExp.timeRow}>
-            <Text style={stylesExp.time}>{formatMillis(currentTime)}</Text>
+            <Text style={stylesExp.time}>{formatMillis(displayCurrentMs)}</Text>
             <Text style={stylesExp.time}>{formatMillis(duration)}</Text>
           </View>
         </View>
@@ -530,7 +570,7 @@ const stylesExp = StyleSheet.create({
 
   dragHandleArea: {
     position: "absolute",
-    top: 6,
+    top: 18,
     left: 0,
     right: 0,
     height: 28,
@@ -543,5 +583,22 @@ const stylesExp = StyleSheet.create({
     height: 5,
     borderRadius: 3,
     backgroundColor: "rgba(255,255,255,0.5)",
+  },
+});
+
+/* Apple-like progress styles */
+const appleStyles = StyleSheet.create({
+  wrap: { height: 28, justifyContent: "center" },
+  track: {
+    height: 6, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.35)",
+  },
+  fill: {
+    position: "absolute", left: 0, height: 6, borderRadius: 12, backgroundColor: "#fff",
+  },
+  knob: {
+    position: "absolute", width: 14, height: 14, borderRadius: 7, backgroundColor: "#fff",
+    top: 7,
+    shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 1 },
+    elevation: 3,
   },
 });
