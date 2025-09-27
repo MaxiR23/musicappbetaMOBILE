@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
+    Animated,
     FlatList,
     Image,
     StyleSheet,
@@ -25,13 +26,7 @@ export type ResultItem = {
 type Props = {
   searchFn: (
     q: string
-  ) => Promise<
-    | ResultItem[]
-    | {
-        artists?: any[];
-        songs?: any[];
-      }
-  >;
+  ) => Promise<ResultItem[] | { artists?: any[]; songs?: any[] }>;
   onSelect: (item: ResultItem) => void;
   onClose: () => void;
   placeholder?: string;
@@ -49,10 +44,20 @@ export default function SearchPanel({
   titleRecents = "Búsquedas recientes",
 }: Props) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<ResultItem[] | null>(null); // null => mostrar recientes
+  const [results, setResults] = useState<ResultItem[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [recents, setRecents] = useState<string[]>([]);
   const inputRef = useRef<TextInput>(null);
+
+  // 👇 animación de entrada
+  const fade = useRef(new Animated.Value(0)).current;
+  const ty = useRef(new Animated.Value(6)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fade, { toValue: 1, duration: 160, useNativeDriver: true }),
+      Animated.timing(ty, { toValue: 0, duration: 160, useNativeDriver: true }),
+    ]).start();
+  }, [fade, ty]);
 
   useEffect(() => {
     (async () => {
@@ -75,7 +80,7 @@ export default function SearchPanel({
   };
 
   const mapResults = (res: any): ResultItem[] => {
-    if (Array.isArray(res)) return res.map((r) => ({ ...r, thumbnail: normalizeUrl(r.thumbnail) }));
+    if (Array.isArray(res)) return res.map(r => ({ ...r, thumbnail: normalizeUrl(r.thumbnail) }));
     const mappedArtists: ResultItem[] = (res?.artists || []).map((a: any) => ({
       id: a.artistId ?? a.id,
       title: a.name ?? a.title,
@@ -91,9 +96,7 @@ export default function SearchPanel({
       artistName: s.artists?.map((ar: any) => ar.name).join(", ") || "",
       artistId: s.artists?.[0]?.browseId ?? s.artists?.[0]?.id ?? null,
       duration: s.duration || "",
-      thumbnail: normalizeUrl(
-        s.thumbnails?.[0]?.url || s.thumbnailUrl || s.albumArt?.url || s.thumbnail
-      ),
+      thumbnail: normalizeUrl(s.thumbnails?.[0]?.url || s.thumbnailUrl || s.albumArt?.url || s.thumbnail),
       type: "song",
     }));
     return [...mappedArtists, ...mappedSongs];
@@ -103,7 +106,7 @@ export default function SearchPanel({
     async (q: string) => {
       const trimmed = q.trim();
       if (!trimmed) return;
-      const next = [trimmed, ...recents.filter((r) => r.toLowerCase() !== trimmed.toLowerCase())].slice(0, 8);
+      const next = [trimmed, ...recents.filter(r => r.toLowerCase() !== trimmed.toLowerCase())].slice(0, 8);
       setRecents(next);
       try { await AsyncStorage.setItem(RECENTS_KEY, JSON.stringify(next)); } catch {}
     },
@@ -115,12 +118,10 @@ export default function SearchPanel({
     try { await AsyncStorage.removeItem(RECENTS_KEY); } catch {}
   }, []);
 
-  // ✅ ahora acepta un query forzado (para recientes)
   const doSearch = useCallback(
     async (forceQ?: string) => {
       const q = (forceQ ?? query).trim();
       if (!q) return;
-      // si vino forzado, sincronizo el input para que se vea
       if (forceQ !== undefined && forceQ !== query) setQuery(forceQ);
       setLoading(true);
       try {
@@ -143,7 +144,15 @@ export default function SearchPanel({
   const showResults = !!results && results.length > 0;
 
   return (
-    <View style={{ flex: 1, backgroundColor: BG, paddingTop: 40 }}>
+    <Animated.View
+      style={{
+        flex: 1,
+        backgroundColor: BG,
+        paddingTop: 40,
+        opacity: fade,
+        transform: [{ translateY: ty }],
+      }}
+    >
       {/* Search bar */}
       <View style={styles.searchBar}>
         <Ionicons name="search" size={20} color="#888" />
@@ -200,10 +209,7 @@ export default function SearchPanel({
               keyExtractor={(s) => s}
               keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.recentRow}
-                  onPress={() => doSearch(item)} // 👈 ejecuta directo con ese término
-                >
+                <TouchableOpacity style={styles.recentRow} onPress={() => doSearch(item)}>
                   <Ionicons name="time" size={16} color="#9aa0a6" />
                   <Text style={styles.recentText} numberOfLines={1}>{item}</Text>
                 </TouchableOpacity>
@@ -249,7 +255,7 @@ export default function SearchPanel({
           <Text style={styles.centerSubtitle}>Probá con otro término</Text>
         </View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -291,29 +297,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 12,
   },
-  thumb: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: "#1a1a1a",
-  },
+  thumb: { width: 44, height: 44, borderRadius: 8, backgroundColor: "#1a1a1a" },
   thumbFallback: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: "#1a1a1a",
-    alignItems: "center",
-    justifyContent: "center",
+    width: 44, height: 44, borderRadius: 8, backgroundColor: "#1a1a1a",
+    alignItems: "center", justifyContent: "center",
   },
   resultTitle: { color: "#fff", fontSize: 15, fontWeight: "600" },
   resultSubtitle: { color: "#9aa0a6", fontSize: 12, marginTop: 2 },
 
-  centerEmpty: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
+  centerEmpty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10 },
   centerTitle: { color: "#fff", fontSize: 16, fontWeight: "700", marginTop: 6 },
   centerSubtitle: { color: "#9aa0a6", fontSize: 13 },
 });
