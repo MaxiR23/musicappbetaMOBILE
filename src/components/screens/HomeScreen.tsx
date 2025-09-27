@@ -201,7 +201,7 @@ export default function HomeScreen() {
       </SafeAreaView>
 
       {/* 🔽 Contenido */}
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }} bounces={false} overScrollMode="never" showsVerticalScrollIndicator={false}>
         {/* 🎵 Banner */}
         <LinearGradient
           colors={["#00f2fe", "#4facfe"]}
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     borderRadius: 10, alignSelf: "flex-start",
   },
   exploreButtonText: { color: "#fff", fontWeight: "600" },
-  section: { marginBottom: 24 },
+  section: { marginBottom: 20 },
   sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#fff", marginBottom: 12 },
   categories: { flexDirection: "row" },
   categoryButton: {
