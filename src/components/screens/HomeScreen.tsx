@@ -235,64 +235,72 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
 
-        {/* 🔥 Tus playlists (más bajas + con título) */}
+        {/* 🔥 Tus playlists */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { fontSize: 16 }]}>Tus playlists</Text>
 
-          <View style={styles.popularRow}>
-            {/* NO TOCAR: botón crear */}
-            <TouchableOpacity
-              style={{
-                width: 140,
-                height: 140,
-                borderRadius: 16,
-                backgroundColor: "#1a1a1a",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-              onPress={() => setCreateOpen(true)}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="add" size={28} color="#fff" />
-              <Text style={{ color: "#fff", marginTop: 8, fontWeight: "600", fontSize: 13 }}>
-                Crear playlist
-              </Text>
-            </TouchableOpacity>
+          {/* ⬇️ Agregá este ScrollView horizontal */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingRight: 2 }}
+          >
+            <View style={styles.popularRow}>
+              {/* NO TOCAR: botón crear */}
+              <TouchableOpacity
+                style={{ width: 140, height: 140, borderRadius: 16, backgroundColor: "#1a1a1a", alignItems: "center", justifyContent: "center" }}
+                onPress={() => setCreateOpen(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="add" size={28} color="#fff" />
+                <Text style={{ color: "#fff", marginTop: 8, fontWeight: "600", fontSize: 13 }}>
+                  Crear playlist
+                </Text>
+              </TouchableOpacity>
 
-            {/* Tarjetas de playlists (140px de alto + título) */}
-            {playlists.map((pl) => {
-              const imagesFromTracks: string[] = (pl?.playlist_tracks || [])
-                .map((t: any) => t?.tracks?.thumbnail_url || t?.thumbnail_url)
-                .filter(Boolean);
-              const images: string[] = pl?.cover_url ? [pl.cover_url, ...imagesFromTracks] : imagesFromTracks;
+              {/* Tarjetas de playlists */}
+              {playlists.map((pl) => {
+                const imagesFromTracks = (pl?.playlist_tracks || [])
+                  .map((t: any) => t?.tracks?.thumbnail_url || t?.thumbnail_url)
+                  .filter(Boolean);
+                const images = pl?.cover_url ? [pl.cover_url, ...imagesFromTracks] : imagesFromTracks;
+                const SIZE = 140, RADIUS = 16;
 
-              const SIZE = 140;  // ↓ antes 160, ahora un poco más bajo
-              const RADIUS = 16;
-
-              return (
-                <TouchableOpacity
-                  key={`${pl.id}-${pl.updated_at ?? ""}`}
-                  // 👇 no usamos styles.songCard para no recortar el texto
-                  style={{ width: SIZE, marginRight: 16 }}
-                  onPress={() => router.push(`/playlist/${encodeURIComponent(pl.id)}`)}
-                  activeOpacity={0.8}
-                >
-                  <View style={{ width: SIZE, height: SIZE, borderRadius: RADIUS, overflow: "hidden" }}>
-                    <PlaylistCover images={images} size={SIZE} borderRadius={RADIUS} />
-                  </View>
-
-                  {!!(pl?.title || pl?.name) && (
-                    <Text
-                      numberOfLines={1}
-                      style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13, marginLeft: 8 }}
+                return (
+                  <TouchableOpacity
+                    key={`${pl.id}-${pl.updated_at ?? ""}`}
+                    style={{ width: SIZE }}
+                    onPress={() => router.push(`/playlist/${encodeURIComponent(pl.id)}`)}
+                    activeOpacity={0.8}
+                  >
+                    <View
+                      style={{
+                        width: SIZE,
+                        height: SIZE,
+                        borderRadius: RADIUS,
+                        overflow: "hidden",
+                        backgroundColor: "#1a1a1a",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
                     >
-                      {pl.title ?? pl.name}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                      {images.length > 0 ? (
+                        <PlaylistCover images={images} size={SIZE} borderRadius={RADIUS} />
+                      ) : (
+                        <Ionicons name="musical-notes" size={28} color="#777" />
+                      )}
+                    </View>
+
+                    {!!(pl?.title || pl?.name) && (
+                      <Text numberOfLines={1} style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13, marginLeft: 8 }}>
+                        {pl.title ?? pl.name}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </ScrollView>
         </View>
 
         {/* 🆕 Escuchados recientemente — compacto */}
