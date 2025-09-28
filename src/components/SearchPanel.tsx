@@ -296,7 +296,7 @@ export default function SearchPanel({
                   {item.type === "artist"
                     ? `${typeLabel(item.type)} • ${item.artistName}`
                     : item.type === "song"
-                    ? `${typeLabel(item.type)} • ${item.artistName} • ${item.duration || ""}`
+                    ? `${typeLabel(item.type)} • ${item.artistName}`
                     : `${typeLabel(item.type)} • ${item.artistName}`}
                 </Text>
               </View>
