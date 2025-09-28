@@ -8,7 +8,7 @@ const g = globalThis;
 g.__RNTP__ = g.__RNTP__ || { service: false, ready: false };
 
 export async function ensureTrackPlayer() {
-  // Registrar el servicio una sola vez (RNTP v4 NO necesita registerHeadlessTask)
+  // Registrar el service UNA sola vez
   if (!g.__RNTP__.service) {
     try {
       const service = require('../../services/trackPlayerService').default;
@@ -21,11 +21,31 @@ export async function ensureTrackPlayer() {
     }
   }
 
-  // Setup del player solo una vez
+  // Setup del player sólo una vez
   if (g.__RNTP__.ready) return;
 
   console.log('[RNTP] setupPlayer…');
-  await TrackPlayer.setupPlayer();
+
+  // ⚡ Intento con opciones agresivas para “fast start”.
+  // Si tu RNTP no soporta opciones, hacemos fallback sin romper.
+  try {
+    await TrackPlayer.setupPlayer({
+      waitForBuffer: false,
+      android: {
+        minBuffer: 5000,
+        maxBuffer: 15000,
+        playBuffer: 500,
+        backBuffer: 0,
+        maxCacheSize: 64 * 1024 * 1024,
+      },
+      iosCategory: 'playback',
+      iosCategoryMode: 'default',
+      iosCategoryOptions: ['mixWithOthers'],
+    });
+  } catch (e) {
+    console.log('[RNTP] setupPlayer options not supported, falling back:', e?.message || e);
+    await TrackPlayer.setupPlayer();
+  }
 
   await TrackPlayer.updateOptions({
     android: {
@@ -39,7 +59,7 @@ export async function ensureTrackPlayer() {
       Capability.SeekTo,
     ],
     compactCapabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext],
-    progressUpdateEventInterval: 1,
+    progressUpdateEventInterval: 0.3,
   });
 
   g.__RNTP__.ready = true;

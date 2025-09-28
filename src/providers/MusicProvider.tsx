@@ -32,9 +32,14 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  function warmResolve(id: string, baseUrl: string) {
-    const url = `${baseUrl}/music/play?id=${encodeURIComponent(id)}&redir=0`;
-    fetch(url).catch(() => {});
+  // Prefetch por lote (calienta en el backend sin clavar el primer play)
+  function warmBatch(ids: string[], baseUrl: string) {
+    if (!ids?.length) return;
+    fetch(`${baseUrl}/music/prefetch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+    }).catch(() => {});
   }
 
   function majorityId<T>(list: T[], pick: (x: T) => string | null | undefined): string | null {
@@ -46,9 +51,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     }
     let best: string | null = null;
     let bestN = 0;
-    for (const [k, n] of counts) {
-      if (n > bestN) { best = k; bestN = n; }
-    }
+    for (const [k, n] of counts) if (n > bestN) { best = k; bestN = n; }
     return best;
   }
 
@@ -60,14 +63,12 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     if (source.type === "album") {
       const albumId =
         majorityId(list, (s: any) => s.albumId ?? s.album_id ?? null) || null;
-      if (albumId) return { key: `album:${albumId}`, kind: "album", id: albumId };
-      return null;
+      return albumId ? { key: `album:${albumId}`, kind: "album", id: albumId } : null;
     }
     if (source.type === "artist") {
       const artistId =
         majorityId(list, (s: any) => s.artistId ?? s.artist_id ?? null) || null;
-      if (artistId) return { key: `artist:${artistId}`, kind: "artist", id: artistId };
-      return null;
+      return artistId ? { key: `artist:${artistId}`, kind: "artist", id: artistId } : null;
     }
     return null;
   }
@@ -81,6 +82,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // 🔒 Siempre vía PROXY (redir=2). NO usar redir=0 ni 1.
     const tracks = list.map((s, i) => ({
       id: String(s.id),
       url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
@@ -94,7 +96,13 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     const idx = Math.max(0, Math.min(startIndex, tracks.length - 1));
     const doSkip = (TrackPlayer as any).skip?.bind(TrackPlayer);
 
-    try { warmResolve((list[idx] as any).id, BASE_URL); } catch {}
+    // Prefetch en lote (IDs alrededor del inicio)
+    try {
+      const ids = list.map((s: any) => String(s.id)).filter(Boolean);
+      const uniq = Array.from(new Set(ids));
+      const slice = uniq.slice(Math.max(0, idx - 2), idx + 12);
+      warmBatch(slice, BASE_URL);
+    } catch {}
 
     const getQueue = (TrackPlayer as any).getQueue?.bind(TrackPlayer);
     const getActiveTrack = (TrackPlayer as any).getActiveTrack?.bind(TrackPlayer);
@@ -127,6 +135,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       }
 
       await dumpQueue("post-add");
+
+      await new Promise((r) => setTimeout(r, 50));
       await TrackPlayer.play();
     } catch (e) {
       console.error("[sync] ERROR reset/add/skip/play:", e);
@@ -139,8 +149,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   async function playFromList(list: Song[], startIndex: number, source?: PlaySource) {
     if (switchingRef.current) return;
     switchingRef.current = true;
-
-    await TrackPlayer.pause().catch(() => {});
 
     setQueue(list);
     setQueueIndex(startIndex);
@@ -171,7 +179,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
     try {
       await syncWithTrackPlayer(list, startIndex);
-      await TrackPlayer.play();
+      setTimeout(() => { TrackPlayer.play().catch(() => {}); }, 350);
     } catch (err) {
       console.error("[RNTP] error en syncWithTrackPlayer]:", err);
     } finally {
@@ -190,11 +198,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     const doSkip = (TrackPlayer as any).skip?.bind(TrackPlayer);
     (async () => {
       try {
-        if (doSkip) {
-          await doSkip(ni);
-        } else {
-          await TrackPlayer.skipToNext();
-        }
+        if (doSkip) await doSkip(ni);
+        else await TrackPlayer.skipToNext();
         await TrackPlayer.play();
       } catch (e) {
         console.error("[next] ERROR:", e);
@@ -212,11 +217,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     const doSkip = (TrackPlayer as any).skip?.bind(TrackPlayer);
     (async () => {
       try {
-        if (doSkip) {
-          await doSkip(ni);
-        } else {
-          await TrackPlayer.skipToPrevious();
-        }
+        if (doSkip) await doSkip(ni);
+        else await TrackPlayer.skipToPrevious();
         await TrackPlayer.play();
       } catch (e) {
         console.error("[prev] ERROR:", e);
@@ -232,17 +234,14 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         const getTrack = (TrackPlayer as any).getTrack?.bind(TrackPlayer);
 
         let active: any = getActiveTrack ? await getActiveTrack() : null;
-
         if (!active && getCurrentTrack) {
           const idx = await getCurrentTrack();
           if (typeof idx === "number" && idx >= 0 && getTrack) {
             active = await getTrack(idx);
           }
         }
-
         const activeId = active?.id ?? null;
         if (!activeId) return null;
-
         const pos = queue.findIndex((s) => String(s.id) === String(activeId));
         return pos >= 0 ? pos : null;
       } catch {
@@ -260,10 +259,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
       try {
         const BASE_URL = getBaseUrl();
-        const nextItem = queue[pos + 1];
-        if (BASE_URL && nextItem?.id) {
-          warmResolve(String(nextItem.id), BASE_URL);
-          console.log("[prefetch] warmed next:", nextItem.id);
+        const nexts = queue.slice(pos + 1, pos + 6).map((s) => String(s.id));
+        if (BASE_URL && nexts.length) {
+          warmBatch(nexts, BASE_URL);
+          console.log("[prefetch] warm next batch:", nexts);
         }
       } catch (e) {
         console.warn("[prefetch] warm next failed:", e);

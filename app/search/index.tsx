@@ -14,11 +14,19 @@ export default function SearchScreen() {
   const onSelect = (item: ResultItem) => {
     if (item.type === "song") {
       const track = {
-        id: item.id, title: item.title, artistName: item.artistName ?? "",
-        artistId: item.artistId ?? null, thumbnail: item.thumbnail ?? "",
-        url: "", duration: item.duration, durationSeconds: undefined, albumId: null,
+        id: item.id,
+        title: item.title,
+        artistName: item.artistName ?? "",
+        artistId: item.artistId ?? null,
+        thumbnail: item.thumbnail ?? "",
+        url: "",
+        duration: item.duration,
+        durationSeconds: undefined,
+        albumId: null,
       };
       playFromList([track] as any, 0, { type: "queue", name: null });
+    } else if (item.type === "album") {
+      router.push(`/album/${item.id}`);
     } else {
       router.push(`/artist/${item.id}`);
     }
