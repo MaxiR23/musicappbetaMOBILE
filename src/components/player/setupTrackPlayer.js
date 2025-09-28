@@ -20,25 +20,28 @@ export async function ensureTrackPlayer() {
   if (g.__RNTP__.ready) return;
 
   try {
+    // ❗ opciones en top-level (no dentro de "android")
     await TrackPlayer.setupPlayer({
       waitForBuffer: false,
-      android: {
-        // 🔽 Arranque rápido: bajar lo que ExoPlayer pide antes de dar "ready"
-        minBuffer: 2,                      // antes 5000
-        maxBuffer: 20,                     // antes 15000
-        playBuffer: 0.25,                      // antes 500
-        backBuffer: 0,
-        maxCacheSize: 64 * 1024 * 1024,
-        // Algunos RNTP/ExoPlayer aceptan explícitos:
-        bufferForPlaybackMs: 250,
-        bufferForPlaybackAfterRebufferMs: 500,
-      },
+
+      // Buffers (Android)
+      minBuffer: 2,                   // segundos
+      maxBuffer: 12,                  // segundos
+      playBuffer: 0.5,                // arranca con ~0.5s
+      backBuffer: 0,                  // segundos
+      maxCacheSize: 64 * 1024 * 1024, // bytes
+
+      // ExoPlayer readiness
+      bufferForPlaybackMs: 0,
+      bufferForPlaybackAfterRebufferMs: 250,
+
+      // iOS
       iosCategory: 'playback',
       iosCategoryMode: 'default',
       iosCategoryOptions: ['mixWithOthers'],
     });
   } catch (e) {
-    console.log('[RNTP] setupPlayer options not supported, fallback:', e?.message || e);
+    console.log('[RNTP] setupPlayer options not supported, fallback:', e && e.message ? e.message : e);
     await TrackPlayer.setupPlayer();
   }
 
