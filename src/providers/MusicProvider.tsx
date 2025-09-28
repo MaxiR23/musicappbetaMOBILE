@@ -85,7 +85,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     // 🔒 Siempre vía PROXY (redir=2). NO usar redir=0 ni 1.
     const tracks = list.map((s, i) => ({
       id: String(s.id),
-      url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
+      url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=${i === startIndex ? 1 : 2}`,
       title: (s as any).title,
       artist: (s as any).artistName ?? (s as any).artist ?? "",
       artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
@@ -93,53 +93,32 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       __idx: i,
     })) as any[];
 
+    // 👉 Reordena para que el primer elemento sea el que querés reproducir (sin skip)
     const idx = Math.max(0, Math.min(startIndex, tracks.length - 1));
-    const doSkip = (TrackPlayer as any).skip?.bind(TrackPlayer);
+    const ordered = tracks.slice(idx).concat(tracks.slice(0, idx));
 
-    // Prefetch en lote (IDs alrededor del inicio)
-    try {
-      const ids = list.map((s: any) => String(s.id)).filter(Boolean);
-      const uniq = Array.from(new Set(ids));
-      const slice = uniq.slice(Math.max(0, idx - 2), idx + 12);
-      warmBatch(slice, BASE_URL);
-    } catch {}
-
-    const getQueue = (TrackPlayer as any).getQueue?.bind(TrackPlayer);
-    const getActiveTrack = (TrackPlayer as any).getActiveTrack?.bind(TrackPlayer);
-    const getCurrentTrack = (TrackPlayer as any).getCurrentTrack?.bind(TrackPlayer);
-    const getTrack = (TrackPlayer as any).getTrack?.bind(TrackPlayer);
-    const dumpQueue = async (label: string) => {
-      try {
-        const q = getQueue ? await getQueue() : null;
-        console.log(`[sync] ${label} queue.len:`, q?.length, q?.map((t: any, i: number) => ({ i, id: t?.id })));
-        let active: any = getActiveTrack ? await getActiveTrack() : null;
-        if (!active && getCurrentTrack && getTrack) {
-          const ci = await getCurrentTrack();
-          if (typeof ci === "number" && ci >= 0) active = await getTrack(ci);
-        }
-        console.log(`[sync] ${label} activeTrack:`, active ? { id: active.id, url: active.url } : null);
-      } catch (e) {
-        console.warn(`[sync] ${label} dumpQueue ERROR:`, e);
-      }
-    };
-
+    // 👉 Cargá SOLO el primer track y arrancá YA; el resto se agrega en background.
     syncingRef.current = true;
     try {
       await TrackPlayer.reset();
-      await TrackPlayer.add(tracks);
+      await TrackPlayer.add([ordered[0]]);
+      // Arranque inmediato: nada de sleeps ni dumps antes de play
+      TrackPlayer.play().catch(() => {});
 
-      if (doSkip) {
-        await doSkip(idx);
-      } else {
-        for (let i = 0; i < idx; i++) await TrackPlayer.skipToNext();
+      // Prefetch IDs cercanos
+      try {
+        const ids = list.map((s: any) => String(s.id)).filter(Boolean);
+        const uniq = Array.from(new Set(ids));
+        const slice = uniq.slice(Math.max(0, idx - 3), idx + 16);
+        warmBatch(slice, BASE_URL);
+      } catch {}
+
+      // Agregar resto de la cola SIN bloquear el play
+      if (ordered.length > 1) {
+        TrackPlayer.add(ordered.slice(1)).catch(() => {});
       }
-
-      await dumpQueue("post-add");
-
-      await new Promise((r) => setTimeout(r, 50));
-      await TrackPlayer.play();
     } catch (e) {
-      console.error("[sync] ERROR reset/add/skip/play:", e);
+      console.error("[sync] ERROR reset/add/play:", e);
       throw e;
     } finally {
       syncingRef.current = false;
@@ -179,7 +158,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
     try {
       await syncWithTrackPlayer(list, startIndex);
-      setTimeout(() => { TrackPlayer.play().catch(() => {}); }, 350);
+      // ❌ sin setTimeout extra ni doble play
     } catch (err) {
       console.error("[RNTP] error en syncWithTrackPlayer]:", err);
     } finally {
@@ -195,11 +174,9 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     setQueueIndex(ni);
     setCurrentSong(queue[ni]);
 
-    const doSkip = (TrackPlayer as any).skip?.bind(TrackPlayer);
     (async () => {
       try {
-        if (doSkip) await doSkip(ni);
-        else await TrackPlayer.skipToNext();
+        await TrackPlayer.skipToNext();
         await TrackPlayer.play();
       } catch (e) {
         console.error("[next] ERROR:", e);
@@ -214,11 +191,9 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     setQueueIndex(ni);
     setCurrentSong(queue[ni]);
 
-    const doSkip = (TrackPlayer as any).skip?.bind(TrackPlayer);
     (async () => {
       try {
-        if (doSkip) await doSkip(ni);
-        else await TrackPlayer.skipToPrevious();
+        await TrackPlayer.skipToPrevious();
         await TrackPlayer.play();
       } catch (e) {
         console.error("[prev] ERROR:", e);
