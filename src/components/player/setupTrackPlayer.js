@@ -24,9 +24,9 @@ export async function ensureTrackPlayer() {
       waitForBuffer: false,
       android: {
         // 🔽 Arranque rápido: bajar lo que ExoPlayer pide antes de dar "ready"
-        minBuffer: 1500,                      // antes 5000
-        maxBuffer: 10000,                     // antes 15000
-        playBuffer: 250,                      // antes 500
+        minBuffer: 2,                      // antes 5000
+        maxBuffer: 20,                     // antes 15000
+        playBuffer: 0.25,                      // antes 500
         backBuffer: 0,
         maxCacheSize: 64 * 1024 * 1024,
         // Algunos RNTP/ExoPlayer aceptan explícitos:
