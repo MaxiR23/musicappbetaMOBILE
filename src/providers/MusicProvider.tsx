@@ -39,7 +39,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids }),
-    }).catch(() => {});
+    }).catch(() => { });
   }
 
   function majorityId<T>(list: T[], pick: (x: T) => string | null | undefined): string | null {
@@ -103,7 +103,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       await TrackPlayer.reset();
       await TrackPlayer.add([ordered[0]]);
       // Arranque inmediato: nada de sleeps ni dumps antes de play
-      TrackPlayer.play().catch(() => {});
+      TrackPlayer.play().catch(() => { });
 
       // Prefetch IDs cercanos
       try {
@@ -111,11 +111,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         const uniq = Array.from(new Set(ids));
         const slice = uniq.slice(Math.max(0, idx - 3), idx + 16);
         warmBatch(slice, BASE_URL);
-      } catch {}
+      } catch { }
 
       // Agregar resto de la cola SIN bloquear el play
       if (ordered.length > 1) {
-        TrackPlayer.add(ordered.slice(1)).catch(() => {});
+        TrackPlayer.add(ordered.slice(1)).catch(() => { });
       }
     } catch (e) {
       console.error("[sync] ERROR reset/add/play:", e);
@@ -142,10 +142,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           lastLoggedContextKeyRef.current = ctx.key;
           const srcMeta = { name: source?.name ?? null, thumb: source?.thumb ?? null };
           if (ctx.kind === "album") {
-            await logPlayAlbum(ctx.id, srcMeta).catch(() => {});
+            await logPlayAlbum(ctx.id, srcMeta).catch(() => { });
             console.log("[tracklog] album logged:", ctx.id, srcMeta);
           } else if (ctx.kind === "artist") {
-            await logPlayArtist(ctx.id, srcMeta).catch(() => {});
+            await logPlayArtist(ctx.id, srcMeta).catch(() => { });
             console.log("[tracklog] artist logged:", ctx.id, srcMeta);
           }
         } else {
@@ -185,8 +185,22 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   }
 
   function prev() {
-    if (queueIndex <= 0) return;
+    if (queueIndex < 0) return;
+
     const ni = queueIndex - 1;
+
+    if (ni < 0) {
+      // Estás en la primera canción → simplemente reinicia al inicio
+      (async () => {
+        try {
+          await TrackPlayer.seekTo(0);
+          await TrackPlayer.play();
+        } catch (e) {
+          console.error("[prev] ERROR (seekTo 0):", e);
+        }
+      })();
+      return;
+    }
 
     setQueueIndex(ni);
     setCurrentSong(queue[ni]);
@@ -196,7 +210,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         await TrackPlayer.skipToPrevious();
         await TrackPlayer.play();
       } catch (e) {
-        console.error("[prev] ERROR:", e);
+        console.error("[prev] ERROR (skipToPrevious):", e);
       }
     })();
   }
