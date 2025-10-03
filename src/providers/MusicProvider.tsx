@@ -17,6 +17,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const syncingRef = useRef(false);
   const switchingRef = useRef(false);
   const lastLoggedContextKeyRef = useRef<string | null>(null);
+  const endingRef = useRef(false);
 
   type PlaySource =
     | { type: "playlist"; name?: string | null; thumb?: string | null }
@@ -32,15 +33,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // Prefetch por lote (calienta en el backend sin clavar el primer play)
-  function warmBatch(ids: string[], baseUrl: string) {
-    if (!ids?.length) return;
-    fetch(`${baseUrl}/music/prefetch`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids }),
-    }).catch(() => { });
-  }
+  function warmBatch(ids: string[], baseUrl: string) { return; }
 
   function majorityId<T>(list: T[], pick: (x: T) => string | null | undefined): string | null {
     const counts = new Map<string, number>();
@@ -82,41 +75,37 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // 🔒 Siempre vía PROXY (redir=2). NO usar redir=0 ni 1.
     const tracks = list.map((s, i) => ({
       id: String(s.id),
-      url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=${i === startIndex ? 1 : 2}`,
+      url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
       title: (s as any).title,
       artist: (s as any).artistName ?? (s as any).artist ?? "",
       artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
       type: TrackType.Default,
+      headers: {
+        //Range: "bytes=0-",
+        "Accept-Encoding": "identity",
+        Connection: "keep-alive",
+      },
       __idx: i,
     })) as any[];
 
-    // 👉 Reordena para que el primer elemento sea el que querés reproducir (sin skip)
     const idx = Math.max(0, Math.min(startIndex, tracks.length - 1));
-    const ordered = tracks.slice(idx).concat(tracks.slice(0, idx));
 
-    // 👉 Cargá SOLO el primer track y arrancá YA; el resto se agrega en background.
     syncingRef.current = true;
     try {
       await TrackPlayer.reset();
-      await TrackPlayer.add([ordered[0]]);
-      // Arranque inmediato: nada de sleeps ni dumps antes de play
-      TrackPlayer.play().catch(() => { });
+      await TrackPlayer.setRepeatMode(RepeatMode.Off);
+      await TrackPlayer.add(tracks);
+      await TrackPlayer.skip(idx);
+      TrackPlayer.play().catch(() => {});
 
-      // Prefetch IDs cercanos
       try {
         const ids = list.map((s: any) => String(s.id)).filter(Boolean);
         const uniq = Array.from(new Set(ids));
         const slice = uniq.slice(Math.max(0, idx - 3), idx + 16);
         warmBatch(slice, BASE_URL);
-      } catch { }
-
-      // Agregar resto de la cola SIN bloquear el play
-      if (ordered.length > 1) {
-        TrackPlayer.add(ordered.slice(1)).catch(() => { });
-      }
+      } catch {}
     } catch (e) {
       console.error("[sync] ERROR reset/add/play:", e);
       throw e;
@@ -134,7 +123,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     setCurrentSong(list[startIndex] ?? null);
     setPlaySource(source ?? { type: "queue", name: null, thumb: null });
 
-    // Log de contexto (una sola vez por cambio)
     try {
       const ctx = resolveContextKey(list, source);
       if (ctx) {
@@ -142,10 +130,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           lastLoggedContextKeyRef.current = ctx.key;
           const srcMeta = { name: source?.name ?? null, thumb: source?.thumb ?? null };
           if (ctx.kind === "album") {
-            await logPlayAlbum(ctx.id, srcMeta).catch(() => { });
+            await logPlayAlbum(ctx.id, srcMeta).catch(() => {});
             console.log("[tracklog] album logged:", ctx.id, srcMeta);
           } else if (ctx.kind === "artist") {
-            await logPlayArtist(ctx.id, srcMeta).catch(() => { });
+            await logPlayArtist(ctx.id, srcMeta).catch(() => {});
             console.log("[tracklog] artist logged:", ctx.id, srcMeta);
           }
         } else {
@@ -158,7 +146,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
     try {
       await syncWithTrackPlayer(list, startIndex);
-      // ❌ sin setTimeout extra ni doble play
     } catch (err) {
       console.error("[RNTP] error en syncWithTrackPlayer]:", err);
     } finally {
@@ -190,7 +177,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     const ni = queueIndex - 1;
 
     if (ni < 0) {
-      // Estás en la primera canción → simplemente reinicia al inicio
       (async () => {
         try {
           await TrackPlayer.seekTo(0);
@@ -259,20 +245,28 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     };
 
     const subActive = TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, onActiveChanged);
+
     const subEnded = TrackPlayer.addEventListener(Event.PlaybackQueueEnded, async () => {
       if (syncingRef.current) return;
-      if (queue.length) {
-        setQueueIndex(queue.length - 1);
-        setCurrentSong(queue[queue.length - 1] ?? null);
-      }
+      if (endingRef.current) return;
+      endingRef.current = true;
+
       try {
-        const mode = (await (TrackPlayer as any).getRepeatMode?.()) ?? RepeatMode.Off;
-        if (mode !== RepeatMode.Track && mode !== RepeatMode.Queue) {
-          await TrackPlayer.pause();
-          await TrackPlayer.seekTo(0);
-        }
+        const lastIdx = Math.max(0, queue.length - 1);
+        const lastSong = queue[lastIdx];
+        if (!lastSong) { endingRef.current = false; return; }
+
+        await TrackPlayer.setRepeatMode(RepeatMode.Off).catch(() => {});
+        await TrackPlayer.skip(lastIdx).catch(() => {});
+        await TrackPlayer.pause().catch(() => {});
+        await TrackPlayer.seekTo(0).catch(() => {});
+
+        setQueueIndex(lastIdx);
+        setCurrentSong(lastSong);
       } catch (e) {
-        console.warn("[ended] reset to 0 failed:", e);
+        console.warn("[ended] finalize at last track failed:", e);
+      } finally {
+        endingRef.current = false;
       }
     });
 
