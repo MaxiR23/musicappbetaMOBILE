@@ -301,8 +301,18 @@ export default function MusicPlayer({
     <>
       {/* MINI PLAYER */}
       <View style={stylesMini.wrapper}>
+        {/* tinte difuminado según portada */}
+        <LinearGradient
+          colors={[gradient[0], gradient[1]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* capa de transparencia para efecto glass */}
+        <View style={stylesMini.glassOverlay} />
+
         {/* barra de progreso (no intercepta toques) */}
-        <View style={stylesMini.progressContainer} pointerEvents="none">
+        {/* <View style={stylesMini.progressContainer} pointerEvents="none">
           <View style={stylesMini.progressBg} />
           <View
             style={[
@@ -320,7 +330,7 @@ export default function MusicPlayer({
             thumbTintColor="transparent"
             disabled
           />
-        </View>
+        </View> */}
 
         <View style={stylesMini.container}>
           <Image source={{ uri: thumbUrl }} style={stylesMini.thumbnail} />
@@ -515,8 +525,25 @@ export default function MusicPlayer({
 
 /* ───────── STYLES ───────── */
 
+/* ───────── STYLES (reemplaza sólo stylesMini) ───────── */
 const stylesMini = StyleSheet.create({
-  wrapper: { position: "relative", backgroundColor: "rgba(17,17,17,0.25)" },
+  wrapper: {
+    position: "relative",
+    marginHorizontal: 10,
+    marginBottom: 8,
+    borderRadius: 16,
+    overflow: "hidden",               // mantiene el tinte dentro de las esquinas
+    // sombra suave
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
+  },
+  glassOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(15,15,15,0.35)", // transparencia extra para efecto glass
+  },
   progressContainer: {
     position: "absolute",
     top: 0, left: 0, right: 0,
@@ -524,12 +551,15 @@ const stylesMini = StyleSheet.create({
     zIndex: 10,
     overflow: "visible",
   },
-  progressBg: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0, backgroundColor: "#444" },
+  progressBg: {
+    position: "absolute", left: 0, right: 0, top: 0, bottom: 0,
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
   progressFill: { position: "absolute", left: 0, top: 0, bottom: 0 },
   progressSlider: {
     position: "absolute",
-    left: -16,
-    right: -16,
+    left: -14,
+    right: -14,
     top: -(28 - 2) / 2,
     height: 28,
   },
@@ -538,13 +568,11 @@ const stylesMini = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#333",
   },
-  thumbnail: { width: 48, height: 48, borderRadius: 6 },
+  thumbnail: { width: 48, height: 48, borderRadius: 10 },
   info: { flex: 1, marginHorizontal: 12 },
-  title: { color: "#fff", fontSize: 14, fontWeight: "500" },
-  artist: { color: "#aaa", fontSize: 12 },
+  title: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  artist: { color: "#ddd", fontSize: 12 },
   iconButton: { paddingHorizontal: 8 },
 });
 
