@@ -299,7 +299,7 @@ export default function PlaylistScreen() {
                 </Text>
               </View>
 
-              <Text style={styles.duration}>{song.duration}</Text>
+              {/* <Text style={styles.duration}>{song.duration}</Text> */}
 
               {/* 3 puntitos por canción */}
               <TouchableOpacity

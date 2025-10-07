@@ -232,7 +232,7 @@ export default function AlbumScreen() {
                   )}
                 </TouchableOpacity>
               </View>
-              <Text style={styles.songDuration}>{song.duration}</Text>
+              {/* <Text style={styles.songDuration}>{song.duration}</Text> */}
 
               <TouchableOpacity
                 onPress={() => {
