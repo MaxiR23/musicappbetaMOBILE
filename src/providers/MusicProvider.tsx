@@ -83,7 +83,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
       type: TrackType.Default,
       headers: {
-        //Range: "bytes=0-",
+        Range: "bytes=0-",
         "Accept-Encoding": "identity",
         Connection: "keep-alive",
       },
