@@ -334,6 +334,21 @@ export function useMusicApi() {
     []
   );
 
+  // 🔥 NUEVO: mover track en playlist (para reordenar)
+  const moveTrackInPlaylist = useCallback(
+    async (playlistId: string, oldPosition: number, newPosition: number) => {
+      return authFetch(
+        `${BASE_URL}/music/playlists/${encodeURIComponent(playlistId)}/move-track`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }, // <-- por si acaso
+          body: JSON.stringify({ old_position: oldPosition, new_position: newPosition }),
+        }
+      );
+    },
+    []
+  );
+
   return {
     searchSongs,
     playSongUrl,
@@ -359,5 +374,6 @@ export function useMusicApi() {
     unlikePlaylist,
     isTrackLiked,
     getRecentPlays, // ← export nuevo
+    moveTrackInPlaylist,
   };
 }
