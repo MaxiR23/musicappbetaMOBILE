@@ -145,11 +145,16 @@ export default function HomeScreen() {
   const refreshRecent = useCallback(async () => {
     try {
       setRecentLoading(true);
-      const resp = await cacheWrap(
+      /* const resp = await cacheWrap(
         `home:recent:plays:12:v1`,
         () => getRecentPlays(12),
         { userId, ttl: DAY_MS }
       );
+      setRecent(resp?.items ?? []); */
+
+      console.log("[cache] BYPASS → home:recent:plays:12:v1");
+      const resp = await getRecentPlays(12);
+
       setRecent(resp?.items ?? []);
     } catch (e: any) {
       console.warn("[API] getRecentPlays error:", e?.message || e);
