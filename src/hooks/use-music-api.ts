@@ -349,6 +349,16 @@ export function useMusicApi() {
     []
   );
 
+  // 🔤 Lyrics (público, no requiere auth)
+  const getTrackLyrics = useCallback(
+    async (trackId: string): Promise<{ ok: boolean; lyrics?: string | null; source?: string | null }> => {
+      return publicFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/lyrics`, {
+        method: "GET",
+      });
+    },
+    []
+  );
+
   return {
     searchSongs,
     playSongUrl,
@@ -373,7 +383,8 @@ export function useMusicApi() {
     likePlaylist,
     unlikePlaylist,
     isTrackLiked,
-    getRecentPlays, // ← export nuevo
+    getRecentPlays, 
     moveTrackInPlaylist,
+    getTrackLyrics
   };
 }
