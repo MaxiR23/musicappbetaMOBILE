@@ -1,4 +1,5 @@
 import PlaylistCover from "@/src/components/PlaylistCover";
+import { useMusic } from "@/src/hooks/use-music";
 import { useMusicApi } from "@/src/hooks/use-music-api";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
@@ -19,6 +20,10 @@ import SearchBar from "./../SearchBar";
 import CreatePlaylistModal from "@/src/components/CreatePlaylistModal";
 import TrackActionsSheet from "@/src/components/TrackActionsSheet";
 import { supabase } from "@/src/lib/supabase";
+import { fetchFeed } from "@/src/services/feedService";
+
+// 👇 NUEVO: cache genérico
+import { cacheWrap, DAY_MS } from "@/src/utils/cache";
 
 type RecentItem = {
   type: "album" | "artist";
@@ -79,6 +84,27 @@ export default function HomeScreen() {
   const [recent, setRecent] = useState<RecentItem[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
 
+  // ✅ FEED: estados para 3 secciones
+  const [newReleases, setNewReleases] = useState<any[]>([]);
+  const [topAlbums, setTopAlbums] = useState<any[]>([]);
+  const [topTracks, setTopTracks] = useState<any[]>([]);
+
+  const { playFromList } = useMusic();
+
+  const mappedTopTracks = useMemo(() => {
+    return topTracks.map((t: any) => ({
+      id: String(t.id),
+      title: t.title,
+      artistName: t.artist ?? "",          // MusicProvider usa artistName || artist
+      artist: t.artist ?? "",
+      thumbnail: t.thumb ?? t.thumbnail,   // acepta thumbnail o thumbnail_url
+      thumbnail_url: t.thumb ?? t.thumbnail,
+      duration: t.duration ?? null,
+      durationSeconds: typeof t.duration_s === "number" ? t.duration_s : null,
+      url: "",                             // no hace falta, el provider arma la URL con /music/play
+    }));
+  }, [topTracks]);
+
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getSession();
@@ -105,19 +131,25 @@ export default function HomeScreen() {
 
   const refreshPlaylists = useCallback(async () => {
     try {
-      const pls = await getPlaylists();
+      const pls = await cacheWrap(
+        `home:playlists:v1`,
+        () => getPlaylists(),
+        { userId, ttl: DAY_MS }
+      );
       setPlaylists(pls);
     } catch (e: any) {
       console.warn("[API] getPlaylists error:", e?.message || e);
     }
-  }, [getPlaylists]);
+  }, [getPlaylists, userId]);
 
   const refreshRecent = useCallback(async () => {
     try {
       setRecentLoading(true);
-      const resp = await getRecentPlays(12); // álbumes/artistas recientes
-      console.log('resp')
-      console.log(resp)
+      const resp = await cacheWrap(
+        `home:recent:plays:12:v1`,
+        () => getRecentPlays(12),
+        { userId, ttl: DAY_MS }
+      );
       setRecent(resp?.items ?? []);
     } catch (e: any) {
       console.warn("[API] getRecentPlays error:", e?.message || e);
@@ -125,18 +157,63 @@ export default function HomeScreen() {
     } finally {
       setRecentLoading(false);
     }
-  }, [getRecentPlays]);
+  }, [getRecentPlays, userId]);
 
-  useEffect(() => {
-    refreshPlaylists();
-    refreshRecent();
-  }, [refreshPlaylists, refreshRecent]);
+  // ✅ loaders de feed
+  const refreshNewReleases = useCallback(async () => {
+    try {
+      const albums = await cacheWrap(
+        `home:feed:new_releases:AR:albums:20:v1`,
+        () => fetchFeed({ kind: "new_releases", type: "album", store: "AR", limit: 20 }),
+        { userId, ttl: DAY_MS }
+      );
+      setNewReleases(albums);
+    } catch (e: any) {
+      console.warn("[API] new_releases error:", e?.message || e);
+      setNewReleases([]);
+    }
+  }, [userId]);
+
+  const refreshTopAlbums = useCallback(async () => {
+    try {
+      const albums = await cacheWrap(
+        `home:feed:most_played:albums:20:v1`,
+        () => fetchFeed({ kind: "most_played", type: "album", limit: 20 }),
+        { userId, ttl: DAY_MS }
+      );
+      setTopAlbums(albums);
+    } catch (e: any) {
+      console.warn("[API] most_played/albums error:", e?.message || e);
+      setTopAlbums([]);
+    }
+  }, [userId]);
+
+  const refreshTopTracks = useCallback(async () => {
+    try {
+      const tracks = await cacheWrap(
+        `home:feed:most_played:tracks:20:v1`,
+        () => fetchFeed({ kind: "most_played", type: "track", limit: 20 }),
+        { userId, ttl: DAY_MS }
+      );
+      setTopTracks(tracks);
+    } catch (e: any) {
+      console.warn("[API] most_played/tracks error:", e?.message || e);
+      setTopTracks([]);
+    }
+  }, [userId]);
+
+  const ready = !!userId;
 
   useFocusEffect(
     useCallback(() => {
+      if (!ready) return;
       refreshPlaylists();
       refreshRecent();
-    }, [refreshPlaylists, refreshRecent])
+      // ✅ feed
+      refreshNewReleases();
+      refreshTopAlbums();
+      refreshTopTracks();
+    }, [refreshPlaylists, refreshRecent, refreshNewReleases, refreshTopAlbums, refreshTopTracks])
   );
 
   // Solo mostramos recientes con info visible (evita cajas vacías)
@@ -356,6 +433,138 @@ export default function HomeScreen() {
                     <Text style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>
                       {isArtist ? "Artista" : "Álbum"}
                     </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* 🆕 Nuevos lanzamientos (álbumes) */}
+        {newReleases.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { fontSize: 16 }]}>Nuevos lanzamientos</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {newReleases.map((al) => {
+                const SIZE = 120;
+                const GAP = 12;
+                return (
+                  <TouchableOpacity
+                    key={al.id}
+                    style={{ marginRight: GAP, width: SIZE }}
+                    onPress={() => router.push(`/album/${encodeURIComponent(al.id)}`)}
+                    activeOpacity={0.85}
+                  >
+                    <View
+                      style={{
+                        width: SIZE, height: SIZE, borderRadius: 16, overflow: "hidden",
+                        backgroundColor: "#333", alignItems: "center", justifyContent: "center",
+                      }}
+                    >
+                      {al.thumb ? (
+                        <Image source={{ uri: al.thumb }} style={{ width: SIZE, height: SIZE }} />
+                      ) : (
+                        <Ionicons name="musical-notes-outline" size={22} color="#777" />
+                      )}
+                    </View>
+                    {!!al.title && (
+                      <Text numberOfLines={1} style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13 }}>
+                        {al.title}
+                      </Text>
+                    )}
+                    {!!al.artist && (
+                      <Text numberOfLines={1} style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>
+                        {al.artist}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* 🔝 Más escuchados · Álbumes */}
+        {topAlbums.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { fontSize: 16 }]}>Más escuchados · Álbumes</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {topAlbums.map((al) => {
+                const SIZE = 120;
+                const GAP = 12;
+                return (
+                  <TouchableOpacity
+                    key={al.id}
+                    style={{ marginRight: GAP, width: SIZE }}
+                    onPress={() => router.push(`/album/${encodeURIComponent(al.id)}`)}
+                    activeOpacity={0.85}
+                  >
+                    <View
+                      style={{
+                        width: SIZE, height: SIZE, borderRadius: 16, overflow: "hidden",
+                        backgroundColor: "#333", alignItems: "center", justifyContent: "center",
+                      }}
+                    >
+                      {al.thumb ? (
+                        <Image source={{ uri: al.thumb }} style={{ width: SIZE, height: SIZE }} />
+                      ) : (
+                        <Ionicons name="musical-notes-outline" size={22} color="#777" />
+                      )}
+                    </View>
+                    {!!al.title && (
+                      <Text numberOfLines={1} style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13 }}>
+                        {al.title}
+                      </Text>
+                    )}
+                    {!!al.artist && (
+                      <Text numberOfLines={1} style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>
+                        {al.artist}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* 🔝 Más escuchados · Canciones */}
+        {topTracks.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { fontSize: 16 }]}>Más escuchados · Canciones</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {topTracks.map((t, i) => {
+                const SIZE = 120;
+                const GAP = 12;
+                return (
+                  <TouchableOpacity
+                    key={t.id}
+                    style={{ marginRight: GAP, width: SIZE }}
+                    onPress={() => playFromList(mappedTopTracks, i, { type: "queue", name: "Top tracks" })}
+                    activeOpacity={0.85}
+                  >
+                    <View
+                      style={{
+                        width: SIZE, height: SIZE, borderRadius: 16, overflow: "hidden",
+                        backgroundColor: "#333", alignItems: "center", justifyContent: "center",
+                      }}
+                    >
+                      {t.thumb ? (
+                        <Image source={{ uri: t.thumb }} style={{ width: SIZE, height: SIZE }} />
+                      ) : (
+                        <Ionicons name="musical-notes-outline" size={22} color="#777" />
+                      )}
+                    </View>
+                    {!!t.title && (
+                      <Text numberOfLines={1} style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13 }}>
+                        {t.title}
+                      </Text>
+                    )}
+                    {!!t.artist && (
+                      <Text numberOfLines={1} style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>
+                        {t.artist}
+                      </Text>
+                    )}
                   </TouchableOpacity>
                 );
               })}
