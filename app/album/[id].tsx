@@ -45,7 +45,7 @@ export default function AlbumScreen() {
             const pick = pickHex(col) || "#222";
             setHeroColor(pick);
           }
-        } catch {}
+        } catch { }
         setLoading(false);
       })
       .catch((err) => {
@@ -247,6 +247,80 @@ export default function AlbumScreen() {
             </View>
           ))}
         </View>
+
+        {/* Other versions / Releases for you */}
+        {(album.otherVersions?.length || album.releasesForYou?.length) ? (
+          <View style={{ paddingHorizontal: 16, marginTop: 8, gap: 18 }}>
+            {/* Other versions */}
+            {!!album.otherVersions?.length && (
+              <View>
+                <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 10 }}>
+                  Other versions
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {album.otherVersions.map((it: any, i: number) => {
+                    const thumb =
+                      it.thumbnails?.[it.thumbnails.length - 1]?.url ||
+                      it.thumbnails?.[0]?.url || coverUrl;
+                    return (
+                      <TouchableOpacity
+                        key={`ov-${i}-${it.browseId || it.title}`}
+                        style={{ width: 140, marginRight: 12 }}
+                        activeOpacity={0.85}
+                        onPress={() => router.push(`/album/${it.browseId}`)}
+                      >
+                        <Image source={{ uri: thumb }} style={{ width: 140, height: 140, borderRadius: 10 }} />
+                        <Text numberOfLines={2} style={{ color: "#fff", marginTop: 6, fontWeight: "600" }}>
+                          {it.title}
+                        </Text>
+                        <Text numberOfLines={1} style={{ color: "#aaa", fontSize: 12, marginTop: 2 }}>
+                          {it.type}{it.artistName ? ` • ${it.artistName}` : ""}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Releases for you */}
+            {!!album.releasesForYou?.length && (
+              <View>
+                <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 10 }}>
+                  Releases for you
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {album.releasesForYou.map((it: any, i: number) => {
+                    const thumb =
+                      it.thumbnails?.[it.thumbnails.length - 1]?.url ||
+                      it.thumbnails?.[0]?.url || coverUrl;
+                    const route =
+                      (it.type || "").toLowerCase() === "playlist"
+                        ? `/playlist/${it.browseId}`
+                        : `/album/${it.browseId}`;
+                    return (
+                      <TouchableOpacity
+                        key={`rfy-${i}-${it.browseId || it.title}`}
+                        style={{ width: 140, marginRight: 12 }}
+                        activeOpacity={0.85}
+                        onPress={() => router.push(route)}
+                      >
+                        <Image source={{ uri: thumb }} style={{ width: 140, height: 140, borderRadius: 10 }} />
+                        <Text numberOfLines={2} style={{ color: "#fff", marginTop: 6, fontWeight: "600" }}>
+                          {it.title}
+                        </Text>
+                        <Text numberOfLines={1} style={{ color: "#aaa", fontSize: 12, marginTop: 2 }}>
+                          {it.type || "Release"}{it.artistName ? ` • ${it.artistName}` : ""}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+          </View>
+        ) : null}
+
       </ScrollView>
 
       <TrackActionsSheet
