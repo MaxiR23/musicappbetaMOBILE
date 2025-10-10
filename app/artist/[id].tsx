@@ -30,16 +30,6 @@ export default function ArtistScreen() {
     setLoading(true);
     getArtist(id as string)
       .then((data) => {
-
-
-        console.log("[getArtist] keys:", Object.keys(data || {}));
-        console.log(
-          "[getArtist] newReleases:",
-          Array.isArray((data as any).newReleases)
-            ? { len: (data as any).newReleases.length, sample: (data as any).newReleases[0] }
-            : (data as any).newReleases
-        );
-
         setArtist(data);
         setLoading(false);
       })
