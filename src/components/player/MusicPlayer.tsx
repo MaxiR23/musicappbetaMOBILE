@@ -123,6 +123,7 @@ export default function MusicPlayer({
   const [lyricsText, setLyricsText] = useState<string | null>(null);
   const [lyricsLoading, setLyricsLoading] = useState(false);
   const [lyricsError, setLyricsError] = useState<string | null>(null);
+  const mainScrollRef = useRef<ScrollView>(null);
 
   const fetchLyrics = async () => {
     if (!currentSong?.id) return;
@@ -149,7 +150,10 @@ export default function MusicPlayer({
     const next = !lyricsOpen;
     setLyricsOpen(next);
     if (next && lyricsText == null && !lyricsLoading) await fetchLyrics();
-    if (!next) setPanLocked(false);
+    if (!next) {
+      setPanLocked(false);
+      mainScrollRef.current?.scrollTo({ y: 0, animated: false });
+    }
   };
 
   useEffect(() => {
@@ -377,15 +381,16 @@ export default function MusicPlayer({
 
         {/* 🔽 CONTENIDO SCROLLEABLE */}
         <ScrollView
+          ref={mainScrollRef}
           nestedScrollEnabled
-          showsVerticalScrollIndicator={lyricsOpen}     // solo muestra la barra con letras abiertas
-          scrollEnabled={lyricsOpen}                    // ⬅️ desactiva el scroll cuando las letras están cerradas
-          bounces={lyricsOpen}                          // evita el “rubber band” cuando está cerrado
+          showsVerticalScrollIndicator={lyricsOpen}
+          scrollEnabled={lyricsOpen}
+          bounces={lyricsOpen}
           overScrollMode={lyricsOpen ? "auto" : "never"}
           contentContainerStyle={{
             paddingTop: 40,
             paddingHorizontal: 20,
-            paddingBottom: lyricsOpen ? 40 : 16,        // menos padding cuando está cerrado
+            paddingBottom: lyricsOpen ? 40 : 16,
           }}
           onScrollBeginDrag={() => setPanLocked(true)}
           onMomentumScrollEnd={() => setPanLocked(false)}
@@ -500,7 +505,7 @@ export default function MusicPlayer({
             </TouchableOpacity>
           </View>
 
-          {/* Lyrics al estilo Spotify (sin títulos enormes ni expandir) */}
+          {/* Lyrics al estilo Spotify */}
           <View style={stylesExp.lyricsSection}>
             <Pressable
               onPressIn={() => Animated.spring(lyricsBtnScale, { toValue: 0.97, useNativeDriver: true }).start()}
@@ -523,11 +528,10 @@ export default function MusicPlayer({
                   <Text style={stylesExp.lyricsArtist} numberOfLines={1}>{artistName}</Text>
                 </View>
 
-                {/* scroll interno real */}
                 <ScrollView
                   nestedScrollEnabled
                   showsVerticalScrollIndicator
-                  style={{ maxHeight: 320 }} // ~40% de alto en la mayoría de pantallas
+                  style={{ maxHeight: 320 }}
                   contentContainerStyle={{ paddingBottom: 8 }}
                   onScrollBeginDrag={() => setPanLocked(true)}
                   onMomentumScrollEnd={() => setPanLocked(false)}
@@ -643,11 +647,8 @@ const stylesExp = StyleSheet.create({
   },
   dragHandle: { width: 44, height: 5, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.5)" },
 
-  /* Lyrics (abajo) */
-
-  // Reemplazá en stylesExp:
   lyricsSection: {
-    marginTop: 90,      // lo empuja más abajo
+    marginTop: 90,
     marginBottom: 26,
   },
 
@@ -658,17 +659,12 @@ const stylesExp = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
-
-    // podés mantener tu padding grande sin que mute el color
     paddingHorizontal: 18,
     paddingVertical: 14,
-
     borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.06)",   // mismo “ghost” de la pestaña
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)",
-
-    // 🔒 quitar lo que ensucia el color con transparencia
     shadowColor: "transparent",
     shadowOpacity: 0,
     shadowRadius: 0,
