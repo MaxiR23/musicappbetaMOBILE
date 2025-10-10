@@ -12,6 +12,7 @@ export interface Artist {
   albums: Album[];
   singles_eps?: Single[];
   related: RelatedArtist[];
+  newReleases?: NewRelease[];
 }
 
 export interface TopSong {
@@ -77,6 +78,17 @@ export interface AlbumDetails {
     artistId: string | null;
     artistName: string | null;
   }[];
+}
+
+export interface NewRelease {
+  id: string;          // album browseId (MPREb_…)
+  title: string;       // nombre del álbum
+  artist: string;      // nombre(s) del artista
+  artist_id?: string;  // UC… (opcional)
+  thumb?: string | null;
+  release_date?: string; // "YYYY-MM-DD"
+  track_count?: number | null;
+  url?: string;        // "/browse/MPREb_…"
 }
 
 const BASE_URL =

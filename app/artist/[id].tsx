@@ -30,6 +30,16 @@ export default function ArtistScreen() {
     setLoading(true);
     getArtist(id as string)
       .then((data) => {
+
+
+        console.log("[getArtist] keys:", Object.keys(data || {}));
+        console.log(
+          "[getArtist] newReleases:",
+          Array.isArray((data as any).newReleases)
+            ? { len: (data as any).newReleases.length, sample: (data as any).newReleases[0] }
+            : (data as any).newReleases
+        );
+
         setArtist(data);
         setLoading(false);
       })
@@ -155,6 +165,53 @@ export default function ArtistScreen() {
           </View>
         </View>
 
+        {/* Nuevo lanzamiento */}
+        {/* Nuevo lanzamiento */}
+        {Array.isArray(artist?.newReleases) && artist.newReleases[0] && (() => {
+          const nr = artist.newReleases[0];
+          const cover = upgradeYtmImage(nr.thumb, 256);
+          return (
+            <View style={styles.nrCardWrap}>
+              <TouchableOpacity
+                style={styles.nrCard}
+                onPress={() => router.push(`/album/${nr.id}`)}
+                activeOpacity={0.9}
+              >
+                {/* fila arriba: badge */}
+                <View style={styles.nrHeaderRow}>
+                  <View style={styles.nrPillSmall}>
+                    <Ionicons name="sparkles" size={11} color="#111" />
+                    <Text style={styles.nrPillSmallText}>Nuevo lanzamiento</Text>
+                  </View>
+                </View>
+
+                {/* fila abajo: cover + info + chevron */}
+                <View style={styles.nrContentRow}>
+                  {cover ? (
+                    <Image source={{ uri: cover }} style={styles.nrCoverSmall} />
+                  ) : (
+                    <View style={styles.nrCoverSmall} />
+                  )}
+
+                  <View style={styles.nrInfoCol}>
+                    <Text style={styles.nrTitle} numberOfLines={1}>{nr.title}</Text>
+                    <Text style={styles.nrArtist} numberOfLines={1}>{nr.artist}</Text>
+                    {!!nr.release_date && (
+                      <Text style={styles.nrMeta} numberOfLines={1}>
+                        {nr.release_date} · {nr.track_count ?? "—"} tracks
+                      </Text>
+                    )}
+                  </View>
+
+                  <View style={styles.nrChevronBox}>
+                    <Ionicons name="chevron-forward" size={20} color="#fff" />
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </View>
+          );
+        })()}
+
         {/* Top Songs */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Canciones Populares</Text>
@@ -200,6 +257,36 @@ export default function ArtistScreen() {
           </ScrollView>
         </View>
 
+        {/* Singles / EPs */}
+        {Array.isArray(artist.singles_eps) && artist.singles_eps.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Singles / EPs</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {artist.singles_eps.map((s: any) => (
+                <TouchableOpacity
+                  key={s.id}
+                  style={styles.albumCard}
+                  onPress={() => router.push(`/album/${s.id}`)}  // ← mismo redirect que álbum
+                >
+                  <Image
+                    source={{
+                      uri: upgradeYtmImage(
+                        s.thumbnails?.[s.thumbnails?.length - 1]?.url,
+                        512
+                      ),
+                    }}
+                    style={styles.albumImage}
+                  />
+                  <Text style={styles.albumTitle} numberOfLines={2}>{s.title}</Text>
+                  <Text style={styles.albumYear}>
+                    {s.type || ""}{s.type && s.year ? " • " : ""}{s.year || ""}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
         {/* Related */}
         {related.length > 0 && (
           <View style={styles.section}>
@@ -214,18 +301,18 @@ export default function ArtistScreen() {
                     router.push(`/artist/${rel.id}`);
                   }}
                 >
-                {rel.img ? (
-                  <Image
-                    source={{ uri: upgradeYtmImage(rel.img, 256) }}
-                    style={styles.relatedImage}
-                  />
-                ) : (
-                  <View style={[styles.relatedImage, styles.darkBg]} />
-                )}
-                <Text style={styles.relatedName}>{rel.name}</Text>
-                {!!rel.subtitle && (
-                  <Text style={styles.relatedSubtitle}>{rel.subtitle}</Text>
-                )}
+                  {rel.img ? (
+                    <Image
+                      source={{ uri: upgradeYtmImage(rel.img, 256) }}
+                      style={styles.relatedImage}
+                    />
+                  ) : (
+                    <View style={[styles.relatedImage, styles.darkBg]} />
+                  )}
+                  <Text style={styles.relatedName}>{rel.name}</Text>
+                  {!!rel.subtitle && (
+                    <Text style={styles.relatedSubtitle}>{rel.subtitle}</Text>
+                  )}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -256,6 +343,76 @@ const styles = StyleSheet.create({
   // Sections
   section: { padding: 16 },
   sectionTitle: { fontSize: 20, fontWeight: "bold", color: "#fff", marginBottom: 12 },
+
+  // Nuevo lanzamiento
+  // wrapper del card
+  nrCardWrap: { paddingHorizontal: 16, marginTop: 12 },
+
+  // card en columna (badge arriba, contenido abajo)
+  nrCard: {
+    backgroundColor: "#161616",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#242424",
+    padding: 10,
+    gap: 8,
+    // sombra sutil
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
+  },
+
+  // fila de cabecera (solo el badge)
+  nrHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+  },
+
+  // pill "Nuevo"
+  nrPillSmall: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#ffd54a",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  nrPillSmallText: { fontSize: 10, fontWeight: "700", color: "#111" },
+
+  // fila de contenido (cover + info + chevron)
+  nrContentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+
+  // portada
+  nrCoverSmall: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    backgroundColor: "#0e0e0e",
+  },
+
+  // columna de info (mantiene tus textos)
+  nrInfoCol: { flex: 1, minWidth: 0, gap: 2 },
+
+  // chevron a la derecha, centrado vertical
+  nrChevronBox: {
+    alignSelf: "center",
+    backgroundColor: "#2a2a2a",
+    borderRadius: 999,
+    padding: 6,
+  },
+
+  // textos (tus estilos; por si faltan)
+  nrTitle: { color: "#fff", fontSize: 18, fontWeight: "800" },
+  nrArtist: { color: "#ddd", fontSize: 14, },
+  nrMeta: { color: "#9aa", fontSize: 12 },
 
   // Top Songs
   songRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
