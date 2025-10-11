@@ -68,6 +68,8 @@ export default function MusicPlayer({
   // bloquear pan mientras se scrollea
   const [panLocked, setPanLocked] = useState(false);
 
+  const coverScale = useRef(new Animated.Value(1)).current;
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
@@ -163,6 +165,16 @@ export default function MusicPlayer({
     setLyricsLoading(false);
     setPanLocked(false);
   }, [currentSong?.id]);
+
+  useEffect(() => {
+    Animated.spring(coverScale, {
+      toValue: isPlaying ? 1 : 0.90,   // ← pausado: levemente más chico
+      useNativeDriver: true,
+      friction: 10,
+      tension: 70,
+    }).start();
+  }, [isPlaying]);
+
 
   // metadatos
   const artistId =
@@ -430,7 +442,7 @@ export default function MusicPlayer({
             </TouchableOpacity>
           </View>
 
-          <View style={stylesExp.coverCard}>
+          <Animated.View style={[stylesExp.coverCard, { transform: [{ scale: coverScale }] }]}>
             <Image source={{ uri: coverUrl }} style={stylesExp.coverImage} resizeMode="cover" />
             <LinearGradient
               pointerEvents="none"
@@ -438,7 +450,7 @@ export default function MusicPlayer({
               locations={[0, 0.45, 1]}
               style={StyleSheet.absoluteFill}
             />
-          </View>
+          </Animated.View>
 
           <View style={stylesExp.meta}>
             <Text style={stylesExp.title} numberOfLines={2}>{(currentSong as any)?.title ?? ""}</Text>
@@ -627,10 +639,10 @@ const stylesExp = StyleSheet.create({
   meta: { alignItems: "center", marginBottom: 20 },
   title: { color: "#fff", fontSize: 22, fontWeight: "bold", textAlign: "center" },
   artist: { color: "#ccc", fontSize: 16 },
-  sliderContainer: { width: "94%", marginBottom: 12, justifyContent: "center", alignSelf: "center" },
+  sliderContainer: { width: "92%", marginBottom: 12, justifyContent: "center", alignSelf: "center" },
   timeRow: { flexDirection: "row", justifyContent: "space-between" },
   time: { color: "#ccc", fontSize: 12 },
-  controls: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8, paddingHorizontal: 20 },
+  controls: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8, paddingHorizontal: 24 },
   playButton: { borderRadius: 999, width: 64, height: 64, justifyContent: "center", alignItems: "center" },
   repeatWrap: { position: "relative", width: 28, height: 28, alignItems: "center", justifyContent: "center" },
   repeatBadge: { position: "absolute", bottom: -2, right: -2, fontSize: 10, color: "#fff" },
