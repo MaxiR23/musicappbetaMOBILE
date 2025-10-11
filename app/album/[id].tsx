@@ -395,7 +395,7 @@ export default function AlbumScreen() {
                         onPress={() => router.push(`/album/${it.browseId}`)}
                       >
                         <Image source={{ uri: thumb }} style={{ width: 140, height: 140, borderRadius: 10 }} />
-                        <Text numberOfLines={2} style={{ color: "#fff", marginTop: 6, fontWeight: "600" }}>
+                        <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: "#fff", marginTop: 6, fontWeight: "600" }}>
                           {it.title}
                         </Text>
                         <Text numberOfLines={1} style={{ color: "#aaa", fontSize: 12, marginTop: 2 }}>
@@ -427,7 +427,7 @@ export default function AlbumScreen() {
                         onPress={() => router.push(`/album/${it.id}`)}
                       >
                         <Image source={{ uri: thumb }} style={{ width: 140, height: 140, borderRadius: 10 }} />
-                        <Text numberOfLines={2} style={{ color: "#fff", marginTop: 6, fontWeight: "600" }}>
+                        <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: "#fff", marginTop: 6, fontWeight: "600" }}>
                           {it.title}
                         </Text>
                         <Text numberOfLines={1} style={{ color: "#aaa", fontSize: 12, marginTop: 2 }}>
@@ -463,7 +463,7 @@ export default function AlbumScreen() {
                         onPress={() => router.push(route)}
                       >
                         <Image source={{ uri: thumb }} style={{ width: 140, height: 140, borderRadius: 10 }} />
-                        <Text numberOfLines={2} style={{ color: "#fff", marginTop: 6, fontWeight: "600" }}>
+                        <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: "#fff", marginTop: 6, fontWeight: "600" }}>
                           {it.title}
                         </Text>
                         <Text numberOfLines={1} style={{ color: "#aaa", fontSize: 12, marginTop: 2 }}>

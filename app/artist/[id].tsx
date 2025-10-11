@@ -249,7 +249,7 @@ export default function ArtistScreen() {
                   source={{ uri: upgradeYtmImage(album.thumbnails?.[album.thumbnails?.length - 1]?.url, 512) }}
                   style={styles.albumImage}
                 />
-                <Text style={styles.albumTitle}>{album.title}</Text>
+                <Text style={styles.albumTitle} numberOfLines={1} ellipsizeMode="tail">{album.title}</Text>
                 <Text style={styles.albumYear}>{album.year}</Text>
               </TouchableOpacity>
             ))}
@@ -276,7 +276,7 @@ export default function ArtistScreen() {
                     }}
                     style={styles.albumImage}
                   />
-                  <Text style={styles.albumTitle} numberOfLines={2}>{s.title}</Text>
+                  <Text style={styles.albumTitle} numberOfLines={1} ellipsizeMode="tail">{s.title}</Text>
                   <Text style={styles.albumYear}>
                     {s.type || ""}{s.type && s.year ? " • " : ""}{s.year || ""}
                   </Text>
