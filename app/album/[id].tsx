@@ -6,6 +6,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Image,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -40,12 +41,25 @@ export default function AlbumScreen() {
           const url =
             data?.info?.thumbnails?.[data.info.thumbnails.length - 1]?.url ||
             data?.info?.thumbnails?.[0]?.url;
+
+          console.log("📸 URL de imagen:", url);
+
           if (url && typeof getThemeFromImage === "function") {
             const col = await getThemeFromImage(url);
-            const pick = pickHex(col) || "#222";
+
+            console.log("🎨 Respuesta completa de getThemeFromImage:", JSON.stringify(col, null, 2));
+
+            const paletteData = col?.palette || col?.colors || col;
+            console.log("🎨 Paleta a procesar:", JSON.stringify(paletteData, null, 2));
+
+            const pick = pickHex(paletteData) || "#222";
+            console.log("✅ Color final seleccionado:", pick);
+
             setHeroColor(pick);
           }
-        } catch { }
+        } catch (err) {
+          console.error("❌ Error extrayendo color:", err);
+        }
         setLoading(false);
       })
       .catch((err) => {
@@ -54,16 +68,66 @@ export default function AlbumScreen() {
       });
   }, [id]);
 
-  function pickHex(obj: any): string | undefined {
-    if (!obj) return;
-    if (typeof obj === "string" && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(obj)) return obj;
-    if (typeof obj === "object") {
-      for (const v of Object.values(obj)) {
-        const found = pickHex(v);
-        if (found) return found;
+  // Reemplazá SOLO esta función
+  // Reemplazá SOLO esta función
+  function pickHex(palette: any): string | undefined {
+    // 0) si viene nuestro formato (getThemeFromImage), usar 'accent'
+    if (palette && typeof palette.accent === "string" && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(palette.accent)) {
+      return palette.accent;
+    }
+    // evitar tomar '#000'/'#fff' provenientes de 'textOnAccent'
+    const isHex = (s: any) => typeof s === "string" && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(s);
+    const isBad = (s: string) => /^#0{3,6}$/i.test(s) || /^#f{3,6}$/i.test(s);
+
+    // 1) claves típicas de librerías de colores
+    const pref = [
+      "dominant", "vibrant", "darkVibrant", "lightVibrant",
+      "muted", "lightMuted", "darkMuted", "primary", "secondary", "average", "background",
+      // variantes comunes de react-native-image-colors
+      "Vibrant", "DarkVibrant", "LightVibrant", "Muted", "DarkMuted", "LightMuted",
+    ];
+    const toHex = (v: any): string | undefined => {
+      if (!v) return;
+      if (isHex(v) && !isBad(v)) return v;
+      if (typeof v === "object") {
+        if (isHex(v.hex) && !isBad(v.hex)) return v.hex;
+        if ([v.r, v.g, v.b].every((x: any) => Number.isFinite(x))) {
+          const c = (n: number) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0");
+          const hex = `#${c(v.r)}${c(v.g)}${c(v.b)}`;
+          return isBad(hex) ? undefined : hex;
+        }
+      }
+      if (Array.isArray(v) && v.length >= 3) {
+        const c = (n: number) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0");
+        const hex = `#${c(v[0])}${c(v[1])}${c(v[2])}`;
+        return isBad(hex) ? undefined : hex;
+      }
+      return undefined;
+    };
+
+    // 2) probar por claves conocidas
+    for (const k of pref) {
+      const hex = toHex(palette?.[k]);
+      if (hex) return hex;
+    }
+
+    // 3) DFS pero: ignorar 'textOnAccent' y strings 'rgba(...)'
+    const stack = [palette];
+    while (stack.length) {
+      const it = stack.pop();
+      const hex = toHex(it);
+      if (hex) return hex;
+      if (it && typeof it === "object") {
+        for (const [k, v] of Object.entries(it)) {
+          if (k === "textOnAccent") continue;
+          if (typeof v === "string" && /^rgba?\(/i.test(v)) continue;
+          stack.push(v);
+        }
       }
     }
+    return "#222";
   }
+
   function hexToRgba(hex: string, a: number) {
     const m = hex.replace("#", "");
     const v =
@@ -135,6 +199,23 @@ export default function AlbumScreen() {
     return parts.join(" • ");
   }, [album]);
 
+  // ---- NUEVO: datos para mostrar mini artista(s) debajo del título ----
+  const artistThumbUrl =
+    album?.info?.straplineThumbnail?.[0]?.url ||
+    album?.info?.thumbnails?.[0]?.url ||
+    "";
+
+  const artistNames =
+    (album?.info?.includedArtists?.length
+      ? (album.info.includedArtists as any[])
+          .map(a => a?.name)
+          .filter(Boolean)
+      : (album?.info?.artistName ? [album.info.artistName] : [])
+    ).join(", ");
+
+  // ---- NUEVO: flag para ocultar UI si no hay tracks ----
+  const hasTracks = !!(album?.tracks && album.tracks.length > 0);
+
   if (loading || !album) {
     return (
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
@@ -150,102 +231,124 @@ export default function AlbumScreen() {
   return (
     <>
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: currentSong ? 18 : 32 }}>
-        {/* Hero Section */}
-        <View style={styles.hero}>
-          <Image source={{ uri: coverUrl }} style={styles.heroImage} />
+        <ImageBackground
+          source={{ uri: coverUrl }}
+          style={styles.hero}
+          blurRadius={50}
+          resizeMode="cover"
+          imageStyle={{ backgroundColor: "#000" }}
+        >
           <LinearGradient
-            colors={[
-              "transparent",
-              "rgba(0,0,0,0.35)",
-              "rgba(0,0,0,0.75)",
-              "#0e0e0e",
-            ]}
-            locations={[0.55, 0.80, 0.95, 1]}
-            style={styles.heroGradient}
+            colors={["rgba(0,0,0,0.20)", "rgba(0,0,0,0.85)"]}
+            style={StyleSheet.absoluteFillObject}
           />
+
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
-        </View>
+
+          <View style={styles.heroCoverWrap}>
+            <Image source={{ uri: coverUrl }} style={styles.heroCover} />
+          </View>
+        </ImageBackground>
 
         {/* Info debajo del hero */}
         <View style={styles.infoBlock}>
           <Text style={styles.albumTitle}>{album.info?.title}</Text>
+
+          {/* NUEVO: mini avatar + nombres de artista(s) */}
+          {!!artistNames && (
+            <View style={styles.artistRow}>
+              {!!artistThumbUrl && (
+                <Image source={{ uri: artistThumbUrl }} style={styles.artistAvatar} />
+              )}
+              <Text style={styles.artistName}>{artistNames}</Text>
+            </View>
+          )}
+
           {!!albumMeta && <Text style={styles.albumMeta}>{albumMeta}</Text>}
           {!!album.info?.subtitle && <Text style={styles.albumSubtitle}>{album.info?.subtitle}</Text>}
           {!!album.info?.secondSubtitle && <Text style={styles.albumSubtitle}>{album.info?.secondSubtitle}</Text>}
         </View>
 
         {/* Botones */}
-        <View style={styles.actions}>
-          <TouchableOpacity
-            style={styles.softButton}
-            onPress={() =>
-              playFromList(
-                mappedSongs,
-                0,
-                { type: "album", name: album.info?.title, thumb: coverUrl } // ← PASAMOS THUMB
-              )
-            }
-          >
-            <Ionicons name="play" size={18} color="#fff" />
-            <Text style={styles.softButtonText}>Reproducir</Text>
-          </TouchableOpacity>
+        {hasTracks ? (
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={styles.softButton}
+              onPress={() =>
+                playFromList(
+                  mappedSongs,
+                  0,
+                  { type: "album", name: album.info?.title, thumb: coverUrl } // ← PASAMOS THUMB
+                )
+              }
+            >
+              <Ionicons name="play" size={18} color="#fff" />
+              <Text style={styles.softButtonText}>Reproducir</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.softButtonAlt}
-            onPress={() => {
-              const randomIndex = Math.floor(Math.random() * mappedSongs.length);
-              playFromList(
-                mappedSongs,
-                randomIndex,
-                { type: "album", name: album.info?.title, thumb: coverUrl } // ← PASAMOS THUMB
-              );
-            }}
-          >
-            <Ionicons name="shuffle" size={18} color="#fff" />
-            <Text style={styles.softButtonText}>Shuffle</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              style={styles.softButtonAlt}
+              onPress={() => {
+                const randomIndex = Math.floor(Math.random() * mappedSongs.length);
+                playFromList(
+                  mappedSongs,
+                  randomIndex,
+                  { type: "album", name: album.info?.title, thumb: coverUrl } // ← PASAMOS THUMB
+                );
+              }}
+            >
+              <Ionicons name="shuffle" size={18} color="#fff" />
+              <Text style={styles.softButtonText}>Shuffle</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         {/* Songs */}
         <View style={styles.section}>
-          {album.tracks.map((song: any, index: number) => (
-            <View key={`${song.id || "track"}-${index}`} style={styles.songRow}>
-              <Text style={styles.songIndex}>{index + 1}</Text>
-              <View style={{ flex: 1 }}>
+          {hasTracks ? (
+            album.tracks.map((song: any, index: number) => (
+              <View key={`${song.id || "track"}-${index}`} style={styles.songRow}>
+                <Text style={styles.songIndex}>{index + 1}</Text>
+                <View style={{ flex: 1 }}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      playFromList(
+                        mappedSongs,
+                        index,
+                        { type: "album", name: album.info?.title, thumb: coverUrl } // ← PASAMOS THUMB
+                      )
+                    }
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.songTitle}>{song.title}</Text>
+                    {!!song.artists?.length && (
+                      <Text style={styles.songArtists}>
+                        {song.artists.map((a: any) => a.name).join(", ")}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+                {/* <Text style={styles.songDuration}>{song.duration}</Text> */}
+
                 <TouchableOpacity
-                  onPress={() =>
-                    playFromList(
-                      mappedSongs,
-                      index,
-                      { type: "album", name: album.info?.title, thumb: coverUrl } // ← PASAMOS THUMB
-                    )
-                  }
-                  activeOpacity={0.85}
+                  onPress={() => {
+                    setSelectedTrack(mappedSongs[index]);
+                    setActionsOpen(true);
+                  }}
+                  style={{ padding: 6, marginLeft: 6 }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Text style={styles.songTitle}>{song.title}</Text>
-                  {!!song.artists?.length && (
-                    <Text style={styles.songArtists}>
-                      {song.artists.map((a: any) => a.name).join(", ")}
-                    </Text>
-                  )}
+                  <Ionicons name="ellipsis-vertical" size={16} color="#bbb" />
                 </TouchableOpacity>
               </View>
-              {/* <Text style={styles.songDuration}>{song.duration}</Text> */}
-
-              <TouchableOpacity
-                onPress={() => {
-                  setSelectedTrack(mappedSongs[index]);
-                  setActionsOpen(true);
-                }}
-                style={{ padding: 6, marginLeft: 6 }}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="ellipsis-vertical" size={16} color="#bbb" />
-              </TouchableOpacity>
-            </View>
-          ))}
+            ))
+          ) : (
+            <Text style={[styles.songArtists, { marginTop: 8 }]}>
+              Songs unavailable for this release.
+            </Text>
+          )}
         </View>
 
         {/* Upcoming event */}
@@ -322,27 +425,7 @@ export default function AlbumScreen() {
                   )}
 
                   {/* Seatmap / Map links */}
-                  {/* <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
-                    {!!ev?.seatmap && (
-                      <TouchableOpacity
-                        onPress={() => router.push({ pathname: "/webview", params: { url: ev.seatmap } })}
-                        style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10, backgroundColor: "#222" }}
-                      >
-                        <Text style={{ color: "#fff" }}>Seatmap</Text>
-                      </TouchableOpacity>
-                    )}
-                   {!!mapUrl && (
-                      <TouchableOpacity
-                        onPress={() => router.push({ pathname: "/webview", params: { url: mapUrl } })}
-                        style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10, backgroundColor: "#222" }}
-                      >
-                        <Text style={{ color: "#ba8585ff" }}>Ver mapa</Text>
-                      </TouchableOpacity>
-                    )} 
-                  </View>
-                   */}
-
-                  {/* Lineup / Openers */}
+                  {/* ... */}
                   {(isFestival ? (ev?.attractions?.length > 0) : (openers.length > 0)) && (
                     <View style={{ marginTop: 10 }}>
                       <Text style={{ color: "#fff", fontWeight: "700", marginBottom: 6 }}>
@@ -492,9 +575,21 @@ export default function AlbumScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0e0e0e" },
-  hero: { height: 360, position: "relative" },
-  heroImage: { width: "100%", height: "100%", resizeMode: "cover" },
-  heroGradient: { position: "absolute", left: 0, right: 0, bottom: 0, height: "75%" },
+  hero: { height: 320, position: "relative", justifyContent: "flex-end" },
+  heroGradientFull: { ...StyleSheet.absoluteFillObject },
+  heroCoverWrap: {
+    alignSelf: "center",
+    marginBottom: 18,
+    borderRadius: 14,
+    overflow: "hidden",
+    // sombra
+    shadowColor: "#000",
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 10,
+  },
+  heroCover: { width: 220, height: 220, borderRadius: 14, resizeMode: "cover" },
   backButton: {
     position: "absolute",
     top: 40,
@@ -506,6 +601,26 @@ const styles = StyleSheet.create({
 
   infoBlock: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
   albumTitle: { fontSize: 28, fontWeight: "bold", color: "#fff" },
+
+  // NUEVO
+  artistRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 6,
+  },
+  artistAvatar: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#333",
+  },
+  artistName: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
   albumMeta: { fontSize: 13, color: "#bbb", marginTop: 6 },
   albumSubtitle: { fontSize: 14, color: "#ccc", marginTop: 2 },
 
