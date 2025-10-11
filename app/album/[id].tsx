@@ -286,6 +286,7 @@ export default function AlbumScreen() {
               </Text>
 
               <TouchableOpacity
+                disabled
                 activeOpacity={0.9}
                 /* onPress={() => ev?.url && router.push({ pathname: "/webview", params: { url: ev.url } })} */
                 style={{
@@ -347,7 +348,7 @@ export default function AlbumScreen() {
                       <Text style={{ color: "#fff", fontWeight: "700", marginBottom: 6 }}>
                         {isFestival ? "Lineup" : "With"}
                       </Text>
-                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} onStartShouldSetResponderCapture={() => true}>
                         {(isFestival ? ev.attractions : openers).slice(0, 12).map((a: any, i: number) => (
                           <View
                             key={`${a.id || a.name}-${i}`}
