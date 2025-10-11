@@ -9,7 +9,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { ArtistSkeletonLayout } from "./../../src/components/skeletons/Skeleton";
 import { useMusic } from "./../../src/hooks/use-music";
@@ -24,6 +24,15 @@ export default function ArtistScreen() {
   const { currentSong, playFromList } = useMusic();
   const { getArtist } = useMusicApi();
   const router = useRouter();
+
+  const [showAllEvents, setShowAllEvents] = useState(false);
+
+  function fmtWhen(ev: any) {
+    const d = ev?.start?.localDate || "";
+    const t = ev?.start?.localTime || "";
+    const tz = ev?.start?.timezone ? ` • ${ev.start.timezone}` : "";
+    return `${d}${t ? ` ${t}` : ""}${tz}`;
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -277,6 +286,62 @@ export default function ArtistScreen() {
           </View>
         )}
 
+        {/* Upcoming events */}
+        {Array.isArray(artist?.upcomingEvents) && artist.upcomingEvents.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.evHeaderRow}>
+              <Text style={styles.sectionTitle}>Upcoming events</Text>
+              {/* ← sin botón acá */}
+            </View>
+
+            {(showAllEvents ? artist.upcomingEvents.slice(0, 10) : artist.upcomingEvents.slice(0, 3)).map((ev: any, i: number) => {
+              const when = fmtWhen(ev);
+              const where = [ev?.venue?.city, ev?.venue?.state || ev?.venue?.country].filter(Boolean).join(", ");
+              return (
+                <TouchableOpacity
+                  key={`${ev.id}-${i}`}
+                  style={styles.evCard}
+                  activeOpacity={0.9}
+                  /* onPress={() => ev?.url && router.push({ pathname: "/webview", params: { url: ev.url } })} */
+                >
+                  <View style={styles.evLeft}>
+                    <Text numberOfLines={2} style={styles.evTitle}>{ev.name}</Text>
+
+                    <View style={styles.evRow}>
+                      <Ionicons name="calendar-outline" size={14} color="#bbb" />
+                      <Text style={styles.evMeta} numberOfLines={1}>{when || "Por confirmar"}</Text>
+                    </View>
+
+                    <View style={styles.evRow}>
+                      <Ionicons name="location-outline" size={14} color="#bbb" />
+                      <Text style={styles.evMeta} numberOfLines={1}>
+                        {ev?.venue?.name ? `${ev.venue.name}${where ? " • " : ""}` : ""}{where}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+
+            {/* línea “Show more / Show less” */}
+            {artist.upcomingEvents.length > 3 && (
+              <TouchableOpacity
+                onPress={() => setShowAllEvents(v => !v)}
+                activeOpacity={0.8}
+                style={styles.evDividerTouchable}
+              >
+                <View style={styles.evDividerRow}>
+                  <View style={styles.evDividerLine} />
+                  <Text style={styles.evDividerText}>
+                    {showAllEvents ? "Show less" : "Show more"}
+                  </Text>
+                  <View style={styles.evDividerLine} />
+                </View>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {/* Related */}
         {related.length > 0 && (
           <View style={styles.section}>
@@ -416,6 +481,59 @@ const styles = StyleSheet.create({
   albumImage: { width: "100%", height: 140, borderRadius: 8 },
   albumTitle: { color: "#fff", fontWeight: "600", marginTop: 4 },
   albumYear: { color: "#aaa", fontSize: 12 },
+
+  // Events
+  evHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+
+  evCard: {
+    backgroundColor: "#161616",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#242424",
+    padding: 12,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  evLeft: { flex: 1, gap: 6 },
+  evTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  evRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  evMeta: { color: "#bbb", fontSize: 12, flexShrink: 1 },
+
+  evMapBtn: {
+    marginLeft: 10,
+    backgroundColor: "#2a2a2a",
+    borderRadius: 10,
+    padding: 8,
+  },
+
+  // Divider “Show more / Show less”
+  evDividerTouchable: {
+    marginTop: 6,
+  },
+  evDividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 8,
+  },
+  evDividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "#2a2a2a",
+  },
+  evDividerText: {
+    color: "#ccc",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
+  },
 
   // Related
   relatedCard: { marginRight: 16, alignItems: "center" },

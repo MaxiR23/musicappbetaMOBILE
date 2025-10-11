@@ -248,6 +248,131 @@ export default function AlbumScreen() {
           ))}
         </View>
 
+        {/* Upcoming event */}
+        {!!album.upcomingEvents?.length && (() => {
+          const ev = album.upcomingEvents[0];
+          const artistName =
+            album?.info?.artistName ||
+            album?.info?.artists?.[0]?.name ||
+            "";
+
+          const isFestival =
+            /fest(ival)?/i.test(ev?.name || "") || (ev?.attractions?.length || 0) >= 4;
+
+          // supporters/openers: attractions menos la artista principal (case-insensitive)
+          const openers = (ev?.attractions || []).filter((a: any) =>
+            artistName ? (a?.name || "").toLowerCase() !== artistName.toLowerCase() : true
+          );
+
+          const whenLocal = ev?.start?.localDate
+            ? `${ev.start.localDate}${ev.start.localTime ? " " + ev.start.localTime : ""}`
+            : "TBA";
+
+          const venueLine = [ev?.venue?.name, ev?.venue?.city, ev?.venue?.country]
+            .filter(Boolean)
+            .join(" • ");
+
+          const mapUrl =
+            ev?.venue?.lat && ev?.venue?.lon
+              ? `https://maps.google.com/?q=${ev.venue.lat},${ev.venue.lon}`
+              : undefined;
+
+          const poster = ev?.image || album?.info?.thumbnails?.[0]?.url || "";
+
+          return (
+            <View style={{ paddingHorizontal: 16, marginTop: 8, gap: 10 }}>
+              <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 6 }}>
+                Upcoming event
+              </Text>
+
+              <TouchableOpacity
+                activeOpacity={0.9}
+                /* onPress={() => ev?.url && router.push({ pathname: "/webview", params: { url: ev.url } })} */
+                style={{
+                  backgroundColor: "#151515",
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: "#222",
+                  overflow: "hidden"
+                }}
+              >
+                {!!poster && (
+                  <Image source={{ uri: poster }} style={{ width: "100%", height: 160 }} />
+                )}
+                <View style={{ padding: 12 }}>
+                  <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }} numberOfLines={2}>
+                    {ev?.name}
+                  </Text>
+
+                  {/* Fecha + hora (con ícono calendario) */}
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
+                    <Ionicons name="calendar-outline" size={14} color="#bbb" />
+                    <Text style={{ color: "#bbb" }}>
+                      {whenLocal} {ev?.start?.timezone ? `• ${ev.start.timezone}` : ""}
+                    </Text>
+                  </View>
+
+                  {/* Lugar (con ícono ubicación) */}
+                  {!!venueLine && (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
+                      <Ionicons name="location-outline" size={14} color="#bbb" />
+                      <Text style={{ color: "#bbb", flexShrink: 1 }}>{venueLine}</Text>
+                    </View>
+                  )}
+
+                  {/* Seatmap / Map links */}
+                  {/* <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
+                    {!!ev?.seatmap && (
+                      <TouchableOpacity
+                        onPress={() => router.push({ pathname: "/webview", params: { url: ev.seatmap } })}
+                        style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10, backgroundColor: "#222" }}
+                      >
+                        <Text style={{ color: "#fff" }}>Seatmap</Text>
+                      </TouchableOpacity>
+                    )}
+                   {!!mapUrl && (
+                      <TouchableOpacity
+                        onPress={() => router.push({ pathname: "/webview", params: { url: mapUrl } })}
+                        style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10, backgroundColor: "#222" }}
+                      >
+                        <Text style={{ color: "#ba8585ff" }}>Ver mapa</Text>
+                      </TouchableOpacity>
+                    )} 
+                  </View>
+                   */}
+
+                  {/* Lineup / Openers */}
+                  {(isFestival ? (ev?.attractions?.length > 0) : (openers.length > 0)) && (
+                    <View style={{ marginTop: 10 }}>
+                      <Text style={{ color: "#fff", fontWeight: "700", marginBottom: 6 }}>
+                        {isFestival ? "Lineup" : "With"}
+                      </Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        {(isFestival ? ev.attractions : openers).slice(0, 12).map((a: any, i: number) => (
+                          <View
+                            key={`${a.id || a.name}-${i}`}
+                            style={{
+                              paddingVertical: 6,
+                              paddingHorizontal: 10,
+                              borderRadius: 14,
+                              backgroundColor: "#1e1e1e",
+                              borderWidth: 1,
+                              borderColor: "#2a2a2a",
+                              marginRight: 8
+                            }}
+                          >
+                            <Text style={{ color: "#ddd", fontSize: 12 }}>{a.name}</Text>
+                          </View>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            </View>
+          );
+        })()}
+
         {/* Other versions / Releases for you */}
         {(album.otherVersions?.length || album.releasesForYou?.length) ? (
           <View style={{ paddingHorizontal: 16, marginTop: 8, gap: 18 }}>
@@ -275,6 +400,38 @@ export default function AlbumScreen() {
                         </Text>
                         <Text numberOfLines={1} style={{ color: "#aaa", fontSize: 12, marginTop: 2 }}>
                           {it.type}{it.artistName ? ` • ${it.artistName}` : ""}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* More from artist */}
+            {!!album.moreFromArtist?.length && (
+              <View>
+                <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 10 }}>
+                  More from artist
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {album.moreFromArtist.map((it: any, i: number) => {
+                    const thumb =
+                      it.thumbnails?.[it.thumbnails.length - 1]?.url ||
+                      it.thumbnails?.[0]?.url || coverUrl;
+                    return (
+                      <TouchableOpacity
+                        key={`mfa-${i}-${it.id || it.title}`}
+                        style={{ width: 140, marginRight: 12 }}
+                        activeOpacity={0.85}
+                        onPress={() => router.push(`/album/${it.id}`)}
+                      >
+                        <Image source={{ uri: thumb }} style={{ width: 140, height: 140, borderRadius: 10 }} />
+                        <Text numberOfLines={2} style={{ color: "#fff", marginTop: 6, fontWeight: "600" }}>
+                          {it.title}
+                        </Text>
+                        <Text numberOfLines={1} style={{ color: "#aaa", fontSize: 12, marginTop: 2 }}>
+                          {it.type || "Album"}{it.year ? ` • ${it.year}` : ""}
                         </Text>
                       </TouchableOpacity>
                     );
