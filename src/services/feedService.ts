@@ -10,8 +10,11 @@ export async function fetchFeed({ kind = "most_played", type = "album", store = 
   const url =
     kind === "new_releases"
       ? `${BASE_URL}/feed/db/new-releases?limit=${encodeURIComponent(limit)}`
-      : `${BASE_URL}/feed/most-played?limit=${encodeURIComponent(limit)}`;
-
+      : kind === "new_singles"
+        ? `${BASE_URL}/feed/db/new-singles?limit=${encodeURIComponent(limit)}`
+        : kind === "seed_tracks"
+          ? `${BASE_URL}/feed/db/seed-tracks?limit=${encodeURIComponent(limit)}`
+          : `${BASE_URL}/feed/most-played?limit=${encodeURIComponent(limit)}`;
   console.log("[feed] GET", url);
 
   // auth como en authFetch
@@ -30,7 +33,7 @@ export async function fetchFeed({ kind = "most_played", type = "album", store = 
 
   if (!res.ok) {
     let body = "";
-    try { body = await res.text(); } catch {}
+    try { body = await res.text(); } catch { }
     console.warn(`[feed] HTTP ${res.status} ${res.statusText} — body:`, (body || "").slice(0, 1200));
     throw new Error(`feed ${kind}/${type}: ${res.status}`);
   }
@@ -38,7 +41,7 @@ export async function fetchFeed({ kind = "most_played", type = "album", store = 
   let json: any;
   try { json = await res.json(); }
   catch (err: any) {
-    let body = ""; try { body = await res.text(); } catch {}
+    let body = ""; try { body = await res.text(); } catch { }
     console.warn("[feed] JSON PARSE ERROR:", err?.message || err, "— raw body:", (body || "").slice(0, 1200));
     throw err;
   }
