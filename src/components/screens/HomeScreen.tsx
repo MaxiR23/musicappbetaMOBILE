@@ -615,7 +615,7 @@ export default function HomeScreen() {
                   <TouchableOpacity
                     key={a.id}
                     style={{ marginRight: GAP, width: SIZE }}
-                    onPress={() => router.push(`/artist/${encodeURIComponent(a.id)}`)}
+                    /* onPress={() => router.push(`/artist/${encodeURIComponent(a.id)}`)} */
                     activeOpacity={0.85}
                   >
                     <View style={{
@@ -744,7 +744,7 @@ export default function HomeScreen() {
                   <TouchableOpacity
                     key={a.id}
                     style={{ marginRight: GAP, width: SIZE }}
-                    onPress={() => router.push(`/artist/${encodeURIComponent(a.id)}`)}
+                    /* onPress={() => router.push(`/artist/${encodeURIComponent(a.id)}`)} */
                     activeOpacity={0.85}
                   >
                     <View style={{
@@ -881,7 +881,7 @@ export default function HomeScreen() {
                     <TouchableOpacity
                       key={a.id}
                       style={{ marginRight: GAP, width: SIZE }}
-                      onPress={() => router.push(`/artist/${encodeURIComponent(a.id)}`)}
+                      /* onPress={() => router.push(`/artist/${encodeURIComponent(a.id)}`)} */
                       activeOpacity={0.85}
                     >
                       <View
