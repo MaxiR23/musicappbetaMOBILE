@@ -2,7 +2,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Image,
@@ -16,71 +16,26 @@ import {
 } from "react-native";
 import DragList, { DragListRenderItemInfo } from "react-native-draglist";
 
+import PlaybackButtons from "@/src/components/PlaybackButtons";
 import PlaylistCover from "@/src/components/PlaylistCover";
 import { PlaylistSkeletonLayout } from "@/src/components/skeletons/Skeleton";
 import TrackActionsSheet from "@/src/components/TrackActionsSheet";
+import { useDetailScreen } from "@/src/hooks/use-detail-screen";
 import { useMusic } from "@/src/hooks/use-music";
 import { useMusicApi } from "@/src/hooks/use-music-api";
+
+import BackButton from "@/src/components/BackButton";
+
 import { SCRIM_GRADIENT } from "@/src/utils/colorUtils.native";
 
+import { mapPlaylistSongs } from "@/src/utils/song-mapper";
+
+import TrackRow from "@/src/components/TrackRow";
+import { formatDuration, parseDurationToMs } from "@/src/utils/durations";
+
+import { applyServerOrder, briefSong, reorderLog } from "@/src/utils/reorder-logger";
+
 const HERO_HEIGHT = 320;
-
-// ===================== LOGS SOLO REORDEN =====================
-const RELOG_ENABLED = true;
-const rlog = (tag: string, data?: any) => {
-  if (!__DEV__ || !RELOG_ENABLED) return;
-  try {
-    console.log(`REORDER:${tag}`, data ? JSON.stringify(data) : "");
-  } catch {
-    console.log(`REORDER:${tag}`);
-  }
-};
-const brief = (s: any, i: number) => ({
-  i,
-  pos1: i + 1,
-  id: s?.id,
-  internalId: s?.internalId,
-  title: s?.title,
-});
-
-// Helpers para total y parseo mm:ss / hh:mm:ss
-function formatTotal(ms: number) {
-  const totalSec = Math.floor(ms / 1000);
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  return h > 0
-    ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
-    : `${m}:${String(s).padStart(2, "0")}`;
-}
-function parseDurationToMs(d?: string) {
-  if (!d || d === "--:--") return 0;
-  const parts = d.split(":").map((n) => parseInt(n, 10) || 0);
-  if (parts.length === 3) {
-    const [h, m, s] = parts;
-    return (h * 3600 + m * 60 + s) * 1000;
-  }
-  const [m, s] = parts;
-  return (m * 60 + s) * 1000;
-}
-
-// ==== NUEVO: reconciliar con el orden “canónico” que devuelve el backend ====
-function applyServerOrder(
-  songs: any[],
-  order: { internalId: string | number; trackId?: string | number; position: number }[]
-) {
-  if (!order?.length) return songs;
-  const byInternal = new Map(order.map(o => [String(o.internalId), Number(o.position)]));
-  const byTrack    = new Map(order.map(o => [String(o.trackId ?? ""), Number(o.position)]));
-  const withPos = songs.map((s: any, i: number) => {
-    const p1 = byInternal.get(String(s.internalId));
-    const p2 = byTrack.get(String(s.id));
-    const pos = typeof p1 === "number" ? p1 : (typeof p2 === "number" ? p2 : (i + 1));
-    return { s, pos };
-  });
-  withPos.sort((a, b) => a.pos - b.pos);
-  return withPos.map(x => x.s);
-}
 
 export default function PlaylistScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -93,9 +48,6 @@ export default function PlaylistScreen() {
     moveTrackInPlaylist, // ← reordenar por POSICIONES (1-based)
   } = useMusicApi();
   const { playFromList } = useMusic();
-
-  const [loading, setLoading] = useState(true);
-  const [playlist, setPlaylist] = useState<any | null>(null);
 
   // menú superior (3 puntitos)
   const [menuOpen, setMenuOpen] = useState(false);
@@ -110,17 +62,19 @@ export default function PlaylistScreen() {
   const [editMode, setEditMode] = useState(false);
   const [editSongs, setEditSongs] = useState<any[]>([]); // snapshot para reordenar en memoria
 
-  const load = useCallback(async () => {
-    if (!id) return;
-    try {
-      const data = await getPlaylistById(id);
+  const [playlist, setPlaylist] = useState<any | null>(null);
 
-      const totalMs = (data.tracks || []).reduce(
+  // Hook que maneja la carga de la playlist con transformación
+  const { data, loading } = useDetailScreen({
+    id,
+    fetcher: getPlaylistById,
+    transformer: (rawData) => {
+      const totalMs = (rawData.tracks || []).reduce(
         (acc: number, t: any) => acc + (t?.duration_ms ?? 0),
         0
       );
 
-      const songs = (data.tracks || []).map((t: any, idx: number) => ({
+      const songs = (rawData.tracks || []).map((t: any, idx: number) => ({
         id: t.track_id,
         internalId: t.id, // id interno de la fila (DB)
         title: t.title,
@@ -129,54 +83,41 @@ export default function PlaylistScreen() {
         albumId: t.album ?? null,
         duration: t.duration_ms
           ? `${Math.floor(t.duration_ms / 60000)}:${String(
-              Math.floor((t.duration_ms % 60000) / 1000)
-            ).padStart(2, "0")}`
+            Math.floor((t.duration_ms % 60000) / 1000)
+          ).padStart(2, "0")}`
           : "--:--",
         albumCover: t.thumbnail_url || undefined,
         _i: idx + 1,
       }));
 
-      const normalized = {
-        id: data.id,
-        name: data.title,
-        description: data.description,
-        isPublic: data.is_public,
+      return {
+        id: rawData.id,
+        name: rawData.title,
+        description: rawData.description,
+        isPublic: rawData.is_public,
         songCount: songs.length,
-        duration: formatTotal(totalMs),
+        duration: formatDuration(totalMs),
         songs,
       };
+    },
+  });
 
-      setPlaylist(normalized);
-    } finally {
-      setLoading(false);
-    }
-  }, [id, getPlaylistById]);
-
+  //sincronizar data del hook con estado local (necesario para mutaciones optimistas)
   useEffect(() => {
-    setLoading(true);
-    load();
-  }, [load]);
+    if (data) {
+      setPlaylist(data);
+    }
+  }, [data]);
 
   useEffect(() => {
     if (!playlist?.songs?.length) return;
     const ids = playlist.songs.map((s: any) => s.id).filter(Boolean);
-    prefetchSongs(ids.slice(0, 30)).catch(() => {});
+    prefetchSongs(ids.slice(0, 30)).catch(() => { });
   }, [playlist, prefetchSongs]);
 
   const mappedSongs = useMemo(() => {
     if (!playlist) return [];
-    return playlist.songs.map((s: any) => ({
-      id: s.id,
-      internalId: s.internalId,
-      title: s.title,
-      artistName: s.artist,
-      artistId: s.artistId ?? null,
-      albumId: s.albumId ?? null,
-      thumbnail: s.albumCover,
-      duration: s.duration,
-      durationSeconds: null,
-      url: "",
-    }));
+    return mapPlaylistSongs(playlist.songs);
   }, [playlist]);
 
   const handlePlayAll = () => {
@@ -221,15 +162,15 @@ export default function PlaylistScreen() {
     setEditSongs(playlist.songs.map((s: any) => ({ ...s }))); // snapshot
     setEditMode(true);
     closeMenu();
-    rlog("start", {
+    reorderLog("start", {
       count: playlist.songs.length,
-      first5: playlist.songs.slice(0, 5).map(brief),
+      first5: playlist.songs.slice(0, 5).map(briefSong),
     });
   };
   const cancelEdit = () => {
     setEditMode(false);
     setEditSongs([]);
-    rlog("cancel");
+    reorderLog("cancel");
   };
   const saveEdits = () => {
     if (!playlist) {
@@ -238,9 +179,9 @@ export default function PlaylistScreen() {
     }
     setPlaylist((prev: any) => (prev ? { ...prev, songs: editSongs } : prev));
     setEditMode(false);
-    rlog("save", {
+    reorderLog("save", {
       count: editSongs.length,
-      first5: editSongs.slice(0, 5).map(brief),
+      first5: editSongs.slice(0, 5).map(briefSong),
     });
   };
 
@@ -254,37 +195,37 @@ export default function PlaylistScreen() {
       setPlaylist((prev: any) =>
         prev
           ? (() => {
-              const nextSongs = (prev.songs || []).filter(
-                (s: any) => String(s.internalId) !== String(internalId)
-              );
-              const nextTotalMs = nextSongs.reduce(
-                (acc: number, s: any) => acc + parseDurationToMs(s.duration),
-                0
-              );
-              return {
-                ...prev,
-                songs: nextSongs,
-                songCount: nextSongs.length,
-                duration: formatTotal(nextTotalMs),
-              };
-            })()
+            const nextSongs = (prev.songs || []).filter(
+              (s: any) => String(s.internalId) !== String(internalId)
+            );
+            const nextTotalMs = nextSongs.reduce(
+              (acc: number, s: any) => acc + parseDurationToMs(s.duration),
+              0
+            );
+            return {
+              ...prev,
+              songs: nextSongs,
+              songCount: nextSongs.length,
+              duration: formatDuration(nextTotalMs),
+            };
+          })()
           : prev
       );
       // Y snapshot de edición
       setEditSongs((prev) =>
         prev.filter((s: any) => String(s.internalId) !== String(internalId))
       );
-      rlog("remove", { internalId: String(internalId) });
+      reorderLog("remove", { internalId: String(internalId) });
     } catch (e: any) {
       Alert.alert("Error", e?.message || "No se pudo quitar el tema.");
-      rlog("remove:error", { msg: e?.message });
+      reorderLog("remove:error", { msg: e?.message });
     }
   };
 
   // Logs compactos al cambiar snapshot (máx 20)
   useEffect(() => {
     if (!editMode) return;
-    rlog("set", {
+    reorderLog("set", {
       len: (editSongs || []).length,
       first20: (editSongs || []).slice(0, 20).map(brief),
     });
@@ -345,9 +286,8 @@ export default function PlaylistScreen() {
             )}
 
             {/* Top buttons */}
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#fff" />
-            </TouchableOpacity>
+            <BackButton />
+
             <TouchableOpacity style={styles.moreButtonTop} onPress={openMenu}>
               <Ionicons name="ellipsis-vertical" size={18} color="#fff" />
             </TouchableOpacity>
@@ -375,63 +315,29 @@ export default function PlaylistScreen() {
           </View>
 
           {/* Botones */}
-          <View style={styles.actions}>
-            <TouchableOpacity onPress={handlePlayAll} style={styles.softButton} activeOpacity={0.85}>
-              <Ionicons name="play" size={18} color="#fff" />
-              <Text style={styles.softButtonText}>Reproducir</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={handleShuffleAll} style={styles.softButtonAlt} activeOpacity={0.85}>
-              <Ionicons name="shuffle" size={18} color="#fff" />
-              <Text style={styles.softButtonText}>Shuffle</Text>
-            </TouchableOpacity>
-          </View>
+          <PlaybackButtons
+            onPlay={handlePlayAll}
+            onShuffle={handleShuffleAll}
+          />
 
           {/* Lista de canciones */}
           <View style={{ paddingHorizontal: 16 }}>
+
             {playlist.songs.map((song: any, index: number) => (
-              <TouchableOpacity
+              <TrackRow
                 key={`${song.id}-${index}`}
+                index={index + 1}
+                title={song.title}
+                artist={song.artist}
+                thumbnail={song.albumCover}
                 onPress={() =>
                   playFromList(mappedSongs, index, { type: "playlist", name: playlist.name })
                 }
-                style={styles.row}
-                activeOpacity={0.85}
-              >
-                <View style={{ width: 24, alignItems: "center", marginRight: 6 }}>
-                  <Text style={styles.index}>{index + 1}</Text>
-                </View>
-
-                <View style={styles.thumbBox}>
-                  {song.albumCover ? (
-                    <Image source={{ uri: song.albumCover }} style={styles.thumb} />
-                  ) : (
-                    <View style={[styles.thumb, { backgroundColor: "#333" }]} />
-                  )}
-                </View>
-
-                <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text style={styles.songTitle} numberOfLines={1}>
-                    {song.title}
-                  </Text>
-                  <Text style={styles.songArtist} numberOfLines={1}>
-                    {song.artist}
-                  </Text>
-                </View>
-
-                {/* 3 puntitos por canción */}
-                <TouchableOpacity
-                  style={styles.moreBtn}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  onPress={() => {
-                    const t = mappedSongs[index]; // ya incluye internalId
-                    setSelectedTrack(t);
-                    setSheetOpen(true);
-                  }}
-                >
-                  <Ionicons name="ellipsis-vertical" size={16} color="#bbb" />
-                </TouchableOpacity>
-              </TouchableOpacity>
+                onMorePress={() => {
+                  setSelectedTrack(mappedSongs[index]);
+                  setSheetOpen(true);
+                }}
+              />
             ))}
           </View>
         </ScrollView>
@@ -480,20 +386,20 @@ export default function PlaylistScreen() {
               setPlaylist((prev: any) =>
                 prev
                   ? (() => {
-                      const nextSongs = (prev.songs || []).filter(
-                        (s: any) => String(s.internalId) !== internalId
-                      );
-                      const nextTotalMs = nextSongs.reduce(
-                        (acc: number, s: any) => acc + parseDurationToMs(s.duration),
-                        0
-                      );
-                      return {
-                        ...prev,
-                        songs: nextSongs,
-                        songCount: nextSongs.length,
-                        duration: formatTotal(nextTotalMs),
-                      };
-                    })()
+                    const nextSongs = (prev.songs || []).filter(
+                      (s: any) => String(s.internalId) !== internalId
+                    );
+                    const nextTotalMs = nextSongs.reduce(
+                      (acc: number, s: any) => acc + parseDurationToMs(s.duration),
+                      0
+                    );
+                    return {
+                      ...prev,
+                      songs: nextSongs,
+                      songCount: nextSongs.length,
+                      duration: formatDuration(nextTotalMs),
+                    };
+                  })()
                   : prev
               );
             } catch (e: any) {
@@ -590,17 +496,17 @@ export default function PlaylistScreen() {
               const before = editSongs;
               const movedItem = before[fromIndex];
 
-              rlog("onReordered", {
+              reorderLog("onReordered", {
                 fromIndex,
                 toIndex,
                 oldPos,
                 newPos,
                 moved: movedItem
                   ? {
-                      internalId: movedItem.internalId,
-                      id: movedItem.id,
-                      title: movedItem.title,
-                    }
+                    internalId: movedItem.internalId,
+                    id: movedItem.id,
+                    title: movedItem.title,
+                  }
                   : null,
               });
 
@@ -612,9 +518,9 @@ export default function PlaylistScreen() {
                 return draft;
               })();
 
-              rlog("optimistic", {
-                first5_before: before.slice(0, 5).map(brief),
-                first5_after: optimistic.slice(0, 5).map(brief),
+              reorderLog("optimistic", {
+                first5_before: before.slice(0, 5).map(briefSong),
+                first5_after: optimistic.slice(0, 5).map(briefSong),
               });
 
               setEditSongs(optimistic);
@@ -622,14 +528,14 @@ export default function PlaylistScreen() {
               // Persistir en backend (POSICIONES) y reconciliar con ORDEN CANÓNICO
               try {
                 if (playlist?.id) {
-                  rlog("persist:request", {
+                  reorderLog("persist:request", {
                     playlistId: playlist.id,
                     oldPosition: oldPos,
                     newPosition: newPos,
                   });
 
                   const res: any = await moveTrackInPlaylist(playlist.id, oldPos, newPos);
-                  rlog("persist:ok", { gaps: res?.gaps, dups: res?.dups });
+                  reorderLog("persist:ok", { gaps: res?.gaps, dups: res?.dups });
 
                   if (res?.order?.length) {
                     // Corrige huecos/duplicados según el backend
@@ -638,7 +544,7 @@ export default function PlaylistScreen() {
                   }
                 }
               } catch (e: any) {
-                rlog("persist:error", { msg: e?.message });
+                reorderLog("persist:error", { msg: e?.message });
                 // Rollback si falla
                 setEditSongs(before);
                 Alert.alert("No se pudo reordenar", e?.message || "Intentá de nuevo.");
@@ -648,7 +554,7 @@ export default function PlaylistScreen() {
               const { item, onDragStart, onDragEnd, isActive, index } = info;
 
               const handlePressIn = () => {
-                rlog("pressIn", {
+                reorderLog("pressIn", {
                   index,
                   pos1: index + 1,
                   internalId: item?.internalId,
@@ -658,7 +564,7 @@ export default function PlaylistScreen() {
                 onDragStart();
               };
               const handlePressOut = () => {
-                rlog("pressOut", {
+                reorderLog("pressOut", {
                   index,
                   pos1: index + 1,
                   internalId: item?.internalId,
@@ -752,7 +658,7 @@ export default function PlaylistScreen() {
       </Modal>
 
       {/* Sheet acciones (no se usa en edición, lo dejamos cerrado) */}
-      <TrackActionsSheet open={false} onOpenChange={() => {}} track={null} playlistId={playlist.id} />
+      <TrackActionsSheet open={false} onOpenChange={() => { }} track={null} playlistId={playlist.id} />
     </>
   );
 }
@@ -760,14 +666,6 @@ export default function PlaylistScreen() {
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: "#0e0e0e" },
 
-  backButton: {
-    position: "absolute",
-    top: 40,
-    left: 20,
-    backgroundColor: "#0008",
-    padding: 8,
-    borderRadius: 20,
-  },
   moreButtonTop: {
     position: "absolute",
     top: 40,
@@ -864,15 +762,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#222",
   },
-  index: { color: "#aaa", fontSize: 12 },
+
 
   dragHandle: { width: 28, alignItems: "center", marginRight: 6, justifyContent: "center" },
   removeBtn: { width: 28, alignItems: "center", marginRight: 6, justifyContent: "center" },
-
-  thumbBox: { width: 40, height: 40, borderRadius: 6, overflow: "hidden" },
-  thumb: { width: "100%", height: "100%", resizeMode: "cover" },
-  songTitle: { color: "#fff", fontWeight: "600", fontSize: 14 },
-  songArtist: { color: "#aaa", fontSize: 12, marginTop: 2 },
   duration: { color: "#bbb", fontSize: 12, width: 50, textAlign: "right", marginLeft: 10 },
 
   moreBtn: { marginLeft: 6, padding: 4 },

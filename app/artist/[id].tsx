@@ -1,7 +1,7 @@
+import { formatEventDateTime } from "@/src/utils/durations";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Image,
   ScrollView,
@@ -12,14 +12,19 @@ import {
   View
 } from "react-native";
 import { ArtistSkeletonLayout } from "./../../src/components/skeletons/Skeleton";
+import { useDetailScreen } from "./../../src/hooks/use-detail-screen";
 import { useMusic } from "./../../src/hooks/use-music";
 import { useMusicApi } from "./../../src/hooks/use-music-api";
 import { upgradeYtmImage } from "./../../src/utils/ytmImage";
 
+import { mapArtistTopSongs } from "@/src/utils/song-mapper";
+
+import HeroSection from "@/src/components/HeroSection";
+import HorizontalScrollSection from "@/src/components/HorizontalScrollSection";
+import TrackRow from "@/src/components/TrackRow";
+
 export default function ArtistScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [artist, setArtist] = useState<any | null>(null);
-  const [loading, setLoading] = useState(false);
 
   const { currentSong, playFromList } = useMusic();
   const { getArtist } = useMusicApi();
@@ -27,63 +32,17 @@ export default function ArtistScreen() {
 
   const [showAllEvents, setShowAllEvents] = useState(false);
 
-  function fmtWhen(ev: any) {
-    const d = ev?.start?.localDate || "";
-    const t = ev?.start?.localTime || "";
-    const tz = ev?.start?.timezone ? ` • ${ev.start.timezone}` : "";
-    return `${d}${t ? ` ${t}` : ""}${tz}`;
-  }
-
-  useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    getArtist(id as string)
-      .then((data) => {
-        setArtist(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error cargando artista:", err);
-        setLoading(false);
-      });
-  }, [id]);
+  //hook que maneja la carga del artista
+  const { data: artist, loading } = useDetailScreen({
+    id,
+    fetcher: getArtist,
+  });
 
   const mappedTop = useMemo(() => {
     if (!artist) return [];
-    const artistIdFromRoute = (id ?? null) as string | null;
-
-    return artist.topSongs.map((s: any) => {
-      const artistsArr = Array.isArray(s.artists) ? s.artists : [];
-      const primary = artistsArr[0] || null;
-
-      const artistName =
-        s.artistName ??
-        (artistsArr.length ? artistsArr.map((a: any) => a.name).join(", ") : artist.header.name);
-
-      const artistId =
-        s.artistId ??
-        primary?.id ??
-        artistIdFromRoute ??
-        null;
-
-      const trackId = s.videoId ?? s.id;
-
-      const albumId = s.albumId ?? s.album?.id ?? null;
-
-      return {
-        id: trackId,
-        title: s.title,
-        thumbnail: s.thumbnail || artist.header.thumbnails?.[0]?.url,
-        duration: s.duration,
-        durationSeconds: s.durationSeconds,
-
-        artistName,
-        artistId,
-        artists: artistsArr,
-
-        albumId,
-        url: "",
-      };
+    return mapArtistTopSongs(artist.topSongs, {
+      artistId: id ?? null,
+      defaultArtistName: artist.header?.name,
     });
   }, [artist, id]);
 
@@ -135,36 +94,17 @@ export default function ArtistScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Hero */}
-        <View style={[styles.hero, styles.darkBg]}>
-          {heroUrl ? (
-            <Image source={{ uri: heroUrl }} style={styles.heroImage} />
-          ) : (
-            <View style={[styles.heroImage, styles.darkBg]} />
-          )}
-
-          {/* Gradiente inferior */}
-          <LinearGradient
-            colors={[
-              "transparent",
-              "rgba(0,0,0,0.35)",
-              "rgba(0,0,0,0.75)",
-              "#0e0e0e",
-            ]}
-            locations={[0.55, 0.80, 0.95, 1]}
-            style={styles.heroGradient}
-          />
-
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-
+        <HeroSection
+          backgroundImage={heroUrl}
+          height={300}
+          useDirectImage={true}
+        >
           <View style={styles.heroInfo}>
             <Text style={styles.artistName}>{artist?.header?.name}</Text>
             <Text style={styles.listeners}>{artist?.header?.monthlyListeners}</Text>
           </View>
-        </View>
+        </HeroSection>
 
-        {/* Nuevo lanzamiento */}
         {/* Nuevo lanzamiento */}
         {Array.isArray(artist?.newReleases) && artist.newReleases[0] && (() => {
           const nr = artist.newReleases[0];
@@ -215,75 +155,52 @@ export default function ArtistScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Canciones Populares</Text>
           {artist.topSongs.map((song: any, index: number) => (
-            <TouchableOpacity
-              key={song.id || song.videoId || `${index}`}
-              style={styles.songRow}
+            <TrackRow
+              key={`topsong-${song.id || song.videoId}-${index}`}
+              index={index + 1}
+              title={song.title}
+              thumbnail={upgradeYtmImage(song.thumbnail, 256)}
+              showDuration={false}
+              showMoreButton={false}
               onPress={() =>
-                // 👇 PASAMOS thumb en el source para que el Provider lo loguee en metadata
-                playFromList(
-                  mappedTop,
-                  index,
-                  { type: "artist", name: artist.header?.name, thumb: heroUrl }
-                )
+                playFromList(mappedTop, index, {
+                  type: "artist",
+                  name: artist.header?.name,
+                  thumb: heroUrl,
+                })
               }
-            >
-              <Text style={styles.songIndex}>{index + 1}</Text>
-              <Image source={{ uri: upgradeYtmImage(song.thumbnail, 256) }} style={styles.songThumb} />
-              <Text style={styles.songTitle}>{song.title}</Text>
-              <Text style={styles.songDuration}>{song.duration}</Text>
-            </TouchableOpacity>
+            />
           ))}
         </View>
 
         {/* Albums */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Álbumes</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {artist.albums.map((album: any) => (
-              <TouchableOpacity
-                key={album.id}
-                style={styles.albumCard}
-                onPress={() => router.push(`/album/${album.id}`)}
-              >
-                <Image
-                  source={{ uri: upgradeYtmImage(album.thumbnails?.[album.thumbnails?.length - 1]?.url, 512) }}
-                  style={styles.albumImage}
-                />
-                <Text style={styles.albumTitle} numberOfLines={1} ellipsizeMode="tail">{album.title}</Text>
-                <Text style={styles.albumYear}>{album.year}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+        <HorizontalScrollSection
+          title="Álbumes"
+          items={artist.albums}
+          keyExtractor={(album, idx) => `album-${album.id}-${idx}`}
+          imageExtractor={(album) =>
+            upgradeYtmImage(album.thumbnails?.[album.thumbnails?.length - 1]?.url, 512)
+          }
+          titleExtractor={(album) => album.title}
+          subtitleExtractor={(album) => album.year}
+          onItemPress={(album) => router.push(`/album/${album.id}`)}
+        />
 
         {/* Singles / EPs */}
         {Array.isArray(artist.singles_eps) && artist.singles_eps.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Singles / EPs</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {artist.singles_eps.map((s: any) => (
-                <TouchableOpacity
-                  key={s.id}
-                  style={styles.albumCard}
-                  onPress={() => router.push(`/album/${s.id}`)}  // ← mismo redirect que álbum
-                >
-                  <Image
-                    source={{
-                      uri: upgradeYtmImage(
-                        s.thumbnails?.[s.thumbnails?.length - 1]?.url,
-                        512
-                      ),
-                    }}
-                    style={styles.albumImage}
-                  />
-                  <Text style={styles.albumTitle} numberOfLines={1} ellipsizeMode="tail">{s.title}</Text>
-                  <Text style={styles.albumYear}>
-                    {s.type || ""}{s.type && s.year ? " • " : ""}{s.year || ""}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+          <HorizontalScrollSection
+            title="Singles / EPs"
+            items={artist.singles_eps}
+            keyExtractor={(single, idx) => `single-${single.id}-${idx}`}
+            imageExtractor={(single) =>
+              upgradeYtmImage(single.thumbnails?.[single.thumbnails?.length - 1]?.url, 512)
+            }
+            titleExtractor={(single) => single.title}
+            subtitleExtractor={(single) =>
+              `${single.type || ""}${single.type && single.year ? " • " : ""}${single.year || ""}`
+            }
+            onItemPress={(single) => router.push(`/album/${single.id}`)}
+          />
         )}
 
         {/* Upcoming events */}
@@ -295,14 +212,14 @@ export default function ArtistScreen() {
             </View>
 
             {(showAllEvents ? artist.upcomingEvents.slice(0, 10) : artist.upcomingEvents.slice(0, 3)).map((ev: any, i: number) => {
-              const when = fmtWhen(ev);
+              const when = formatEventDateTime(ev);
               const where = [ev?.venue?.city, ev?.venue?.state || ev?.venue?.country].filter(Boolean).join(", ");
               return (
                 <TouchableOpacity
-                  key={`${ev.id}-${i}`}
+                  key={`event-${ev.id || 'no-id'}-${i}`}
                   style={styles.evCard}
                   activeOpacity={0.9}
-                  /* onPress={() => ev?.url && router.push({ pathname: "/webview", params: { url: ev.url } })} */
+                /* onPress={() => ev?.url && router.push({ pathname: "/webview", params: { url: ev.url } })} */
                 >
                   <View style={styles.evLeft}>
                     <Text numberOfLines={2} style={styles.evTitle}>{ev.name}</Text>
@@ -344,34 +261,21 @@ export default function ArtistScreen() {
 
         {/* Related */}
         {related.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Artistas Relacionados</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {related.map((rel: any) => (
-                <TouchableOpacity
-                  key={rel.id}
-                  style={styles.relatedCard}
-                  onPress={() => {
-                    if (String(rel.id) === String(id)) return;
-                    router.push(`/artist/${rel.id}`);
-                  }}
-                >
-                  {rel.img ? (
-                    <Image
-                      source={{ uri: upgradeYtmImage(rel.img, 256) }}
-                      style={styles.relatedImage}
-                    />
-                  ) : (
-                    <View style={[styles.relatedImage, styles.darkBg]} />
-                  )}
-                  <Text style={styles.relatedName}>{rel.name}</Text>
-                  {!!rel.subtitle && (
-                    <Text style={styles.relatedSubtitle}>{rel.subtitle}</Text>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+          <HorizontalScrollSection
+            title="Artistas Relacionados"
+            items={related}
+            keyExtractor={(rel, idx) => `related-${rel.id}-${idx}`}
+            imageExtractor={(rel) => upgradeYtmImage(rel.img, 256)}
+            titleExtractor={(rel) => rel.name}
+            subtitleExtractor={(rel) => rel.subtitle}
+            onItemPress={(rel) => {
+              if (String(rel.id) === String(id)) return;
+              router.push(`/artist/${rel.id}`);
+            }}
+            cardWidth={100}
+            imageHeight={100}
+            circularImage={true}
+          />
         )}
       </ScrollView>
     </>
@@ -383,21 +287,10 @@ const styles = StyleSheet.create({
   darkBg: { backgroundColor: "#0e0e0e" },
 
   // Hero
-  hero: { height: 300, position: "relative" },
-  heroImage: { width: "100%", height: "100%", resizeMode: "cover" },
-  heroGradient: { position: "absolute", left: 0, right: 0, bottom: 0, height: "65%" },
-
-  backButton: {
-    position: "absolute", top: 40, left: 20, backgroundColor: "#0008", padding: 8, borderRadius: 20,
-  },
   heroInfo: { position: "absolute", bottom: 20, left: 20 },
   avatar: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: "#1DB954" },
   artistName: { fontSize: 28, fontWeight: "bold", color: "#fff", marginTop: 8 },
   listeners: { fontSize: 14, color: "#ccc" },
-
-  // Sections
-  section: { padding: 16 },
-  sectionTitle: { fontSize: 20, fontWeight: "bold", color: "#fff", marginBottom: 12 },
 
   // Nuevo lanzamiento
   // wrapper del card
@@ -469,19 +362,6 @@ const styles = StyleSheet.create({
   nrArtist: { color: "#ddd", fontSize: 14, },
   nrMeta: { color: "#9aa", fontSize: 12 },
 
-  // Top Songs
-  songRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
-  songIndex: { color: "#aaa", width: 20, textAlign: "center" },
-  songThumb: { width: 40, height: 40, borderRadius: 4, marginHorizontal: 8 },
-  songTitle: { flex: 1, color: "#fff" },
-  songDuration: { color: "#aaa", width: 50, textAlign: "right" },
-
-  // Albums
-  albumCard: { marginRight: 16, width: 140 },
-  albumImage: { width: "100%", height: 140, borderRadius: 8 },
-  albumTitle: { color: "#fff", fontWeight: "600", marginTop: 4 },
-  albumYear: { color: "#aaa", fontSize: 12 },
-
   // Events
   evHeaderRow: {
     flexDirection: "row",
@@ -534,10 +414,4 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     textTransform: "uppercase",
   },
-
-  // Related
-  relatedCard: { marginRight: 16, alignItems: "center" },
-  relatedImage: { width: 100, height: 100, borderRadius: 50 },
-  relatedName: { color: "#fff", marginTop: 6, fontWeight: "600" },
-  relatedSubtitle: { color: "#aaa", fontSize: 12 },
 });
