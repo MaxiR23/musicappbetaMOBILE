@@ -284,6 +284,19 @@ export default function ArtistScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0e0e0e" },
+
+  section: {
+    paddingHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 12,
+  },
+
   darkBg: { backgroundColor: "#0e0e0e" },
 
   // Hero
