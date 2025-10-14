@@ -2,7 +2,6 @@ import PlaylistCover from "@/src/components/PlaylistCover";
 import { useMusic } from "@/src/hooks/use-music";
 import { useMusicApi } from "@/src/hooks/use-music-api";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -23,8 +22,11 @@ import { supabase } from "@/src/lib/supabase";
 import { fetchFeed } from "@/src/services/feedService";
 import { fetchRecommendations } from "@/src/services/recommendService";
 
-// 👇 NUEVO: cache genérico
 import { cacheWrap, DAY_MS } from "@/src/utils/cache";
+import HorizontalScrollSection from "../HorizontalScrollSection";
+
+import { getInitials, pickGradient } from "@/src/utils/avatar";
+import SimilarToHeader from "../SimilarToHeader";
 
 type RecentItem = {
   type: "album" | "artist";
@@ -33,62 +35,6 @@ type RecentItem = {
   name?: string | null;
   thumbnail_url?: string | null;
 };
-
-// ───────── helpers avatar (gradiente + iniciales) ─────────
-const GRADIENTS: [string, string][] = [
-  ["#ff9966", "#ff5e62"],
-  ["#36D1DC", "#5B86E5"],
-  ["#a18cd1", "#fbc2eb"],
-  ["#7F00FF", "#E100FF"],
-  ["#00c6ff", "#0072ff"],
-  ["#11998e", "#38ef7d"],
-  ["#f7971e", "#ffd200"],
-  ["#fc5c7d", "#6a82fb"],
-];
-
-function hashStr(s: string) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return h;
-}
-function pickGradient(seed: string) {
-  const idx = hashStr(seed) % GRADIENTS.length;
-  return GRADIENTS[idx];
-}
-function getInitials(nameOrEmail: string) {
-  if (!nameOrEmail) return "U";
-  const name = nameOrEmail.trim();
-  const base = name.includes("@") ? name.split("@")[0] : name;
-  const parts = base.split(/\s+/).filter(Boolean);
-  const initials = (parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "");
-  return initials.toUpperCase() || "U";
-}
-
-/** ── NUEVO: encabezado reutilizable “More like …” (thumb + 2 líneas) ── */
-function SimilarHeader({ name, thumb }: { name?: string | null; thumb?: string | null }) {
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10 }}>
-      {thumb ? (
-        <Image source={{ uri: thumb }} style={{ width: 48, height: 48, borderRadius: 24 }} />
-      ) : (
-        <View
-          style={{
-            width: 48, height: 48, borderRadius: 24, backgroundColor: "#222",
-            alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <Ionicons name="person-outline" size={22} color="#777" />
-        </View>
-      )}
-      <View style={{ flexShrink: 1 }}>
-        <Text style={{ color: "#aaa", fontSize: 13, fontWeight: "600" }}>More like</Text>
-        <Text numberOfLines={1} style={{ color: "#fff", fontSize: 18, fontWeight: "700" }}>
-          {name || "Artista"}
-        </Text>
-      </View>
-    </View>
-  );
-}
 
 export default function HomeScreen() {
   const [query, setQuery] = useState("");
@@ -164,6 +110,9 @@ export default function HomeScreen() {
     () => pickGradient(userId || userEmail || userName || "seed"),
     [userId, userEmail, userName]
   );
+  const playlistsWithCreate = useMemo(() => {
+    return [{ id: '__create__', isCreateButton: true }, ...playlists];
+  }, [playlists]);
 
   const refreshPlaylists = useCallback(async () => {
     try {
@@ -283,31 +232,31 @@ export default function HomeScreen() {
 
   const ready = !!userId;
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!ready) return;
-      refreshPlaylists();
-      refreshRecent();
-      // ✅ feed
+  // Carga inicial - solo lo importante
+  useEffect(() => {
+    console.log('🏠 [HOME] Primera carga');
+    if (!ready) return;
+
+    refreshPlaylists();
+    refreshRecent();
+  }, [ready]);
+
+  // Carga secundaria - con un pequeño delay
+  useEffect(() => {
+    if (!ready) return;
+
+    const timer = setTimeout(() => {
+      console.log('🏠 [HOME] Carga secundaria');
       refreshNewReleases();
       refreshTopAlbums();
       refreshTopTracks();
-      // ✅ NUEVO
       refreshNewSingles();
       refreshSeedTracks();
       refreshRecommendations();
-    }, [
-      ready,
-      refreshPlaylists,
-      refreshRecent,
-      refreshNewReleases,
-      refreshTopAlbums,
-      refreshTopTracks,
-      refreshNewSingles,
-      refreshSeedTracks,
-      refreshRecommendations
-    ])
-  );
+    }, 100); // 100ms de delay
+
+    return () => clearTimeout(timer);
+  }, [ready]);
 
   // Solo mostramos recientes con info visible (evita cajas vacías)
   const recentVisible = useMemo(
@@ -340,11 +289,6 @@ export default function HomeScreen() {
     const s = items2?.[0]?.similarTo;
     return s ? { name: s.name, thumb: s.thumbnail } : null;
   }, [items2]);
-
-  async function handleSearch() {
-    const data = await searchSongs(query);
-    setResults(data.songs || []);
-  }
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -429,541 +373,310 @@ export default function HomeScreen() {
         </View>
 
         {/* 🔥 Tus playlists */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { fontSize: 16 }]}>Tus playlists</Text>
+        {/* 🔥 Tus playlists */}
+        <HorizontalScrollSection
+          title="Tus playlists"
+          items={playlistsWithCreate}
+          keyExtractor={(pl) => String(pl.id)}
+          imageExtractor={() => ""} // no usado, usamos renderItem
+          titleExtractor={() => ""} // no usado, usamos renderItem
+          onItemPress={() => { }} // no usado, usamos renderItem
+          cardWidth={140}
+          imageHeight={140}
+          renderItem={(pl) => {
+            // Botón crear
+            if (pl.isCreateButton) {
+              return (
+                <TouchableOpacity
+                  style={{ width: 140, height: 140, borderRadius: 16, backgroundColor: "#1a1a1a", alignItems: "center", justifyContent: "center" }}
+                  onPress={() => setCreateOpen(true)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="add" size={28} color="#fff" />
+                  <Text style={{ color: "#fff", marginTop: 8, fontWeight: "600", fontSize: 13 }}>
+                    Crear playlist
+                  </Text>
+                </TouchableOpacity>
+              );
+            }
 
-          {/* ⬇️ Agregá este ScrollView horizontal */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingRight: 2 }}
-          >
-            <View style={styles.popularRow}>
-              {/* NO TOCAR: botón crear */}
+            // Tarjetas de playlists
+            const imagesFromTracks = (pl?.playlist_tracks || [])
+              .map((t: any) => t?.tracks?.thumbnail_url || t?.thumbnail_url)
+              .filter(Boolean);
+            const images = pl?.cover_url ? [pl.cover_url, ...imagesFromTracks] : imagesFromTracks;
+            const SIZE = 140, RADIUS = 16;
+
+            return (
               <TouchableOpacity
-                style={{ width: 140, height: 140, borderRadius: 16, backgroundColor: "#1a1a1a", alignItems: "center", justifyContent: "center" }}
-                onPress={() => setCreateOpen(true)}
+                style={{ width: SIZE }}
+                onPress={() => router.push(`/playlist/${encodeURIComponent(pl.id)}`)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="add" size={28} color="#fff" />
-                <Text style={{ color: "#fff", marginTop: 8, fontWeight: "600", fontSize: 13 }}>
-                  Crear playlist
-                </Text>
+                <View
+                  style={{
+                    width: SIZE,
+                    height: SIZE,
+                    borderRadius: RADIUS,
+                    overflow: "hidden",
+                    backgroundColor: "#1a1a1a",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {images.length > 0 ? (
+                    <PlaylistCover images={images} size={SIZE} borderRadius={RADIUS} />
+                  ) : (
+                    <Ionicons name="musical-notes" size={28} color="#777" />
+                  )}
+                </View>
+
+                {!!(pl?.title || pl?.name) && (
+                  <Text numberOfLines={1} style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13, marginLeft: 8 }}>
+                    {pl.title ?? pl.name}
+                  </Text>
+                )}
               </TouchableOpacity>
-
-              {/* Tarjetas de playlists */}
-              {playlists.map((pl) => {
-                const imagesFromTracks = (pl?.playlist_tracks || [])
-                  .map((t: any) => t?.tracks?.thumbnail_url || t?.thumbnail_url)
-                  .filter(Boolean);
-                const images = pl?.cover_url ? [pl.cover_url, ...imagesFromTracks] : imagesFromTracks;
-                const SIZE = 140, RADIUS = 16;
-
-                return (
-                  <TouchableOpacity
-                    key={`${pl.id}-${pl.updated_at ?? ""}`}
-                    style={{ width: SIZE }}
-                    onPress={() => router.push(`/playlist/${encodeURIComponent(pl.id)}`)}
-                    activeOpacity={0.8}
-                  >
-                    <View
-                      style={{
-                        width: SIZE,
-                        height: SIZE,
-                        borderRadius: RADIUS,
-                        overflow: "hidden",
-                        backgroundColor: "#1a1a1a",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {images.length > 0 ? (
-                        <PlaylistCover images={images} size={SIZE} borderRadius={RADIUS} />
-                      ) : (
-                        <Ionicons name="musical-notes" size={28} color="#777" />
-                      )}
-                    </View>
-
-                    {!!(pl?.title || pl?.name) && (
-                      <Text numberOfLines={1} style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13, marginLeft: 8 }}>
-                        {pl.title ?? pl.name}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </ScrollView>
-        </View>
+            );
+          }}
+        />
 
         {/* 🆕 Escuchados recientemente — compacto */}
         {recentVisible.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { fontSize: 16 }]}>Escuchados recientemente</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {recentVisible.map((it) => {
-                const SIZE = 120;
-                const GAP = 12;
-                const isArtist = it.type === "artist";
-                const radius = isArtist ? SIZE / 2 : 16;
+          <HorizontalScrollSection
+            title="Escuchados recientemente"
+            items={recentVisible}
+            keyExtractor={(it, idx) => `${it.type}:${it.id}:${it.occurred_at}:${idx}`}
+            // ignorados porque usamos renderItem
+            imageExtractor={() => ""}
+            titleExtractor={() => ""}
+            onItemPress={() => { }}
+            cardWidth={120}
+            imageHeight={120}
+            renderItem={(it, idx) => {
+              const SIZE = 120;
+              const isArtist = it.type === "artist";
+              const radius = isArtist ? SIZE / 2 : 16;
 
-                return (
-                  <TouchableOpacity
-                    key={`${it.type}:${it.id}:${it.occurred_at}`}
-                    style={{ marginRight: GAP, width: SIZE }}
-                    onPress={() =>
-                      router.push(
-                        isArtist
-                          ? `/artist/${encodeURIComponent(it.id)}`
-                          : `/album/${encodeURIComponent(it.id)}`
-                      )
-                    }
-                    activeOpacity={0.85}
+              return (
+                <TouchableOpacity
+                  style={{ width: SIZE }}
+                  onPress={() =>
+                    router.push(
+                      isArtist
+                        ? `/artist/${encodeURIComponent(it.id)}`
+                        : `/album/${encodeURIComponent(it.id)}`
+                    )
+                  }
+                  activeOpacity={0.85}
+                >
+                  <View
+                    style={{
+                      width: SIZE,
+                      height: SIZE,
+                      borderRadius: radius,
+                      overflow: "hidden",
+                      backgroundColor: "#333",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
                   >
-                    <View
-                      style={{
-                        width: SIZE,
-                        height: SIZE,
-                        borderRadius: radius,
-                        overflow: "hidden",
-                        backgroundColor: "#333",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {it.thumbnail_url ? (
-                        <Image source={{ uri: it.thumbnail_url }} style={{ width: SIZE, height: SIZE }} />
-                      ) : (
-                        <Ionicons name="musical-notes-outline" size={22} color="#777" />
-                      )}
-                    </View>
-
-                    {!!it.name && (
-                      <Text
-                        numberOfLines={1}
-                        style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13 }}
-                      >
-                        {it.name}
-                      </Text>
+                    {it.thumbnail_url ? (
+                      <Image source={{ uri: it.thumbnail_url }} style={{ width: SIZE, height: SIZE }} />
+                    ) : (
+                      <Ionicons name="musical-notes-outline" size={22} color="#777" />
                     )}
-                    <Text style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>
-                      {isArtist ? "Artista" : "Álbum"}
+                  </View>
+
+                  {!!it.name && (
+                    <Text numberOfLines={1} style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13 }}>
+                      {it.name}
                     </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+                  )}
+                  <Text style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>
+                    {isArtist ? "Artista" : "Álbum"}
+                  </Text>
+                </TouchableOpacity>
+              );
+            }}
+          />
         )}
 
         {/* 🆕 Nuevos lanzamientos (álbumes) */}
         {newReleases.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { fontSize: 16 }]}>Nuevos lanzamientos</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {newReleases.map((al) => {
-                const SIZE = 120;
-                const GAP = 12;
-                return (
-                  <TouchableOpacity
-                    key={al.id}
-                    style={{ marginRight: GAP, width: SIZE }}
-                    onPress={() => router.push(`/album/${encodeURIComponent(al.id)}`)}
-                    activeOpacity={0.85}
-                  >
-                    <View
-                      style={{
-                        width: SIZE, height: SIZE, borderRadius: 16, overflow: "hidden",
-                        backgroundColor: "#333", alignItems: "center", justifyContent: "center",
-                      }}
-                    >
-                      {al.thumb ? (
-                        <Image source={{ uri: al.thumb }} style={{ width: SIZE, height: SIZE }} />
-                      ) : (
-                        <Ionicons name="musical-notes-outline" size={22} color="#777" />
-                      )}
-                    </View>
-                    {!!al.title && (
-                      <Text numberOfLines={1} style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13 }}>
-                        {al.title}
-                      </Text>
-                    )}
-                    {!!al.artist && (
-                      <Text numberOfLines={1} style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>
-                        {al.artist}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+          <HorizontalScrollSection
+            title="Nuevos lanzamientos"
+            items={newReleases}
+            keyExtractor={(al) => String(al.id)}
+            imageExtractor={(al) => al.thumb}
+            titleExtractor={(al) => al.title}
+            subtitleExtractor={(al) => al.artist}
+            onItemPress={(al) => router.push(`/album/${encodeURIComponent(al.id)}`)}
+            cardWidth={120}
+            imageHeight={120}
+            circularImage={false}
+          />
         )}
 
         {/* ⭐ Similar to (1) — colocado ANTES de “Más escuchados · Álbumes” */}
         {!!items1.length && (
-          <View style={styles.section}>
-            <SimilarHeader name={seed1?.name} thumb={seed1?.thumb} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {items1.map((a: any) => {
-                const SIZE = 120, GAP = 12;
-                const thumb =
-                  Array.isArray(a.thumbnails) && a.thumbnails.length > 0
-                    ? a.thumbnails[a.thumbnails.length - 1]?.url
-                    : null;
-                return (
-                  <TouchableOpacity
-                    key={a.id}
-                    style={{ marginRight: GAP, width: SIZE }}
-                    onPress={() => router.push(`/artist/${encodeURIComponent(a.id)}`)}
-                    activeOpacity={0.85}
-                  >
-                    <View style={{
-                      width: SIZE, height: SIZE, borderRadius: SIZE / 2, overflow: "hidden",
-                      backgroundColor: "#333", alignItems: "center", justifyContent: "center",
-                    }}>
-                      {thumb ? (
-                        <Image source={{ uri: thumb }} style={{ width: SIZE, height: SIZE }} />
-                      ) : (
-                        <Ionicons name="person-circle-outline" size={40} color="#777" />
-                      )}
-                    </View>
-                    {!!a.name && (
-                      <Text numberOfLines={1} style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13 }}>
-                        {a.name}
-                      </Text>
-                    )}
-                    <Text style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>Artista</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+          <>
+            <SimilarToHeader name={seed1?.name} thumb={seed1?.thumb} />
+            <HorizontalScrollSection
+              title={`More like ${seed1?.name ?? "Artista"}`}
+              items={items1}
+              keyExtractor={(a, idx) => `${a.id}-${idx}`}
+              imageExtractor={(a) =>
+                Array.isArray(a.thumbnails) && a.thumbnails.length
+                  ? a.thumbnails[a.thumbnails.length - 1]?.url
+                  : undefined
+              }
+              titleExtractor={(a) => a.name}
+              subtitleExtractor={() => "Artista"}
+              onItemPress={(a) => router.push(`/artist/${encodeURIComponent(a.id)}`)}
+              cardWidth={120}
+              imageHeight={120}
+              circularImage
+            />
+          </>
         )}
 
         {/* 🔝 Más escuchados · Álbumes */}
         {topAlbums.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { fontSize: 16 }]}>Más escuchados · Álbumes</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {topAlbums.map((al) => {
-                const SIZE = 120;
-                const GAP = 12;
-                return (
-                  <TouchableOpacity
-                    key={al.id}
-                    style={{ marginRight: GAP, width: SIZE }}
-                    onPress={() => router.push(`/album/${encodeURIComponent(al.id)}`)}
-                    activeOpacity={0.85}
-                  >
-                    <View
-                      style={{
-                        width: SIZE, height: SIZE, borderRadius: 16, overflow: "hidden",
-                        backgroundColor: "#333", alignItems: "center", justifyContent: "center",
-                      }}
-                    >
-                      {al.thumb ? (
-                        <Image source={{ uri: al.thumb }} style={{ width: SIZE, height: SIZE }} />
-                      ) : (
-                        <Ionicons name="musical-notes-outline" size={22} color="#777" />
-                      )}
-                    </View>
-                    {!!al.title && (
-                      <Text numberOfLines={1} style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13 }}>
-                        {al.title}
-                      </Text>
-                    )}
-                    {!!al.artist && (
-                      <Text numberOfLines={1} style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>
-                        {al.artist}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+          <HorizontalScrollSection
+            title="Más escuchados · Álbumes"
+            items={topAlbums}
+            keyExtractor={(al) => String(al.id)}
+            imageExtractor={(al) => al.thumb}
+            titleExtractor={(al) => al.title}
+            subtitleExtractor={(al) => al.artist}
+            onItemPress={(al) => router.push(`/album/${encodeURIComponent(al.id)}`)}
+            cardWidth={120}
+            imageHeight={120}
+          />
         )}
 
         {/* 🔝 Más escuchados · Canciones */}
         {topTracks.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { fontSize: 16 }]}>Más escuchados · Canciones</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {topTracks.map((t, i) => {
-                const SIZE = 120;
-                const GAP = 12;
-                return (
-                  <TouchableOpacity
-                    key={t.id}
-                    style={{ marginRight: GAP, width: SIZE }}
-                    onPress={() => playFromList(mappedTopTracks, i, { type: "queue", name: "Top tracks" })}
-                    activeOpacity={0.85}
-                  >
-                    <View
-                      style={{
-                        width: SIZE, height: SIZE, borderRadius: 16, overflow: "hidden",
-                        backgroundColor: "#333", alignItems: "center", justifyContent: "center",
-                      }}
-                    >
-                      {t.thumb ? (
-                        <Image source={{ uri: t.thumb }} style={{ width: SIZE, height: SIZE }} />
-                      ) : (
-                        <Ionicons name="musical-notes-outline" size={22} color="#777" />
-                      )}
-                    </View>
-                    {!!t.title && (
-                      <Text numberOfLines={1} style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13 }}>
-                        {t.title}
-                      </Text>
-                    )}
-                    {!!t.artist && (
-                      <Text numberOfLines={1} style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>
-                        {t.artist}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+          <HorizontalScrollSection
+            title="Más escuchados · Canciones"
+            items={topTracks}
+            keyExtractor={(t) => String(t.id)}
+            imageExtractor={(t) => t.thumb ?? t.thumbnail}
+            titleExtractor={(t) => t.title}
+            subtitleExtractor={(t) => t.artist}
+            onItemPress={(_, index) =>
+              playFromList(mappedTopTracks, index, { type: "queue", name: "Top tracks" })
+            }
+            cardWidth={120}
+            imageHeight={120}
+            circularImage={false}
+          />
         )}
 
         {/* ⭐ Similar to (2) — colocado DESPUÉS de “Más escuchados · Canciones” */}
         {!!items2.length && (
-          <View style={styles.section}>
-            <SimilarHeader name={seed2?.name} thumb={seed2?.thumb} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {items2.map((a: any) => {
-                const SIZE = 120, GAP = 12;
-                const thumb =
-                  Array.isArray(a.thumbnails) && a.thumbnails.length > 0
-                    ? a.thumbnails[a.thumbnails.length - 1]?.url
-                    : null;
-                return (
-                  <TouchableOpacity
-                    key={a.id}
-                    style={{ marginRight: GAP, width: SIZE }}
-                    onPress={() => router.push(`/artist/${encodeURIComponent(a.id)}`)}
-                    activeOpacity={0.85}
-                  >
-                    <View style={{
-                      width: SIZE, height: SIZE, borderRadius: SIZE / 2, overflow: "hidden",
-                      backgroundColor: "#333", alignItems: "center", justifyContent: "center",
-                    }}>
-                      {thumb ? (
-                        <Image source={{ uri: thumb }} style={{ width: SIZE, height: SIZE }} />
-                      ) : (
-                        <Ionicons name="person-circle-outline" size={40} color="#777" />
-                      )}
-                    </View>
-                    {!!a.name && (
-                      <Text numberOfLines={1} style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13 }}>
-                        {a.name}
-                      </Text>
-                    )}
-                    <Text style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>Artista</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+          <>
+            <SimilarToHeader name={seed2?.name} thumb={seed2?.thumb} />
+            <HorizontalScrollSection
+              title={`More like ${seed2?.name ?? "Artista"}`}
+              items={items2}
+              keyExtractor={(a, idx) => `${a.id}-${idx}`}
+              imageExtractor={(a) =>
+                Array.isArray(a.thumbnails) && a.thumbnails.length
+                  ? a.thumbnails[a.thumbnails.length - 1]?.url
+                  : undefined
+              }
+              titleExtractor={(a) => a.name}
+              subtitleExtractor={() => "Artista"}
+              onItemPress={(a) => router.push(`/artist/${encodeURIComponent(a.id)}`)}
+              cardWidth={120}
+              imageHeight={120}
+              circularImage
+            />
+          </>
         )}
 
         {/* 🆕 Singles nuevos */}
         {newSingles.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { fontSize: 16 }]}>Singles nuevos</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {newSingles.map((t, i) => {
-                const SIZE = 120;
-                const GAP = 12;
-                return (
-                  <TouchableOpacity
-                    key={t.id}
-                    style={{ marginRight: GAP, width: SIZE }}
-                    onPress={() => playFromList(mappedNewSingles, i, { type: "queue", name: "Singles nuevos" })}
-                    activeOpacity={0.85}
-                  >
-                    <View
-                      style={{
-                        width: SIZE, height: SIZE, borderRadius: 16, overflow: "hidden",
-                        backgroundColor: "#333", alignItems: "center", justifyContent: "center",
-                      }}
-                    >
-                      {t.thumb ? (
-                        <Image source={{ uri: t.thumb }} style={{ width: SIZE, height: SIZE }} />
-                      ) : (
-                        <Ionicons name="musical-notes-outline" size={22} color="#777" />
-                      )}
-                    </View>
-                    {!!t.title && (
-                      <Text numberOfLines={1} style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13 }}>
-                        {t.title}
-                      </Text>
-                    )}
-                    {!!t.artist && (
-                      <Text numberOfLines={1} style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>
-                        {t.artist}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+          <HorizontalScrollSection
+            title="Singles nuevos"
+            items={newSingles}
+            keyExtractor={(t) => String(t.id)}
+            imageExtractor={(t) => t.thumb ?? t.thumbnail}
+            titleExtractor={(t) => t.title}
+            subtitleExtractor={(t) => t.artist}
+            onItemPress={(_, index) =>
+              playFromList(mappedNewSingles, index, { type: "queue", name: "Singles nuevos" })
+            }
+            cardWidth={120}
+            imageHeight={120}
+          />
         )}
 
         {/* 🧪 Seed tracks (playlist seed) */}
         {seedTracks.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { fontSize: 16 }]}>Desde tu seed</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {seedTracks.map((t, i) => {
-                const SIZE = 120;
-                const GAP = 12;
-                return (
-                  <TouchableOpacity
-                    key={t.id}
-                    style={{ marginRight: GAP, width: SIZE }}
-                    onPress={() => playFromList(mappedSeedTracks, i, { type: "queue", name: "Seed tracks" })}
-                    activeOpacity={0.85}
-                  >
-                    <View
-                      style={{
-                        width: SIZE, height: SIZE, borderRadius: 16, overflow: "hidden",
-                        backgroundColor: "#333", alignItems: "center", justifyContent: "center",
-                      }}
-                    >
-                      {t.thumb ? (
-                        <Image source={{ uri: t.thumb }} style={{ width: SIZE, height: SIZE }} />
-                      ) : (
-                        <Ionicons name="musical-notes-outline" size={22} color="#777" />
-                      )}
-                    </View>
-                    {!!t.title && (
-                      <Text numberOfLines={1} style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13 }}>
-                        {t.title}
-                      </Text>
-                    )}
-                    {!!t.artist && (
-                      <Text numberOfLines={1} style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>
-                        {t.artist}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+          <HorizontalScrollSection
+            title="Desde tu seed"
+            items={seedTracks}
+            keyExtractor={(t) => String(t.id)}
+            imageExtractor={(t) => t.thumb ?? t.thumbnail}
+            titleExtractor={(t) => t.title}
+            subtitleExtractor={(t) => t.artist}
+            onItemPress={(_, index) =>
+              playFromList(mappedSeedTracks, index, { type: "queue", name: "Seed tracks" })
+            }
+            cardWidth={120}
+            imageHeight={120}
+          />
         )}
 
         {/* ⭐ Recomendados · Artistas — UNA FILA POR SEED (resto) */}
-        {recoBySeed.slice(2).length > 0 && recoBySeed.slice(2).map(([seedId, items]) => {
+        {recoBySeed.slice(2).map(([seedId, items], seedIdx) => {
           const seed = (items?.[0]?.similarTo) || null as any;
           const seedName = seed?.name || "Artistas recomendados";
           const seedThumb = seed?.thumbnail || null;
 
           return (
-            <View key={seedId} style={styles.section}>
-              <SimilarHeader name={seedName} thumb={seedThumb} />
-
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {items.map((a: any) => {
-                  const SIZE = 120;
-                  const GAP = 12;
-                  const thumb =
-                    Array.isArray(a.thumbnails) && a.thumbnails.length > 0
-                      ? a.thumbnails[a.thumbnails.length - 1]?.url
-                      : null;
-
-                  return (
-                    <TouchableOpacity
-                      key={a.id}
-                      style={{ marginRight: GAP, width: SIZE }}
-                      onPress={() => router.push(`/artist/${encodeURIComponent(a.id)}`)}
-                      activeOpacity={0.85}
-                    >
-                      <View
-                        style={{
-                          width: SIZE,
-                          height: SIZE,
-                          borderRadius: SIZE / 2,
-                          overflow: "hidden",
-                          backgroundColor: "#333",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        {thumb ? (
-                          <Image source={{ uri: thumb }} style={{ width: SIZE, height: SIZE }} />
-                        ) : (
-                          <Ionicons name="person-circle-outline" size={40} color="#777" />
-                        )}
-                      </View>
-
-                      {!!a.name && (
-                        <Text
-                          numberOfLines={1}
-                          style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13 }}
-                        >
-                          {a.name}
-                        </Text>
-                      )}
-                      <Text style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>Artista</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
+            <View key={`seed-${seedId}-${seedIdx}`} style={styles.section}>
+              <SimilarToHeader name={seedName} thumb={seedThumb} />
+              <HorizontalScrollSection
+                title={`More like ${seedName}`}
+                items={items}
+                keyExtractor={(a, idx) => `${a.id}-${idx}`}
+                imageExtractor={(a) =>
+                  Array.isArray(a.thumbnails) && a.thumbnails.length
+                    ? a.thumbnails[a.thumbnails.length - 1]?.url
+                    : undefined
+                }
+                titleExtractor={(a) => a.name}
+                subtitleExtractor={() => "Artista"}
+                onItemPress={(a) => router.push(`/artist/${encodeURIComponent(a.id)}`)}
+                cardWidth={120}
+                imageHeight={120}
+                circularImage
+              />
             </View>
           );
         })}
 
         {/* ⭐ Álbumes recomendados */}
         {recoAlbums.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { fontSize: 16 }]}>Álbumes recomendados</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {recoAlbums.map((al) => {
-                const SIZE = 120;
-                const GAP = 12;
-                const thumb = Array.isArray(al.thumbnails) && al.thumbnails.length > 0 ? al.thumbnails[al.thumbnails.length - 1]?.url : null;
-
-                return (
-                  <TouchableOpacity
-                    key={al.id}
-                    style={{ marginRight: GAP, width: SIZE }}
-                    onPress={() => router.push(`/album/${encodeURIComponent(al.id)}`)}
-                    activeOpacity={0.85}
-                  >
-                    <View
-                      style={{
-                        width: SIZE, height: SIZE, borderRadius: 16, overflow: "hidden",
-                        backgroundColor: "#333", alignItems: "center", justifyContent: "center",
-                      }}
-                    >
-                      {thumb ? (
-                        <Image source={{ uri: thumb }} style={{ width: SIZE, height: SIZE }} />
-                      ) : (
-                        <Ionicons name="musical-notes-outline" size={22} color="#777" />
-                      )}
-                    </View>
-
-                    {!!(al.title || al.name) && (
-                      <Text numberOfLines={1} style={{ color: "#fff", marginTop: 6, width: SIZE, fontWeight: "600", fontSize: 13 }}>
-                        {al.title ?? al.name}
-                      </Text>
-                    )}
-                    {!!al.artistName && (
-                      <Text numberOfLines={1} style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>
-                        {al.artistName}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+          <HorizontalScrollSection
+            title="Álbumes recomendados"
+            items={recoAlbums}
+            keyExtractor={(al) => String(al.id)}
+            imageExtractor={(al) =>
+              Array.isArray(al.thumbnails) && al.thumbnails.length
+                ? al.thumbnails[al.thumbnails.length - 1]?.url
+                : undefined
+            }
+            titleExtractor={(al) => al.title ?? al.name}
+            subtitleExtractor={(al) => al.artistName}
+            onItemPress={(al) => router.push(`/album/${encodeURIComponent(al.id)}`)}
+            cardWidth={120}
+            imageHeight={120}
+          />
         )}
 
       </ScrollView>
