@@ -190,13 +190,13 @@ export default React.memo(function HorizontalScrollSection({
 const styles = StyleSheet.create({
   section: {
     paddingHorizontal: 4,
-    marginTop: 8,
+    marginTop: 6,
   },
   title: {
     color: "#fff",
     fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 12,
+    marginBottom: 8,
   },
   scrollContent: {
     paddingRight: 0,

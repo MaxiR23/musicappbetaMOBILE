@@ -39,7 +39,7 @@ function _SimilarToHeader({
 export default memo(_SimilarToHeader);
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10 },
+  row: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10, marginTop: 10 },
   fallback: { backgroundColor: "#222", alignItems: "center", justifyContent: "center" },
   label: { color: "#aaa", fontSize: 13, fontWeight: "600" },
   name: { color: "#fff", fontSize: 18, fontWeight: "700" },

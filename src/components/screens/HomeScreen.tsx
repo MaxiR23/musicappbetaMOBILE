@@ -14,7 +14,6 @@ import {
   View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import SearchBar from "./../SearchBar";
 
 import CreatePlaylistModal from "@/src/components/CreatePlaylistModal";
 import TrackActionsSheet from "@/src/components/TrackActionsSheet";
@@ -26,6 +25,7 @@ import { cacheWrap, DAY_MS } from "@/src/utils/cache";
 import HorizontalScrollSection from "../HorizontalScrollSection";
 
 import { getInitials, pickGradient } from "@/src/utils/avatar";
+import SearchBar from "../SearchBar";
 import SimilarToHeader from "../SimilarToHeader";
 
 type RecentItem = {
@@ -306,10 +306,10 @@ export default function HomeScreen() {
     <>
       {/* 🔍 Barra de búsqueda */}
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#0e0e0e" }}>
-        <View style={{ paddingTop: 10, paddingHorizontal: 16, paddingBottom: 0 }}>
+        <View style={{ paddingTop: 10, paddingHorizontal: 16, paddingBottom: 8 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
             <View style={{ flex: 1 }}>
-              <SearchBar />
+              <SearchBar /> 
             </View>
 
             <TouchableOpacity
@@ -372,7 +372,6 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
 
-        {/* 🔥 Tus playlists */}
         {/* 🔥 Tus playlists */}
         <HorizontalScrollSection
           title="Tus playlists"
