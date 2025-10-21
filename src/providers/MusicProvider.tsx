@@ -186,34 +186,46 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     })();
   }
 
-  function prev() {
+  async function prev() {
     if (queueIndex < 0) return;
 
+    try {
+      // Obtener la posición actual de reproducción
+      const position = await TrackPlayer.getPosition();
+
+      // Si lleva más de 3 segundos, reiniciar la canción
+      if (position > 3) {
+        await TrackPlayer.seekTo(0);
+        await TrackPlayer.play();
+        return;
+      }
+    } catch (e) {
+      console.error("[prev] ERROR obteniendo posición:", e);
+    }
+
+    // Si lleva menos de 3 segundos O si hubo error, ir a la canción anterior
     const ni = queueIndex - 1;
 
     if (ni < 0) {
-      (async () => {
-        try {
-          await TrackPlayer.seekTo(0);
-          await TrackPlayer.play();
-        } catch (e) {
-          console.error("[prev] ERROR (seekTo 0):", e);
-        }
-      })();
+      // Ya estamos en la primera canción, solo reiniciar
+      try {
+        await TrackPlayer.seekTo(0);
+        await TrackPlayer.play();
+      } catch (e) {
+        console.error("[prev] ERROR (seekTo 0):", e);
+      }
       return;
     }
 
     setQueueIndex(ni);
     setCurrentSong(queue[ni]);
 
-    (async () => {
-      try {
-        await TrackPlayer.skipToPrevious();
-        await TrackPlayer.play();
-      } catch (e) {
-        console.error("[prev] ERROR (skipToPrevious):", e);
-      }
-    })();
+    try {
+      await TrackPlayer.skipToPrevious();
+      await TrackPlayer.play();
+    } catch (e) {
+      console.error("[prev] ERROR (skipToPrevious):", e);
+    }
   }
 
   useEffect(() => {
