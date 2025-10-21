@@ -7,13 +7,12 @@ import {
   Dimensions,
   Image,
   ImageBackground,
-  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import TextTicker from "react-native-text-ticker";
 import { LyricsSection } from "./LyricsSection";
@@ -237,11 +236,11 @@ export function ExpandedPlayer({
             >
               {title}
             </TextTicker>
-            <Pressable onPress={onArtistPress}>
+            <TouchableOpacity onPress={onArtistPress} activeOpacity={1} style={{ alignSelf: "flex-start" }}>
               <Text style={styles.artist} numberOfLines={1}>
                 {artistName}
               </Text>
-            </Pressable>
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity

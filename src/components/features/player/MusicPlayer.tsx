@@ -10,9 +10,6 @@ import { useTrackLyrics } from "@/src/hooks/use-track-lyrics";
 import { useTrackMetadata } from "@/src/hooks/use-track-metadata";
 import { router, useLocalSearchParams, usePathname } from "expo-router";
 import React, { useRef, useState } from "react";
-import {
-    InteractionManager
-} from "react-native";
 import { useMusic } from "../../../hooks/use-music";
 import { useMusicApi } from "../../../hooks/use-music-api";
 import { formatDuration } from "../../../utils/durations";
@@ -82,24 +79,32 @@ export default function MusicPlayer({
     if (!aid || navigatingRef.current) return;
     const match = pathname?.match(/\/artist\/([^/]+)/);
     const currentArtistInPath = match?.[1];
+
+    // Si ya estamos en ese artista, solo colapsar
     if (currentArtistInPath && String(currentArtistInPath) === String(aid)) {
       if (isExpanded) collapse();
       return;
     }
-    const doNav = () => {
-      navigatingRef.current = true;
-      if (pathname && pathname.includes("/artist/")) router.replace(`/artist/${aid}`);
-      else router.push(`/artist/${aid}`);
-      setTimeout(() => {
-        navigatingRef.current = false;
-      }, 250);
-    };
-    if (isExpanded) {
-      collapse();
-      InteractionManager.runAfterInteractions(doNav);
+
+    navigatingRef.current = true;
+
+    // Navegar inmediatamente sin colapsar
+    if (pathname && pathname.includes("/artist/")) {
+      router.replace(`/artist/${aid}`);
     } else {
-      doNav();
+      router.push(`/artist/${aid}`);
     }
+
+    // Colapsar DESPUÉS de navegar
+    if (isExpanded) {
+      setTimeout(() => {
+        collapse();
+      }, 100);
+    }
+
+    setTimeout(() => {
+      navigatingRef.current = false;
+    }, 250);
   };
 
   return (
