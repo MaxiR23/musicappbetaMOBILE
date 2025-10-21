@@ -2,7 +2,7 @@
 > **Versión Test** · Streaming moderno de música con React Native
 
 [![Version](https://img.shields.io/badge/version-test-orange)](/)
-[![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-blue)](/)
+[![Platform](https://img.shields.io/badge/platform-Android-blue)](/)
 
 **Beatly** es tu compañero musical definitivo: descubrí, organizá y disfrutá tu música favorita con una experiencia única y personalizada.
 
