@@ -1,6 +1,6 @@
 import { Stack, useRouter } from "expo-router";
 import React from "react";
-import SearchPanel, { ResultItem } from "../../src/components/SearchPanel";
+import SearchPanel, { ResultItem } from "../../src/components/features/search/SearchPanel";
 import { useMusic } from "../../src/hooks/use-music";
 import { useMusicApi } from "../../src/hooks/use-music-api";
 

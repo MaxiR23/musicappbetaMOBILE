@@ -1,8 +1,10 @@
+import { useAuth } from "@/src/hooks/use-auth";
 import Constants from "expo-constants";
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import TrackPlayer, { Event, RepeatMode, TrackType } from "react-native-track-player";
-import { ensureTrackPlayer } from "../components/player/setupTrackPlayer";
+import { useCacheInvalidation } from "../hooks/use-cache-invalidation";
 import { useMusicApi } from "../hooks/use-music-api";
+import { ensureTrackPlayer } from "../services/setupTrackPlayer";
 import { MusicContext } from "./../context/MusicContext";
 import { Song } from "./../types/music";
 
@@ -12,7 +14,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const [queueIndex, setQueueIndex] = useState<number>(-1);
   const [playSource, setPlaySource] = useState<PlaySource | null>(null);
 
+  const { user } = useAuth();
+  const userId = user?.id ?? undefined;
+
   const { logPlayAlbum, logPlayArtist } = useMusicApi();
+  const { invalidateRecent } = useCacheInvalidation(userId);
 
   const syncingRef = useRef(false);
   const switchingRef = useRef(false);
@@ -98,14 +104,14 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       await TrackPlayer.setRepeatMode(RepeatMode.Off);
       await TrackPlayer.add(tracks);
       await TrackPlayer.skip(idx);
-      TrackPlayer.play().catch(() => {});
+      TrackPlayer.play().catch(() => { });
 
       try {
         const ids = list.map((s: any) => String(s.id)).filter(Boolean);
         const uniq = Array.from(new Set(ids));
         const slice = uniq.slice(Math.max(0, idx - 3), idx + 16);
         warmBatch(slice, BASE_URL);
-      } catch {}
+      } catch { }
     } catch (e) {
       console.error("[sync] ERROR reset/add/play:", e);
       throw e;
@@ -130,12 +136,21 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           lastLoggedContextKeyRef.current = ctx.key;
           const srcMeta = { name: source?.name ?? null, thumb: source?.thumb ?? null };
           if (ctx.kind === "album") {
-            await logPlayAlbum(ctx.id, srcMeta).catch(() => {});
+            await logPlayAlbum(ctx.id, srcMeta).catch(() => { });
             console.log("[tracklog] album logged:", ctx.id, srcMeta);
           } else if (ctx.kind === "artist") {
-            await logPlayArtist(ctx.id, srcMeta).catch(() => {});
+            await logPlayArtist(ctx.id, srcMeta).catch(() => { });
             console.log("[tracklog] artist logged:", ctx.id, srcMeta);
           }
+
+          setTimeout(async () => {
+            try {
+              await invalidateRecent();
+            } catch (e) {
+              console.warn("[cache] ❌ Error invalidando:", e);
+            }
+          }, 2000);
+
         } else {
           console.log("[tracklog] same context, skip log:", ctx.key);
         }
@@ -256,10 +271,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         const lastSong = queue[lastIdx];
         if (!lastSong) { endingRef.current = false; return; }
 
-        await TrackPlayer.setRepeatMode(RepeatMode.Off).catch(() => {});
-        await TrackPlayer.skip(lastIdx).catch(() => {});
-        await TrackPlayer.pause().catch(() => {});
-        await TrackPlayer.seekTo(0).catch(() => {});
+        await TrackPlayer.setRepeatMode(RepeatMode.Off).catch(() => { });
+        await TrackPlayer.skip(lastIdx).catch(() => { });
+        await TrackPlayer.pause().catch(() => { });
+        await TrackPlayer.seekTo(0).catch(() => { });
 
         setQueueIndex(lastIdx);
         setCurrentSong(lastSong);

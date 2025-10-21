@@ -9,9 +9,9 @@ import AuthContainer from "@/src/components/features/auth/AuthContainer";
 import { useAuth } from "@/src/hooks/use-auth";
 import AuthProvider from "@/src/providers/AuthProvider";
 
-import MusicPlayer from "@/src/components/player/MusicPlayer";
-import { ensureTrackPlayer } from "../src/components/player/setupTrackPlayer";
+import MusicPlayer from "@/src/components/features/player/MusicPlayer";
 import { MusicProvider } from "../src/providers/MusicProvider";
+import { ensureTrackPlayer } from "../src/services/setupTrackPlayer";
 
 import { useMusic } from "@/src/hooks/use-music";
 import { useMusicApi } from "@/src/hooks/use-music-api";

@@ -1,3 +1,4 @@
+// hooks/use-auth.ts
 import { useContext } from "react";
 import { AuthContext, type AuthContextValue } from "../context/AuthContext";
 

@@ -1,4 +1,4 @@
-// src/hooks/use-detail-screen.ts
+// hooks/use-detail-screen.ts
 import { useCallback, useEffect, useState } from "react";
 
 interface UseDetailScreenOptions<T, R = T> {
