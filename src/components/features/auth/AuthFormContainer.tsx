@@ -1,10 +1,10 @@
-import { Music } from "lucide-react-native";
 import React from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    Text,
-    View,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Text,
+  View,
 } from "react-native";
 import { authStyles } from "./auth-form-styles";
 
@@ -40,7 +40,11 @@ export function AuthFormContainer({
         {/* Brand */}
         <View style={authStyles.brandBox}>
           <View style={authStyles.brandIcon}>
-            <Music size={28} color="#000" />
+            <Image
+              source={require('@/assets/images/icon.png')}
+              style={{ width: 80, height: 80 }}
+              resizeMode="contain"
+            />
           </View>
           <Text style={authStyles.brandTitle}>Beatly</Text>
           <Text style={authStyles.brandSubtitle}>{subtitle}</Text>
