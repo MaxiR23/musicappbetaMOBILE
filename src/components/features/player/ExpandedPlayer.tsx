@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import TextTicker from "react-native-text-ticker";
 import { LyricsSection } from "./LyricsSection";
 import { PlayerControls } from "./PlayerControls";
 import { SeekSlider } from "./SeekSlider";
@@ -182,32 +183,16 @@ export function ExpandedPlayer({
             <ChevronDown size={28} color="#fff" />
           </TouchableOpacity>
 
-          <Text style={styles.source} numberOfLines={1}>
-            {playSource?.type === "playlist" &&
-              `Desde playlist: ${playSource.name ?? ""}`}
-            {playSource?.type === "album" &&
-              `Desde álbum: ${playSource.name ?? ""}`}
-            {playSource?.type === "artist" &&
-              `Canciones de ${playSource.name ?? ""}`}
-          </Text>
-
-          <TouchableOpacity
-            onPress={onToggleLike}
-            disabled={liking}
-            style={{
-              padding: 4,
-              width: 28,
-              alignItems: "center",
-              marginRight: 6,
-            }}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons
-              name={isLiked ? "heart" : "heart-outline"}
-              size={22}
-              color="#fff"
-            />
-          </TouchableOpacity>
+          <View style={styles.sourceContainer}>
+            <Text style={styles.sourceLabel}>
+              {playSource?.type === "playlist" && "Desde playlist"}
+              {playSource?.type === "album" && "Desde álbum"}
+              {playSource?.type === "artist" && "Canciones de"}
+            </Text>
+            <Text style={styles.sourceName} numberOfLines={1} ellipsizeMode="tail">
+              {playSource?.name ?? ""}
+            </Text>
+          </View>
 
           <TouchableOpacity
             onPress={onOpenActions}
@@ -239,16 +224,37 @@ export function ExpandedPlayer({
           />
         </Animated.View>
 
-        {/* Meta (Título y Artista) */}
-        <View style={styles.meta}>
-          <Text style={styles.title} numberOfLines={2}>
-            {title}
-          </Text>
-          <Pressable onPress={onArtistPress} style={{ alignSelf: "center" }}>
-            <Text style={styles.artist} numberOfLines={1}>
-              {artistName}
-            </Text>
-          </Pressable>
+        {/* Meta (Título y Artista) + Like button a la derecha */}
+        <View style={styles.metaWithActions}>
+          <View style={styles.metaText}>
+            <TextTicker //SEE: https://www.npmjs.com/package/react-native-text-ticker 
+              style={styles.title}
+              duration={12000}
+              loop
+              bounce={false}
+              repeatSpacer={30}
+              marqueeDelay={1000}
+            >
+              {title}
+            </TextTicker>
+            <Pressable onPress={onArtistPress}>
+              <Text style={styles.artist} numberOfLines={1}>
+                {artistName}
+              </Text>
+            </Pressable>
+          </View>
+
+          <TouchableOpacity
+            onPress={onToggleLike}
+            disabled={liking}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons
+              name={isLiked ? "heart" : "heart-outline"}
+              size={22}
+              color="#fff"
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Seek Slider */}
@@ -324,16 +330,27 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 20,
   },
-  source: {
-    color: "#ccc",
-    fontSize: 12,
-    textAlign: "center",
+  sourceContainer: {
     flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
     marginHorizontal: 10,
   },
+  sourceLabel: {
+    color: "#999",
+    fontSize: 11,
+    textAlign: "center",
+    marginBottom: 2,
+  },
+  sourceName: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
+  },
   coverCard: {
-    width: 320,
-    height: 340,
+    width: 330,
+    height: 350,
     borderRadius: 20,
     overflow: "hidden",
     backgroundColor: "rgba(255,255,255,0.04)",
@@ -348,12 +365,23 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   coverImage: { width: "100%", height: "100%" },
-  meta: { alignItems: "center", marginBottom: 20 },
+  metaWithActions: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 20,
+    marginLeft: 13,
+    marginRight: 12,
+  },
+  metaText: {
+    flex: 1,
+    paddingRight: 12,
+  },
   title: {
     color: "#fff",
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "bold",
-    textAlign: "center",
+    textAlign: "left",
   },
   artist: { color: "#ccc", fontSize: 16 },
 });

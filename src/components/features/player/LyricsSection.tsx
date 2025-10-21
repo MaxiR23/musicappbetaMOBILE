@@ -1,13 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useRef } from "react";
 import {
-    ActivityIndicator,
-    Animated,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Animated,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
 interface LyricsSectionProps {
