@@ -31,6 +31,9 @@ export function AuthFormContainer({
   switchLinkText,
   onSwitchPress,
 }: AuthFormContainerProps) {
+
+  const BRAND_ICON = require('@/assets/images/icon.png');
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -41,7 +44,7 @@ export function AuthFormContainer({
         <View style={authStyles.brandBox}>
           <View style={authStyles.brandIcon}>
             <Image
-              source={require('@/assets/images/icon.png')}
+              source={BRAND_ICON}
               style={{ width: 80, height: 80 }}
               resizeMode="contain"
             />
