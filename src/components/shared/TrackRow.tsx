@@ -1,13 +1,16 @@
 // src/components/TrackRow.tsx
+import { useIsTrackPlaying } from "@/src/hooks/use-is-track-playing";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import PlayingIndicator from "./PlayingIndicator";
+
 
 interface TrackRowProps {
   /**
@@ -59,6 +62,12 @@ interface TrackRowProps {
    * Si se debe mostrar la duración (default: false)
    */
   showDuration?: boolean;
+
+  /* mostrar indice? */
+  showIndex?: boolean;
+
+  /* mostrar animación al darle a play */
+  trackId: string | number;
 }
 
 /**
@@ -76,23 +85,55 @@ export default function TrackRow({
   showThumbnail = true,
   showMoreButton = true,
   showDuration = false,
+  showIndex = true, //por defecto mostrar indice.
+  trackId,
 }: TrackRowProps) {
+
+  const { isCurrentTrack, isPlaying } = useIsTrackPlaying(trackId);
+
   return (
     <View style={styles.container}>
       {/* Índice */}
-      <View style={styles.indexContainer}>
-        <Text style={styles.index}>{index}</Text>
-      </View>
+      {/* Índice o Thumbnail con overlay */}
+      {showIndex ? (
+        // Caso 1: Mostrar índice (como álbumes/artistas)
+        <>
+          <View style={styles.indexContainer}>
+            {isCurrentTrack ? (
+              <PlayingIndicator color="#b0b0b0" size={14} isPlaying={isPlaying} />
+            ) : (
+              <Text style={styles.index}>{index}</Text>
+            )}
+          </View>
 
-      {/* Thumbnail */}
-      {showThumbnail && (
-        <View style={styles.thumbnailBox}>
-          {thumbnail ? (
-            <Image source={{ uri: thumbnail }} style={styles.thumbnail} />
-          ) : (
-            <View style={[styles.thumbnail, styles.thumbnailPlaceholder]} />
+          {showThumbnail && (
+            <View style={styles.thumbnailBox}>
+              {thumbnail ? (
+                <Image source={{ uri: thumbnail }} style={styles.thumbnail} />
+              ) : (
+                <View style={[styles.thumbnail, styles.thumbnailPlaceholder]} />
+              )}
+            </View>
           )}
-        </View>
+        </>
+      ) : (
+        // Caso 2: Sin índice, indicador sobre thumbnail (como playlists)
+        showThumbnail && (
+          <View style={styles.thumbnailBox}>
+            {thumbnail ? (
+              <Image source={{ uri: thumbnail }} style={styles.thumbnail} />
+            ) : (
+              <View style={[styles.thumbnail, styles.thumbnailPlaceholder]} />
+            )}
+
+            {/* Overlay + Indicador cuando está sonando */}
+            {isCurrentTrack && (
+              <View style={styles.thumbnailOverlay}>
+                <PlayingIndicator color="#fff" size={16} isPlaying={isPlaying} />
+              </View>
+            )}
+          </View>
+        )
       )}
 
       {/* Info (título + artista) - clickeable */}
@@ -101,9 +142,16 @@ export default function TrackRow({
         onPress={onPress}
         activeOpacity={0.85}
       >
-        <Text style={styles.title} numberOfLines={1}>
+        <Text
+          style={[
+            styles.title,
+            isCurrentTrack && styles.titlePlaying
+          ]}
+          numberOfLines={1}
+        >
           {title}
         </Text>
+
         {!!artist && (
           <Text style={styles.artist} numberOfLines={1}>
             {artist}
@@ -154,6 +202,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     overflow: "hidden",
     marginRight: 10,
+    position: "relative",
   },
   thumbnail: {
     width: "100%",
@@ -163,6 +212,16 @@ const styles = StyleSheet.create({
   thumbnailPlaceholder: {
     backgroundColor: "#333",
   },
+  thumbnailOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   infoContainer: {
     flex: 1,
     justifyContent: "center",
@@ -171,6 +230,10 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
     fontSize: 14,
+  },
+  titlePlaying: {
+    color: "#b0b0b0",
+    fontWeight: "700",
   },
   artist: {
     color: "#aaa",

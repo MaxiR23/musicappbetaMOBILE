@@ -130,6 +130,7 @@ export default function AlbumScreen() {
                 title={song.title}
                 artist={song.artists?.map((a: any) => a.name).join(", ")}
                 showThumbnail={false}
+                trackId={song.videoId}
                 onPress={() =>
                   playFromList(mappedSongs, index, {
                     type: "album",

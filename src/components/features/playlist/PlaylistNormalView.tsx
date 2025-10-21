@@ -54,6 +54,8 @@ export default function PlaylistNormalView({
             title={song.title}
             artist={song.artist}
             thumbnail={song.albumCover}
+            trackId={song.id}
+            showIndex={false} 
             onPress={() => onTrackPress(index)}
             onMorePress={() => onTrackMorePress(mappedSongs[index], index)}
           />
