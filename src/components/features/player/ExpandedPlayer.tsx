@@ -339,11 +339,10 @@ const styles = StyleSheet.create({
     color: "#999",
     fontSize: 11,
     textAlign: "center",
-    marginBottom: 2,
   },
   sourceName: {
     color: "#fff",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
     textAlign: "center",
   },
