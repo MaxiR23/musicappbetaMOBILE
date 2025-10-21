@@ -9,7 +9,7 @@ interface PlayingIndicatorProps {
 }
 
 export default function PlayingIndicator({ 
-  color = '#4a9eff', 
+  color = '#b0b0b0', 
   size = 14,
   isPlaying
 }: PlayingIndicatorProps) {

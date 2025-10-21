@@ -93,7 +93,6 @@ export default function TrackRow({
 
   return (
     <View style={styles.container}>
-      {/* Índice */}
       {/* Índice o Thumbnail con overlay */}
       {showIndex ? (
         // Caso 1: Mostrar índice (como álbumes/artistas)
