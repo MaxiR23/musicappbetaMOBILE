@@ -73,6 +73,9 @@ export default function TrackActionsSheet({
     const [desc, setDesc] = useState("");
     const canCreate = useMemo(() => name.trim().length > 0, [name]);
 
+    const [addingToId, setAddingToId] = useState<string | null>(null);
+    const [addedToId, setAddedToId] = useState<string | null>(null);
+
     useEffect(() => {
         if (!open) {
             setMode("root");
@@ -81,6 +84,8 @@ export default function TrackActionsSheet({
             setDesc("");
             setLoading(false);
             setLoaded(false);
+            setAddingToId(null);
+            setAddedToId(null);
         }
     }, [open, track]);
 
@@ -132,16 +137,24 @@ export default function TrackActionsSheet({
 
     async function handleAddTo(plId: string) {
         if (!track) return;
-        setLoading(true);
+        setAddingToId(plId); // Marcar que está procesando
         setErr(null);
         try {
             await addTrackToPlaylist(plId, track);
             await verifyAdded(plId, [String(track.id)]);
-            onOpenChange(false);
+
+            // Mostrar check
+            setAddingToId(null);
+            setAddedToId(plId);
+
+            // Cerrar después de 1 segundo
+            setTimeout(() => {
+                setAddedToId(null);
+                onOpenChange(false);
+            }, 1000);
         } catch (e: any) {
             setErr(e?.message || "No se pudo agregar el tema.");
-        } finally {
-            setLoading(false);
+            setAddingToId(null);
         }
     }
 
@@ -233,7 +246,6 @@ export default function TrackActionsSheet({
                                 />
                             ))}
                             {err && <Text style={styles.error}>{err}</Text>}
-                            {loading && <ActivityIndicator style={{ marginTop: 10 }} color="#bbb" />}
                         </View>
                     )}
 
@@ -245,9 +257,18 @@ export default function TrackActionsSheet({
                                     style={styles.listRow}
                                     activeOpacity={0.85}
                                     onPress={() => handleAddTo(pl.id)}
+                                    disabled={addingToId === pl.id || addedToId === pl.id} // Deshabilitar mientras procesa
                                 >
                                     <Ionicons name="musical-notes" size={16} color="#bbb" style={{ marginRight: 10 }} />
                                     <Text style={styles.listRowText} numberOfLines={1}>{pl.title}</Text>
+
+                                    {/* Spinner o Check */}
+                                    {addingToId === pl.id && (
+                                        <ActivityIndicator size="small" color="#bbb" style={{ marginLeft: "auto" }} />
+                                    )}
+                                    {addedToId === pl.id && (
+                                        <Ionicons name="checkmark-circle" size={20} color="#4ade80" style={{ marginLeft: "auto" }} />
+                                    )}
                                 </TouchableOpacity>
                             ))}
                             <TouchableOpacity
