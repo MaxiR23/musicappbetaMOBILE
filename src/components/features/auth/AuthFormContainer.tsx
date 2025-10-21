@@ -69,7 +69,7 @@ export function AuthFormContainer({
         </View>
 
         <Text style={authStyles.footer}>
-          © 2025 MusicApp. Todos los derechos reservados.
+          © 2025 Beatly. Todos los derechos reservados.
         </Text>
       </View>
     </KeyboardAvoidingView>
