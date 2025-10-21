@@ -67,20 +67,25 @@ export default function ArtistScreen() {
       <StatusBar barStyle="light-content" backgroundColor="#0e0e0e" />
       <ScrollView
         style={styles.container}
-        contentContainerStyle={{ paddingBottom: currentSong ? 18 : 18 }}
+        contentContainerStyle={{ 
+          paddingTop: 0,
+          paddingBottom: currentSong ? 18 : 18 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Hero */}
+        <View style={{ marginBottom: 20 }}>
         <HeroSection
           backgroundImage={heroUrl}
-          height={300}
+          height={400}
           useDirectImage={true}
+          paddingBottom={0}
         >
           <View style={styles.heroInfo}>
             <Text style={styles.artistName}>{artist?.header?.name}</Text>
             <Text style={styles.listeners}>{artist?.header?.monthlyListeners}</Text>
           </View>
         </HeroSection>
+        </View>
 
         {/* Nuevo lanzamiento */}
         {newRelease && (
@@ -174,7 +179,6 @@ const styles = StyleSheet.create({
 
   section: {
     paddingHorizontal: 16,
-    marginTop: 8,
     marginBottom: 20,
   },
   sectionTitle: {
@@ -185,7 +189,7 @@ const styles = StyleSheet.create({
   },
 
   // Hero
-  heroInfo: { position: "absolute", bottom: 20, left: 20 },
-  artistName: { fontSize: 28, fontWeight: "bold", color: "#fff", marginTop: 8 },
+  heroInfo: { position: "absolute", bottom: 4, left: 20 },
+  artistName: { fontSize: 26, fontWeight: "bold", color: "#fff", marginTop: 4 },
   listeners: { fontSize: 14, color: "#ccc" },
 });

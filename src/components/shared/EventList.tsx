@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     marginTop: 8,
-    marginBottom: 20,
+    marginBottom: 10,
   },
   title: {
     color: "#fff",

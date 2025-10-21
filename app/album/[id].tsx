@@ -229,7 +229,6 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     borderRadius: 14,
     overflow: "hidden",
-    // sombra
     shadowColor: "#000",
     shadowOpacity: 0.35,
     shadowRadius: 16,
@@ -237,6 +236,6 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
 
-  heroCover: { width: 220, height: 220, borderRadius: 14, resizeMode: "cover" },
+  heroCover: { width: 240, height: 240, borderRadius: 14, resizeMode: "cover" },
   section: { paddingHorizontal: 16, marginTop: 8 },
 });

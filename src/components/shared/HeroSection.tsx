@@ -8,79 +8,37 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  ViewStyle,
 } from "react-native";
 import BackButton from "./BackButton";
 
 interface HeroSectionProps {
-  /**
-   * URL de la imagen de fondo
-   */
   backgroundImage?: string;
-
-  /**
-   * Altura del hero (default: 320)
-   */
   height?: number;
-
-  /**
-   * Cantidad de blur en la imagen de fondo (default: 40)
-   */
   blurRadius?: number;
-
-  /**
-   * Array de colores para el gradiente
-   * Default: gradiente oscuro desde arriba
-   */
   gradientColors?: string[];
-
-  /**
-   * Posiciones del gradiente (0-1)
-   */
   gradientLocations?: number[];
-
-  /**
-   * Callback para el botón de "más opciones" (3 puntos)
-   * Si se provee, se muestra el botón
-   */
   onMorePress?: () => void;
-
-  /**
-   * Contenido personalizado que va en el centro/bottom del hero
-   * Aquí va el cover, título, info, etc.
-   */
   children: ReactNode;
-
-  /**
-   * Si true, usa Image en vez de ImageBackground
-   * Útil para ArtistScreen que usa Image directo
-   */
   useDirectImage?: boolean;
-
-  /**
-   * Alineación vertical del contenido
-   * Default: 'flex-end' (abajo)
-   */
   contentPosition?: "flex-start" | "center" | "flex-end";
+  
+  /**
+   * Padding bottom del container (default: 12)
+   */
+  paddingBottom?: number;
+  
+  /**
+   * Padding top del container (default: 0)
+   */
+  paddingTop?: number;
+  
+  /**
+   * Estilos adicionales para el container principal
+   */
+  containerStyle?: ViewStyle;
 }
 
-/**
- * Componente reutilizable para la sección Hero de las pantallas
- * Maneja la imagen de fondo, gradiente, botones y contenido customizable
- * 
- * @example
- * ```tsx
- * <HeroSection
- *   backgroundImage={coverUrl}
- *   height={320}
- *   onMorePress={() => setMenuOpen(true)}
- * >
- *   <View style={styles.heroContent}>
- *     <Image source={{ uri: coverUrl }} style={styles.cover} />
- *     <Text style={styles.title}>{album.title}</Text>
- *   </View>
- * </HeroSection>
- * ```
- */
 export default function HeroSection({
   backgroundImage,
   height = 320,
@@ -96,9 +54,23 @@ export default function HeroSection({
   children,
   useDirectImage = false,
   contentPosition = "flex-end",
+  paddingBottom = 12,
+  paddingTop = 0,
+  containerStyle,
 }: HeroSectionProps) {
   return (
-    <View style={[styles.container, { height, justifyContent: contentPosition }]}>
+    <View 
+      style={[
+        styles.container, 
+        { 
+          height, 
+          justifyContent: contentPosition,
+          paddingBottom,
+          paddingTop,
+        },
+        containerStyle
+      ]}
+    >
       {/* Fondo */}
       {backgroundImage ? (
         useDirectImage ? (
@@ -164,7 +136,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: "65%",
+    height: "45%",
   },
   fallbackBg: {
     backgroundColor: "#0e0e0e",
