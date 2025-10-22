@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from "react-native";
 
 interface LyricsSectionProps {
@@ -38,9 +39,12 @@ export function LyricsSection({
   onScrollEnd,
 }: LyricsSectionProps) {
   const lyricsBtnScale = useRef(new Animated.Value(1)).current;
+  const { height } = useWindowDimensions();
+
+  const dynamicMarginTop = height < 700 ? 24 : height < 800 ? 48 : 90; 
 
   return (
-    <View style={styles.lyricsSection}>
+    <View style={[styles.lyricsSection, { marginTop: dynamicMarginTop }]}>
       {/* Toggle Button */}
       <Pressable
         onPressIn={() =>
@@ -124,7 +128,6 @@ export function LyricsSection({
 
 const styles = StyleSheet.create({
   lyricsSection: {
-    marginTop: 90,
     marginBottom: 26,
   },
   lyricsTogglePill: {

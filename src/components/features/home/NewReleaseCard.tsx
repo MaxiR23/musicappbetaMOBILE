@@ -72,7 +72,8 @@ export default function NewReleaseCard({
 const styles = StyleSheet.create({
   cardWrap: {
     paddingHorizontal: 16,
-    marginTop: 12,
+    marginTop: 4,
+    marginBottom: 8,
   },
   card: {
     backgroundColor: "#161616",
