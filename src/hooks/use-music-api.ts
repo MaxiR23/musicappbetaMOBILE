@@ -360,6 +360,32 @@ export function useMusicApi() {
     []
   );
 
+  const getTrackUpNext = useCallback(
+    async (trackId: string): Promise<{
+      ok: boolean;
+      current?: any;
+      upNext?: any[];
+      autoplay?: any;
+    }> => {
+      return publicFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/upnext`, {
+        method: "GET",
+      });
+    },
+    []
+  );
+
+  const getTrackRelated = useCallback(
+    async (trackId: string): Promise<{
+      ok: boolean;
+      related?: any[];
+    }> => {
+      return publicFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/related`, {
+        method: "GET",
+      });
+    },
+    []
+  );
+
   return {
     searchSongs,
     playSongUrl,
@@ -384,8 +410,10 @@ export function useMusicApi() {
     likePlaylist,
     unlikePlaylist,
     isTrackLiked,
-    getRecentPlays, 
+    getRecentPlays,
     moveTrackInPlaylist,
-    getTrackLyrics
+    getTrackLyrics,
+    getTrackUpNext,
+    getTrackRelated, 
   };
 }

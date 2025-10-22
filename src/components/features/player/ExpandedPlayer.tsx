@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronDown } from "lucide-react-native";
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Animated,
   Dimensions,
@@ -15,8 +15,9 @@ import {
   View
 } from "react-native";
 import TextTicker from "react-native-text-ticker";
-import { LyricsSection } from "./LyricsSection";
+import { usePlayerTabAnimation } from "../../../hooks/use-player-tab-animation";
 import { PlayerControls } from "./PlayerControls";
+import { PlayerTabs } from "./PlayerTabs";
 import { SeekSlider } from "./SeekSlider";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
@@ -38,6 +39,7 @@ interface ExpandedPlayerProps {
   artistName: string;
   artistId: string | null;
   playSource: any;
+  currentSong?: any;
 
   // Estados de reproducción
   isPlaying: boolean;
@@ -57,14 +59,32 @@ interface ExpandedPlayerProps {
   duration: number;
 
   // Lyrics
-  lyricsOpen: boolean;
   lyricsText: string | null;
   lyricsLoading: boolean;
   lyricsError: string | null;
   mainScrollRef: React.RefObject<ScrollView | null>;
 
+  // Up Next
+  upNextData: any;
+  upNextLoading: boolean;
+  upNextError: string | null;
+  shouldShowUpNext: boolean;
+  autoplayEnabled: boolean;
+
+  // Related
+  relatedData: any;
+  relatedLoading: boolean;
+  relatedError: string | null;
+  shouldShowRelated: boolean;
+
+  queue: any[];
+  queueIndex: number;
+  originalQueueSize: number;
+
+  activePlayerTab: "upnext" | "lyrics" | "related" | null;
+
   // Callbacks
-  onCollapse: () => void;
+  onCollapse: () => void; // 🔥 Esta función ahora es "inteligente" y maneja tanto cerrar tab como colapsar
   onToggleLike: () => void;
   onOpenActions: () => void;
   onArtistPress: () => void;
@@ -72,19 +92,25 @@ interface ExpandedPlayerProps {
   onPrev: () => void;
   onNext: () => void;
   onToggleRepeat: () => void;
+  onAutoplayToggle: (enabled: boolean) => void;
   onSlidingStart: () => void;
   onValueChange: (value: number) => void;
   onSlidingComplete: (value: number) => void;
-  onToggleLyrics: () => void;
+  onFetchLyrics: () => Promise<void>;
+  onFetchUpNext: () => Promise<void>;
+  onTabChange: (tab: "upnext" | "lyrics" | "related" | null) => void;
+  onFetchRelated: () => Promise<void>;
   setPanLocked: (locked: boolean) => void;
   formatTime: (ms: number) => string;
   accentColor?: string;
+
+  // Callbacks para interacción con upNext/related
+  onUpNextTrackPress?: (track: any, isFromAutoplay: boolean) => void;
+  onRelatedTrackPress?: (track: any) => void;
+  onRelatedArtistPress?: (artistId: string) => void;
+  onRelatedAlbumPress?: (albumId: string) => void;
 }
 
-/**
- * Vista expandida completa del player
- * Incluye fondo, cover, controles, slider y lyrics
- */
 export function ExpandedPlayer({
   isExpanded,
   slideAnim,
@@ -97,6 +123,7 @@ export function ExpandedPlayer({
   artistName,
   artistId,
   playSource,
+  currentSong,
   isPlaying,
   hasPrev,
   hasNext,
@@ -108,30 +135,70 @@ export function ExpandedPlayer({
   knobScale,
   displayCurrentMs,
   duration,
-  lyricsOpen,
   lyricsText,
   lyricsLoading,
   lyricsError,
   mainScrollRef,
-  onCollapse,
+  upNextData,
+  upNextLoading,
+  upNextError,
+  shouldShowUpNext,
+  autoplayEnabled,
+  relatedData,
+  relatedLoading,
+  relatedError,
+  shouldShowRelated,
+  activePlayerTab,
+  queue,
+  queueIndex,
+  originalQueueSize,
+  onTabChange,
+  onCollapse, // 🔥 Esta es la función inteligente que cierra tab primero, luego colapsa
   onToggleLike,
   onOpenActions,
   onArtistPress,
   onTogglePlay,
+  onAutoplayToggle,
   onPrev,
   onNext,
   onToggleRepeat,
   onSlidingStart,
   onValueChange,
   onSlidingComplete,
-  onToggleLyrics,
+  onFetchLyrics,
+  onFetchUpNext,
+  onFetchRelated,
   setPanLocked,
   formatTime,
   accentColor = "#ffffff",
+  onUpNextTrackPress,
+  onRelatedTrackPress,
+  onRelatedArtistPress,
+  onRelatedAlbumPress,
 }: ExpandedPlayerProps) {
+  // Hook de animación para transición player ↔ tabs
+  const {
+    coverScale: tabCoverScale,
+    coverTranslateY,
+    controlsOpacity,
+    tabsOpacity,
+    tabsTranslateY,
+  } = usePlayerTabAnimation({ activeTab: activePlayerTab });
+
+  // Determinar si mostrar tabs o player normal
+  const showTabs = activePlayerTab !== null;
+
+  // MarginTop dinámico según altura de pantalla
+  const { height } = Dimensions.get("window");
+  const dynamicTabMargin = useMemo(() => {
+    if (height < 700) return 40;      // Pantallas chicas
+    if (height < 800) return 60;      // Pantallas medianas
+    return 90;                         // Pantallas grandes
+  }, [height]);
+
   return (
     <Animated.View
-      {...panHandlers}
+      {...(activePlayerTab === null ? panHandlers : {})}
       pointerEvents={isExpanded ? "auto" : "none"}
       style={[styles.container, { transform: [{ translateY: slideAnim }] }]}
     >
@@ -153,148 +220,227 @@ export function ExpandedPlayer({
 
       <StatusBar barStyle="light-content" />
 
-      {/* Contenido scrolleable */}
-      <ScrollView
-        ref={mainScrollRef}
-        nestedScrollEnabled
-        showsVerticalScrollIndicator={lyricsOpen}
-        scrollEnabled={lyricsOpen}
-        bounces={lyricsOpen}
-        overScrollMode={lyricsOpen ? "auto" : "never"}
-        contentContainerStyle={{
-          paddingTop: 40,
-          paddingHorizontal: 20,
-          paddingBottom: lyricsOpen ? 40 : 16,
-        }}
-        onScrollBeginDrag={() => setPanLocked(true)}
-        onMomentumScrollEnd={() => setPanLocked(false)}
-        onScrollEndDrag={() => setPanLocked(false)}
-        scrollEventThrottle={16}
+      {/* PLAYER NORMAL EXPANDIDO - Animado */}
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            opacity: controlsOpacity,
+          },
+        ]}
+        pointerEvents={showTabs ? "none" : "auto"}
       >
-        {/* Drag Handle */}
-        <View style={styles.dragHandleArea} pointerEvents="box-none">
-          <View style={styles.dragHandle} />
-        </View>
-
-        {/* Top Bar */}
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={onCollapse}>
-            <ChevronDown size={28} color="#fff" />
-          </TouchableOpacity>
-
-          <View style={styles.sourceContainer}>
-            <Text style={styles.sourceLabel}>
-              {playSource?.type === "playlist" && "Desde playlist"}
-              {playSource?.type === "album" && "Desde álbum"}
-              {playSource?.type === "artist" && "Canciones de"}
-            </Text>
-            <Text style={styles.sourceName} numberOfLines={1} ellipsizeMode="tail">
-              {playSource?.name ?? ""}
-            </Text>
+        <ScrollView
+          ref={mainScrollRef}
+          nestedScrollEnabled
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={false}
+          bounces={false}
+          overScrollMode="never"
+          contentContainerStyle={{
+            paddingTop: 40,
+            paddingHorizontal: 20,
+            paddingBottom: 16,
+          }}
+          scrollEventThrottle={16}
+        >
+          {/* Drag Handle */}
+          <View style={styles.dragHandleArea} pointerEvents="box-none">
+            <View style={styles.dragHandle} />
           </View>
 
-          <TouchableOpacity
-            onPress={onOpenActions}
-            style={{ padding: 4, width: 28, alignItems: "flex-end" }}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
-          </TouchableOpacity>
-        </View>
+          {/* Top Bar */}
+          <View style={styles.topBar}>
+            <TouchableOpacity onPress={onCollapse}>
+              <ChevronDown size={28} color="#fff" />
+            </TouchableOpacity>
 
-        {/* Cover */}
-        <Animated.View
-          style={[styles.coverCard, { transform: [{ scale: coverScale }] }]}
-        >
-          <Image
-            source={{ uri: coverUrl }}
-            style={styles.coverImage}
-            resizeMode="cover"
-          />
-          <LinearGradient
-            pointerEvents="none"
-            colors={[
-              "rgba(255,255,255,0.06)",
-              "rgba(0,0,0,0)",
-              "rgba(0,0,0,0.35)",
-            ]}
-            locations={[0, 0.45, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-        </Animated.View>
-
-        {/* Meta (Título y Artista) + Like button a la derecha */}
-        <View style={styles.metaWithActions}>
-          <View style={styles.metaText}>
-            <TextTicker //SEE: https://www.npmjs.com/package/react-native-text-ticker 
-              style={styles.title}
-              duration={12000}
-              loop
-              bounce={false}
-              repeatSpacer={30}
-              marqueeDelay={1000}
-            >
-              {title}
-            </TextTicker>
-            <TouchableOpacity onPress={onArtistPress} activeOpacity={1} style={{ alignSelf: "flex-start" }}>
-              <Text style={styles.artist} numberOfLines={1}>
-                {artistName}
+            <View style={styles.sourceContainer}>
+              <Text style={styles.sourceLabel}>
+                {playSource?.type === "playlist" && "Desde playlist"}
+                {playSource?.type === "album" && "Desde álbum"}
+                {playSource?.type === "artist" && "Canciones de"}
               </Text>
+              <Text style={styles.sourceName} numberOfLines={1} ellipsizeMode="tail">
+                {playSource?.name ?? ""}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={onOpenActions}
+              style={{ padding: 4, width: 28, alignItems: "flex-end" }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            onPress={onToggleLike}
-            disabled={liking}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          {/* Cover - Combinamos animaciones */}
+          <Animated.View
+            style={[
+              styles.coverCard,
+              {
+                transform: [
+                  { scale: Animated.multiply(coverScale, tabCoverScale) },
+                  { translateY: coverTranslateY },
+                ],
+              },
+            ]}
           >
-            <Ionicons
-              name={isLiked ? "heart" : "heart-outline"}
-              size={22}
-              color="#fff"
+            <Image
+              source={{ uri: coverUrl }}
+              style={styles.coverImage}
+              resizeMode="cover"
             />
-          </TouchableOpacity>
+            <LinearGradient
+              pointerEvents="none"
+              colors={[
+                "rgba(255,255,255,0.06)",
+                "rgba(0,0,0,0)",
+                "rgba(0,0,0,0.35)",
+              ]}
+              locations={[0, 0.45, 1]}
+              style={StyleSheet.absoluteFill}
+            />
+          </Animated.View>
+
+          {/* Meta (Título y Artista) + Like button a la derecha */}
+          <View style={styles.metaWithActions}>
+            <View style={styles.metaText}>
+              <TextTicker
+                style={styles.title}
+                duration={12000}
+                loop
+                bounce={false}
+                repeatSpacer={30}
+                marqueeDelay={1000}
+              >
+                {title}
+              </TextTicker>
+              <TouchableOpacity onPress={onArtistPress} activeOpacity={1} style={{ alignSelf: "flex-start" }}>
+                <Text style={styles.artist} numberOfLines={1}>
+                  {artistName}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              onPress={onToggleLike}
+              disabled={liking}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons
+                name={isLiked ? "heart" : "heart-outline"}
+                size={22}
+                color="#fff"
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Seek Slider */}
+          <SeekSlider
+            localVal={localVal}
+            dragging={dragging}
+            knobScale={knobScale}
+            displayCurrentMs={displayCurrentMs}
+            duration={duration}
+            formatTime={formatTime}
+            onSlidingStart={onSlidingStart}
+            onValueChange={onValueChange}
+            onSlidingComplete={onSlidingComplete}
+          />
+
+          {/* Player Controls */}
+          <PlayerControls
+            isPlaying={isPlaying}
+            hasPrev={hasPrev}
+            hasNext={hasNext}
+            repeatOne={repeatOne}
+            onTogglePlay={onTogglePlay}
+            onPrev={onPrev}
+            onNext={onNext}
+            onToggleRepeat={onToggleRepeat}
+            accentColor={accentColor}
+          />
+
+          {/* TABS ESTILO YOUTUBE MUSIC */}
+          <View style={[styles.tabsContainer, { marginTop: dynamicTabMargin }]}>
+            <TouchableOpacity
+              style={styles.tab}
+              onPress={() => onTabChange("upnext")}
+            >
+              <Text style={[styles.tabText, activePlayerTab === "upnext" && styles.tabTextActive]}>
+                UP NEXT
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.tab}
+              onPress={() => onTabChange("lyrics")}
+            >
+              <Text style={[styles.tabText, activePlayerTab === "lyrics" && styles.tabTextActive]}>
+                LYRICS
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.tab}
+              onPress={() => onTabChange("related")}
+            >
+              <Text style={[styles.tabText, activePlayerTab === "related" && styles.tabTextActive]}>
+                RELATED
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </Animated.View>
+
+      {/* PLAYER TABS - Animado */}
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            opacity: tabsOpacity,
+            transform: [{ translateY: tabsTranslateY }],
+          },
+        ]}
+        pointerEvents={showTabs ? "box-none" : "none"}
+      >
+        {/* Contenedor interior con pointerEvents auto para capturar toques */}
+        <View style={{ flex: 1 }} pointerEvents={showTabs ? "auto" : "none"}>
+          <PlayerTabs
+            initialTab={activePlayerTab || "upnext"}
+            coverUrl={coverUrl}
+            title={title}
+            artistName={artistName}
+            isPlaying={isPlaying}
+            playSource={playSource}
+            currentSong={currentSong}
+            queue={queue}
+            queueIndex={queueIndex}
+            originalQueueSize={originalQueueSize}
+            lyricsText={lyricsText}
+            lyricsLoading={lyricsLoading}
+            lyricsError={lyricsError}
+            upNextData={upNextData}
+            upNextLoading={upNextLoading}
+            upNextError={upNextError}
+            relatedData={relatedData}
+            relatedLoading={relatedLoading}
+            relatedError={relatedError}
+            onTogglePlay={onTogglePlay}
+            onCoverPress={() => onTabChange(null)} // 🔥 Cerrar tab cuando se presiona el cover
+            onTabChange={(tab) => onTabChange(tab)}
+            onFetchLyrics={onFetchLyrics}
+            onFetchUpNext={onFetchUpNext}
+            onFetchRelated={onFetchRelated}
+            onUpNextTrackPress={onUpNextTrackPress}
+            onRelatedTrackPress={onRelatedTrackPress} // 🆕
+            onRelatedArtistPress={onRelatedArtistPress} // 🆕
+            onRelatedAlbumPress={onRelatedAlbumPress} // 🆕
+          />
         </View>
-
-        {/* Seek Slider */}
-        <SeekSlider
-          localVal={localVal}
-          dragging={dragging}
-          knobScale={knobScale}
-          displayCurrentMs={displayCurrentMs}
-          duration={duration}
-          formatTime={formatTime}
-          onSlidingStart={onSlidingStart}
-          onValueChange={onValueChange}
-          onSlidingComplete={onSlidingComplete}
-        />
-
-        {/* Player Controls */}
-        <PlayerControls
-          isPlaying={isPlaying}
-          hasPrev={hasPrev}
-          hasNext={hasNext}
-          repeatOne={repeatOne}
-          onTogglePlay={onTogglePlay}
-          onPrev={onPrev}
-          onNext={onNext}
-          onToggleRepeat={onToggleRepeat}
-          accentColor={accentColor}
-        />
-
-        {/* Lyrics Section */}
-        <LyricsSection
-          lyricsOpen={lyricsOpen}
-          lyricsText={lyricsText}
-          lyricsLoading={lyricsLoading}
-          lyricsError={lyricsError}
-          trackTitle={title}
-          artistName={artistName}
-          onToggleLyrics={onToggleLyrics}
-          onScrollBeginDrag={() => setPanLocked(true)}
-          onScrollEnd={() => setPanLocked(false)}
-        />
-      </ScrollView>
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -382,4 +528,28 @@ const styles = StyleSheet.create({
     textAlign: "left",
   },
   artist: { color: "#ccc", fontSize: 16 },
+  
+  // TABS ESTILO YOUTUBE MUSIC
+  tabsContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+    paddingHorizontal: 0,
+    gap: 30, // Espaciado entre tabs
+  },
+  tab: {
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  tabText: {
+    color: "#888",
+    fontSize: 13,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+  tabTextActive: {
+    color: "#fff",
+  },
 });

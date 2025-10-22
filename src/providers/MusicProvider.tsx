@@ -13,6 +13,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const [queue, setQueue] = useState<Song[]>([]);
   const [queueIndex, setQueueIndex] = useState<number>(-1);
   const [playSource, setPlaySource] = useState<PlaySource | null>(null);
+  const [originalQueueSize, setOriginalQueueSize] = useState<number>(0); // Tamaño actual (crece con autoplay)
+  const [initialQueueSize, setInitialQueueSize] = useState<number>(0); // 🆕 Tamaño INICIAL (nunca cambia)
+
+  const autoplayProviderRef = useRef<(() => Song | null) | null>(null);
+  const isAutoplayEnabledRef = useRef<(() => boolean) | null>(null);
 
   const { user } = useAuth();
   const userId = user?.id ?? undefined;
@@ -29,7 +34,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     | { type: "playlist"; name?: string | null; thumb?: string | null }
     | { type: "album"; name?: string | null; thumb?: string | null }
     | { type: "artist"; name?: string | null; thumb?: string | null }
-    | { type: "queue"; name?: string | null; thumb?: string | null };
+    | { type: "queue"; name?: string | null; thumb?: string | null }
+    | { type: "related"; name?: string | null; thumb?: string | null }; // 🆕 Contexto para Related
 
   function getBaseUrl() {
     return (
@@ -128,6 +134,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     setQueueIndex(startIndex);
     setCurrentSong(list[startIndex] ?? null);
     setPlaySource(source ?? { type: "queue", name: null, thumb: null });
+    setOriginalQueueSize(list.length); // Tamaño actual
+    setInitialQueueSize(list.length); // 🆕 Tamaño inicial (nunca cambia hasta nueva playlist)
 
     try {
       const ctx = resolveContextKey(list, source);
@@ -168,22 +176,159 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  function next() {
+  // 🆕 Nueva función: Reproducir canción desde Related (borra queue y crea nueva)
+  async function playFromRelated(song: Song) {
+    if (switchingRef.current) return;
+    switchingRef.current = true;
+
+    console.log('🎵 Reproduciendo desde Related:', song.title);
+    console.log('🗑️ Borrando queue anterior y creando nueva');
+
+    // Crear nueva queue con solo esta canción
+    const newQueue = [song];
+
+    // Resetear TODO el estado
+    setQueue(newQueue);
+    setQueueIndex(0);
+    setCurrentSong(song);
+    setPlaySource({ type: "related", name: "Recommended", thumb: null });
+    setOriginalQueueSize(1); // Solo 1 canción inicial
+    setInitialQueueSize(1); // Tamaño inicial también 1
+
+    // No hay logging para "related" (no es album ni artist)
+    lastLoggedContextKeyRef.current = null;
+
+    try {
+      await syncWithTrackPlayer(newQueue, 0);
+      console.log('✅ Reproducción desde Related iniciada');
+    } catch (err) {
+      console.error("[RNTP] error en syncWithTrackPlayer:", err);
+    } finally {
+      switchingRef.current = false;
+    }
+  }
+
+  // 🆕 Nueva función: Agregar canción del autoplay a la cola original y reproducirla
+  async function addToQueueAndPlay(song: Song) {
+    console.log('🎵 Agregando canción de autoplay a cola original:', song.title);
+
+    const insertPosition = originalQueueSize; // Posición donde se insertará en el STATE
+    
+    // 1. Agregar la canción al STATE en la posición correcta
+    const newQueue = [...queue];
+    newQueue.splice(insertPosition, 0, song);
+    
+    // 2. Actualizar estados
+    setQueue(newQueue);
+    setOriginalQueueSize(originalQueueSize + 1);
+    
+    console.log('📊 Nueva cola:', newQueue.map(s => (s as any).title));
+    console.log('📊 originalQueueSize:', originalQueueSize, '→', originalQueueSize + 1);
+
+    // 3. RE-SINCRONIZAR TrackPlayer completamente (para mantener alineación)
+    // Esto es NECESARIO porque insertamos en medio del STATE
+    try {
+      syncingRef.current = true; // Evitar que el event listener interfiera
+      await syncWithTrackPlayer(newQueue, insertPosition);
+      console.log('✅ TrackPlayer re-sincronizado y reproduciendo en posición', insertPosition);
+    } catch (e) {
+      console.error('[addToQueueAndPlay] ERROR:', e);
+    } finally {
+      syncingRef.current = false;
+    }
+  }
+
+  async function next() {
     if (queueIndex < 0) return;
     const ni = queueIndex + 1;
-    if (ni >= queue.length) return;
 
-    setQueueIndex(ni);
-    setCurrentSong(queue[ni]);
+    // Si hay siguiente canción en el queue, reproducirla
+    if (ni < queue.length) {
+      setQueueIndex(ni);
+      setCurrentSong(queue[ni]);
 
-    (async () => {
       try {
         await TrackPlayer.skipToNext();
         await TrackPlayer.play();
       } catch (e) {
         console.error("[next] ERROR:", e);
       }
-    })();
+      return;
+    }
+
+    // Estamos en la última canción del queue
+    // Intentar autoplay si está habilitado
+    if (isAutoplayEnabled() && autoplayProviderRef.current) {
+      const nextAutoplaySong = autoplayProviderRef.current();
+
+      if (nextAutoplaySong) {
+        console.log('🎵 Agregando autoplay automático:', nextAutoplaySong.title);
+
+        // Insertar en la posición correcta (después de la cola original)
+        const newQueue = [...queue];
+        newQueue.splice(originalQueueSize, 0, nextAutoplaySong);
+        
+        setQueue(newQueue);
+        setOriginalQueueSize(originalQueueSize + 1); // Incrementar tamaño original
+        setQueueIndex(ni);
+        setCurrentSong(nextAutoplaySong);
+
+        try {
+          await TrackPlayer.add({
+            id: String(nextAutoplaySong.id),
+            url: `${getBaseUrl()}/music/play?id=${encodeURIComponent(nextAutoplaySong.id)}&redir=2`,
+            title: (nextAutoplaySong as any).title,
+            artist: (nextAutoplaySong as any).artistName ?? "",
+            artwork: (nextAutoplaySong as any).thumbnail ?? undefined,
+            type: TrackType.Default,
+            headers: {
+              Range: "bytes=0-",
+              "Accept-Encoding": "identity",
+              Connection: "keep-alive",
+            },
+          } as any);
+
+          await TrackPlayer.skipToNext();
+          await TrackPlayer.play();
+          
+          console.log('✅ Autoplay automático agregado en posición', originalQueueSize);
+        } catch (e) {
+          console.error("[next] ERROR agregando autoplay:", e);
+        }
+        return;
+      }
+    }
+
+    console.log('🎵 Última canción, sin autoplay');
+  }
+
+  async function skipToIndex(index: number) {
+    if (index < 0 || index >= queue.length) {
+      console.warn('[skipToIndex] índice fuera de rango:', index);
+      return;
+    }
+
+    setQueueIndex(index);
+    setCurrentSong(queue[index]);
+
+    try {
+      await TrackPlayer.skip(index);
+      await TrackPlayer.play();
+    } catch (e) {
+      console.error('[skipToIndex] ERROR:', e);
+    }
+  }
+
+  function setAutoplayProvider(provider: (() => Song | null) | null) {
+    autoplayProviderRef.current = provider;
+  }
+
+  function setIsAutoplayEnabledCallback(callback: (() => boolean) | null) {
+    isAutoplayEnabledRef.current = callback;
+  }
+
+  function isAutoplayEnabled(): boolean {
+    return isAutoplayEnabledRef.current?.() ?? false;
   }
 
   async function prev() {
@@ -313,11 +458,19 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       queue,
       queueIndex,
       playFromList,
+      playFromRelated, // 🆕 Reproducir desde Related
       next,
+      skipToIndex,
       prev,
       playSource,
+      originalQueueSize, // Tamaño actual (crece con autoplay)
+      initialQueueSize, // 🆕 Tamaño inicial
+      addToQueueAndPlay,
+      setAutoplayProvider,
+      setIsAutoplayEnabledCallback,
+      isAutoplayEnabled,
     }),
-    [currentSong, queue, queueIndex, playSource]
+    [currentSong, queue, queueIndex, playSource, originalQueueSize, initialQueueSize]
   );
 
   return <MusicContext.Provider value={value}>{children}</MusicContext.Provider>;

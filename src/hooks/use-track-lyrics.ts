@@ -81,5 +81,6 @@ export function useTrackLyrics({
     lyricsError,
     mainScrollRef,
     toggleLyrics,
+    fetchLyrics,
   };
 }
