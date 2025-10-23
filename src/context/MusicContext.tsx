@@ -2,11 +2,11 @@ import { createContext } from "react";
 import { Song } from "./../types/music";
 
 type PlaySource =
-  | { type: "playlist"; name?: string | null }
-  | { type: "album"; name?: string | null }
-  | { type: "artist"; name?: string | null }
-  | { type: "queue"; name?: string | null };
-
+  | { type: "playlist"; id?: string | null; name?: string | null }
+  | { type: "album";    id?: string | null; name?: string | null }
+  | { type: "artist";   id?: string | null; name?: string | null }
+  | { type: "queue";    id?: string | null; name?: string | null }
+  | { type: "related";  id?: string | null; name?: string | null };
 export interface MusicContextType {
   currentSong: Song | null;
   setCurrentSong: (song: Song | null) => void;
