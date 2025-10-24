@@ -41,7 +41,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     | { type: "album"; name?: string | null; thumb?: string | null }
     | { type: "artist"; name?: string | null; thumb?: string | null }
     | { type: "queue"; name?: string | null; thumb?: string | null }
-    | { type: "related"; name?: string | null; thumb?: string | null };
+    | { type: "related";  id: string;         name?: string | null; thumb?: string | null }; 
 
   function getBaseUrl() {
     return (
@@ -211,8 +211,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     lastLoggedContextKeyRef.current = null;
 
     try {
-      await syncWithTrackPlayer(newQueue, 0);
+      
       setPlaySource({ type: "related", id: String(song.id), name: "Recommended", thumb: null });
+      await syncWithTrackPlayer(newQueue, 0);
+      
       console.log('✅ Reproducción desde Related iniciada');
     } catch (err) {
       console.error("[RNTP] error en syncWithTrackPlayer:", err);

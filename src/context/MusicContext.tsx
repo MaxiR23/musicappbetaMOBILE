@@ -6,7 +6,7 @@ type PlaySource =
   | { type: "album";    id?: string | null; name?: string | null }
   | { type: "artist";   id?: string | null; name?: string | null }
   | { type: "queue";    id?: string | null; name?: string | null }
-  | { type: "related";  id?: string | null; name?: string | null };
+  | { type: "related";  id: string;         name?: string | null };
 export interface MusicContextType {
   currentSong: Song | null;
   setCurrentSong: (song: Song | null) => void;
