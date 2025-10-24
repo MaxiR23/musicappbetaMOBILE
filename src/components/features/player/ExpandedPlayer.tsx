@@ -46,6 +46,7 @@ interface ExpandedPlayerProps {
   hasPrev: boolean;
   hasNext: boolean;
   repeatOne: boolean;
+  shuffled?: boolean;
 
   // Like
   isLiked: boolean;
@@ -92,6 +93,7 @@ interface ExpandedPlayerProps {
   onPrev: () => void;
   onNext: () => void;
   onToggleRepeat: () => void;
+  onToggleShuffle?: () => void;
   onAutoplayToggle: (enabled: boolean) => void;
   onSlidingStart: () => void;
   onValueChange: (value: number) => void;
@@ -128,6 +130,7 @@ export function ExpandedPlayer({
   hasPrev,
   hasNext,
   repeatOne,
+  shuffled,
   isLiked,
   liking,
   localVal,
@@ -162,6 +165,7 @@ export function ExpandedPlayer({
   onPrev,
   onNext,
   onToggleRepeat,
+  onToggleShuffle,
   onSlidingStart,
   onValueChange,
   onSlidingComplete,
@@ -356,10 +360,12 @@ export function ExpandedPlayer({
             hasPrev={hasPrev}
             hasNext={hasNext}
             repeatOne={repeatOne}
+            shuffled={shuffled}
             onTogglePlay={onTogglePlay}
             onPrev={onPrev}
             onNext={onNext}
             onToggleRepeat={onToggleRepeat}
+            onToggleShuffle={onToggleShuffle}
             accentColor={accentColor}
           />
 
@@ -528,7 +534,7 @@ const styles = StyleSheet.create({
     textAlign: "left",
   },
   artist: { color: "#ccc", fontSize: 16 },
-  
+
   // TABS ESTILO YOUTUBE MUSIC
   tabsContainer: {
     flexDirection: "row",

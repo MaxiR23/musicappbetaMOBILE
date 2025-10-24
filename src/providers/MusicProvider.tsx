@@ -18,7 +18,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
   const autoplayProviderRef = useRef<(() => Song | null) | null>(null);
   const isAutoplayEnabledRef = useRef<(() => boolean) | null>(null);
-  const playedAutoplayIdsRef = useRef<Set<string>>(new Set()); // 🆕 IDs reproducidos de autoplay
+  const playedAutoplayIdsRef = useRef<Set<string>>(new Set());
+
+  const [isShuffled, setIsShuffled] = useState(false);
+  const [originalQueueBeforeShuffle, setOriginalQueueBeforeShuffle] = useState<Song[]>([]);
+  const [originalIndexBeforeShuffle, setOriginalIndexBeforeShuffle] = useState<number>(-1);
 
   const { user } = useAuth();
   const userId = user?.id ?? undefined;
@@ -41,7 +45,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     | { type: "album"; name?: string | null; thumb?: string | null }
     | { type: "artist"; name?: string | null; thumb?: string | null }
     | { type: "queue"; name?: string | null; thumb?: string | null }
-    | { type: "related";  id: string;         name?: string | null; thumb?: string | null }; 
+    | { type: "related"; id: string; name?: string | null; thumb?: string | null };
 
   function getBaseUrl() {
     return (
@@ -211,10 +215,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     lastLoggedContextKeyRef.current = null;
 
     try {
-      
+
       setPlaySource({ type: "related", id: String(song.id), name: "Recommended", thumb: null });
       await syncWithTrackPlayer(newQueue, 0);
-      
+
       console.log('✅ Reproducción desde Related iniciada');
     } catch (err) {
       console.error("[RNTP] error en syncWithTrackPlayer:", err);
@@ -404,6 +408,193 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Dentro de MusicProvider, después de la función prev()
+  async function toggleShuffle() {
+    if (originalQueueSize <= 1) {
+      console.log('⚠️ [SHUFFLE] No hay suficientes temas para shuffle');
+      return;
+    }
+
+    const currentSongId = currentSong?.id;
+    if (!currentSongId) {
+      console.warn('⚠️ [SHUFFLE] No hay canción actual');
+      return;
+    }
+
+    // ======== DESACTIVAR SHUFFLE ========
+    if (isShuffled) {
+      console.log('🔀 [SHUFFLE OFF] Restaurando orden original...');
+
+      // Encontrar la canción actual en la queue original
+      const currentSongIndexInOriginal = originalQueueBeforeShuffle.findIndex(
+        (s) => s.id === currentSongId
+      );
+
+      if (currentSongIndexInOriginal === -1) {
+        console.warn('⚠️ [SHUFFLE OFF] No se encontró la canción en la queue original');
+        return;
+      }
+
+      console.log('📍 [SHUFFLE OFF] Canción actual está en posición original:', currentSongIndexInOriginal);
+
+      // Restaurar estados
+      setQueue(originalQueueBeforeShuffle);
+      setQueueIndex(currentSongIndexInOriginal);
+      setIsShuffled(false);
+
+      // Sincronizar TrackPlayer sin cortes
+      try {
+        switchingRef.current = true;
+        await ensureTrackPlayer();
+        const BASE_URL = getBaseUrl();
+        if (!BASE_URL) return;
+
+        syncingRef.current = true;
+
+        // Obtener índice actual
+        const currentTrackIndex = await TrackPlayer.getActiveTrackIndex();
+
+        // Remover todas las pistas excepto la actual
+        const allTracks = await TrackPlayer.getQueue();
+        const indicesToRemove = allTracks
+          .map((_, idx) => idx)
+          .filter(idx => idx !== currentTrackIndex);
+
+        for (let i = indicesToRemove.length - 1; i >= 0; i--) {
+          await TrackPlayer.remove(indicesToRemove[i]);
+        }
+
+        // 🔥 CRÍTICO: Agregar pistas ANTES de la actual (en orden inverso)
+        const tracksBeforeCurrent = originalQueueBeforeShuffle
+          .slice(0, currentSongIndexInOriginal)
+          .reverse() // Invertir para agregar de atrás hacia adelante
+          .map((s) => ({
+            id: String(s.id),
+            url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
+            title: (s as any).title,
+            artist: (s as any).artistName ?? (s as any).artist ?? "",
+            artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
+            type: TrackType.Default,
+            headers: {
+              Range: "bytes=0-",
+              "Accept-Encoding": "identity",
+              Connection: "keep-alive",
+            },
+          })) as any[];
+
+        // Agregar ANTES de la actual (índice 0 = antes de la pista actual)
+        for (const track of tracksBeforeCurrent) {
+          await TrackPlayer.add(track, 0);
+        }
+
+        // 🔥 CRÍTICO: Agregar pistas DESPUÉS de la actual
+        const tracksAfterCurrent = originalQueueBeforeShuffle
+          .slice(currentSongIndexInOriginal + 1)
+          .map((s) => ({
+            id: String(s.id),
+            url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
+            title: (s as any).title,
+            artist: (s as any).artistName ?? (s as any).artist ?? "",
+            artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
+            type: TrackType.Default,
+            headers: {
+              Range: "bytes=0-",
+              "Accept-Encoding": "identity",
+              Connection: "keep-alive",
+            },
+          })) as any[];
+
+        // Agregar DESPUÉS de la actual
+        if (tracksAfterCurrent.length > 0) {
+          await TrackPlayer.add(tracksAfterCurrent);
+        }
+
+        console.log('✅ [SHUFFLE OFF] Orden original restaurado');
+      } catch (e) {
+        console.error('[SHUFFLE OFF] Error:', e);
+      } finally {
+        syncingRef.current = false;
+        switchingRef.current = false;
+      }
+
+      return;
+    }
+    
+    // ======== ACTIVAR SHUFFLE ========
+    console.log('🔀 [SHUFFLE ON] Mezclando temas originales...');
+    console.log('📊 [SHUFFLE ON] Original size:', originalQueueSize, 'Total:', queue.length);
+
+    // Guardar estado original ANTES de mezclar
+    setOriginalQueueBeforeShuffle([...queue]);
+    setOriginalIndexBeforeShuffle(queueIndex);
+
+    // Separar originales y autoplay
+    const originalTracks = queue.slice(0, originalQueueSize);
+    const autoplayTracks = queue.slice(originalQueueSize);
+
+    // Mezclar solo originales (sin la actual)
+    const otherOriginalTracks = originalTracks.filter((s) => s.id !== currentSongId);
+
+    for (let i = otherOriginalTracks.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [otherOriginalTracks[i], otherOriginalTracks[j]] = [otherOriginalTracks[j], otherOriginalTracks[i]];
+    }
+
+    // Nueva queue: actual + mezclados + autoplay
+    const shuffledQueue = [currentSong, ...otherOriginalTracks, ...autoplayTracks];
+
+    setQueue(shuffledQueue);
+    setQueueIndex(0);
+    setIsShuffled(true);
+
+    // Sincronizar TrackPlayer sin cortes
+    try {
+      switchingRef.current = true;
+      await ensureTrackPlayer();
+      const BASE_URL = getBaseUrl();
+      if (!BASE_URL) return;
+
+      syncingRef.current = true;
+
+      const currentTrackIndex = await TrackPlayer.getActiveTrackIndex();
+      const allTracks = await TrackPlayer.getQueue();
+      const indicesToRemove = allTracks
+        .map((_, idx) => idx)
+        .filter(idx => idx !== currentTrackIndex);
+
+      for (let i = indicesToRemove.length - 1; i >= 0; i--) {
+        await TrackPlayer.remove(indicesToRemove[i]);
+      }
+
+      const tracksToAdd = shuffledQueue
+        .slice(1)
+        .map((s) => ({
+          id: String(s.id),
+          url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
+          title: (s as any).title,
+          artist: (s as any).artistName ?? (s as any).artist ?? "",
+          artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
+          type: TrackType.Default,
+          headers: {
+            Range: "bytes=0-",
+            "Accept-Encoding": "identity",
+            Connection: "keep-alive",
+          },
+        })) as any[];
+
+      if (tracksToAdd.length > 0) {
+        await TrackPlayer.add(tracksToAdd);
+      }
+
+      console.log('✅ [SHUFFLE ON] Queue mezclada');
+    } catch (e) {
+      console.error('[SHUFFLE ON] Error:', e);
+    } finally {
+      syncingRef.current = false;
+      switchingRef.current = false;
+    }
+  }
+
   // Sincronizar refs con estados
   useEffect(() => {
     queueRef.current = queue;
@@ -571,6 +762,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       next,
       skipToIndex,
       prev,
+      shuffle: toggleShuffle,
+      isShuffled,
       playSource,
       originalQueueSize,
       initialQueueSize,
@@ -579,7 +772,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       setIsAutoplayEnabledCallback,
       isAutoplayEnabled,
     }),
-    [currentSong, queue, queueIndex, playSource, originalQueueSize, initialQueueSize]
+    [currentSong, queue, queueIndex, playSource, originalQueueSize, initialQueueSize, isShuffled]
   );
 
   return <MusicContext.Provider value={value}>{children}</MusicContext.Provider>;

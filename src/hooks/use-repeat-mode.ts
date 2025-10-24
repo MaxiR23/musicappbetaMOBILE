@@ -2,43 +2,30 @@
 import { useEffect, useState } from "react";
 import TrackPlayer, { RepeatMode } from "react-native-track-player";
 
-/**
- * Hook para manejar el modo de repetición del player
- * Sincroniza con TrackPlayer y permite toggle entre Off y Track
- */
 export function useRepeatMode() {
   const [repeatOne, setRepeatOne] = useState(false);
 
-  // Inicializar el estado desde TrackPlayer al montar
+  // Solo cargar estado inicial
   useEffect(() => {
     (async () => {
       try {
-        const mode = await (TrackPlayer as any).getRepeatMode?.();
+        const mode = await TrackPlayer.getRepeatMode();
         setRepeatOne(mode === RepeatMode.Track);
-      } catch {
-        // Si falla, asumir Off
-      }
+      } catch {}
     })();
   }, []);
 
-  // Toggle entre RepeatMode.Track y RepeatMode.Off
   const toggleRepeatOne = async () => {
     const next = !repeatOne;
-    setRepeatOne(next);
-
+    setRepeatOne(next); // ← Actualizá PRIMERO el estado local
+    
     try {
       await TrackPlayer.setRepeatMode(next ? RepeatMode.Track : RepeatMode.Off);
     } catch (e) {
-      console.warn(
-        "Repeat no soportado por RNTP, quedó en:",
-        next ? "Track" : "Off",
-        e
-      );
+      console.warn("Error repeat:", e);
+      setRepeatOne(!next); // Si falla, revertí el estado
     }
   };
 
-  return {
-    repeatOne,
-    toggleRepeatOne,
-  };
+  return { repeatOne, toggleRepeatOne };
 }

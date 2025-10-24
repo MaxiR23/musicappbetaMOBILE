@@ -7,6 +7,7 @@ interface PlayerControlsProps {
   hasPrev: boolean;
   hasNext: boolean;
   repeatOne: boolean;
+  shuffled?: boolean;
   onTogglePlay: () => void;
   onPrev: () => void;
   onNext: () => void;
@@ -18,22 +19,26 @@ interface PlayerControlsProps {
 /**
  * Controles principales del player: shuffle, prev, play/pause, next, repeat
  */
-export function PlayerControls({
+export const PlayerControls = React.memo(({
   isPlaying,
   hasPrev,
   hasNext,
   repeatOne,
+  shuffled,
   onTogglePlay,
   onPrev,
   onNext,
   onToggleRepeat,
   onToggleShuffle,
   accentColor = "#ffffff",
-}: PlayerControlsProps) {
+}: PlayerControlsProps) => {
   return (
     <View style={styles.controls}>
       <TouchableOpacity onPress={onToggleShuffle}>
-        <Shuffle color="#fff" size={28} />
+        <View style={styles.shuffleWrap}>
+          <Shuffle color={shuffled ? accentColor : "#fff"} size={28} />
+          {shuffled && <View style={styles.shuffleDot} />}
+        </View>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={hasPrev ? onPrev : undefined} disabled={!hasPrev}>
@@ -56,7 +61,9 @@ export function PlayerControls({
       </TouchableOpacity>
     </View>
   );
-}
+});
+
+PlayerControls.displayName = 'PlayerControls';
 
 const styles = StyleSheet.create({
   controls: {
@@ -86,5 +93,20 @@ const styles = StyleSheet.create({
     right: -2,
     fontSize: 10,
     color: "#fff",
+  },
+  shuffleWrap: {
+    position: "relative",
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  shuffleDot: {  
+    position: "absolute",
+    bottom: -4,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#fff",
   },
 });

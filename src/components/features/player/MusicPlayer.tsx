@@ -41,7 +41,7 @@ export default function MusicPlayer({
   onNext,
   onPrev,
 }: Props) {
-  const { currentSong, queue, queueIndex, playSource, originalQueueSize, initialQueueSize, playFromList, playFromRelated, skipToIndex, addToQueueAndPlay, setAutoplayProvider, setIsAutoplayEnabledCallback } = useMusic();
+  const { currentSong, queue, queueIndex, playSource, originalQueueSize, initialQueueSize, playFromList, playFromRelated, skipToIndex, addToQueueAndPlay, setAutoplayProvider, setIsAutoplayEnabledCallback, shuffle, isShuffled } = useMusic();
   const {
     likeTrack,
     unlikeTrack,
@@ -520,6 +520,8 @@ export default function MusicPlayer({
         onPrev={onPrev}
         onNext={onNext}
         onToggleRepeat={toggleRepeatOne}
+        onToggleShuffle={shuffle}
+        shuffled={isShuffled}
         onSlidingStart={startDrag}
         onValueChange={setLocalVal}
         onSlidingComplete={endDrag}
