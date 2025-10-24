@@ -32,13 +32,35 @@ export default async function playbackService() {
   TrackPlayer.addEventListener(Event.RemotePrevious, () => TrackPlayer.skipToPrevious());
   TrackPlayer.addEventListener(Event.RemoteSeek, e => TrackPlayer.seekTo(e.position));
 
+  // --- Repeat-One (repetir la pista actual) ---
+  // Si el modo de repetición es "Track", cuando termina la canción:
+  // 1) volvemos al segundo 0
+  // 2) reproducimos de nuevo
+  // 3) cortamos el flujo para NO avanzar al siguiente tema
+  TrackPlayer.addEventListener(Event.PlaybackTrackEnded, async () => {
+    try {
+      const getRepeatMode = TrackPlayer && TrackPlayer.getRepeatMode;
+      const mode = getRepeatMode ? await getRepeatMode() : undefined;
+
+      const RM = (TrackPlayer && TrackPlayer.RepeatMode) || {}; // fallback
+      if (mode === RM.Track) {
+        await TrackPlayer.seekTo(0);
+        await TrackPlayer.play();
+        return; // no avances al siguiente tema en repeat-one
+      }
+    } catch (e) {
+      // silencioso: si la API no existe, seguí el flujo normal
+    }
+    // si NO está en repeat-one, dejá que otros handlers manejen el avance
+  });
+
   // --- Diagnóstico de primer play / latencia ---
   const t0 = Date.now();
 
   TrackPlayer.addEventListener(Event.PlaybackState, async ({ state }) => {
     if (!DEBUG) return;
     let pos = 0;
-    try { pos = await TrackPlayer.getPosition(); } catch (e) {}
+    try { pos = await TrackPlayer.getPosition(); } catch (e) { }
     dlog(`[RNTP][state] s=${state} t+${Date.now() - t0}ms pos=${pos.toFixed(2)}s`);
   });
 
@@ -70,6 +92,6 @@ export default async function playbackService() {
       let track = null;
       if (getActiveTrack) track = await getActiveTrack();
       dlog('[RNTP][active]', track ? { id: track.id } : null, `t+${Date.now() - t0}ms`);
-    } catch (e) {}
+    } catch (e) { }
   });
 }
