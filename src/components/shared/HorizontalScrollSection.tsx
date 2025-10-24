@@ -3,179 +3,192 @@ import React, { ReactNode } from "react";
 import {
   FlatList,
   Image,
+  ImageStyle,
+  StyleProp,
   StyleSheet,
   Text,
+  TextStyle,
   TouchableOpacity,
-  View
+  View,
+  ViewStyle,
 } from "react-native";
 
-interface HorizontalScrollSectionProps {
-  /**
-   * Título de la sección
-   */
-  title: string;
+interface HorizontalScrollSectionProps<T = any> {
+  /** Título de la sección (ocultable con showTitle=false) */
+  title?: string;
+  showTitle?: boolean; // default: true
+  /** Padding left del título (configurable) */
+  titlePaddingLeft?: number; // default: 8
 
-  /**
-   * Lista de items a mostrar
-   */
-  items: any[];
+  /** Lista de items */
+  items: T[];
 
-  /**
-   * Función para extraer el ID único de cada item
-   */
-  keyExtractor: (item: any, index: number) => string;
+  /** Extractores */
+  keyExtractor: (item: T, index: number) => string;
+  imageExtractor?: (item: T) => string | undefined;
+  titleExtractor?: (item: T) => string | undefined;
+  subtitleExtractor?: (item: T) => string | undefined;
 
-  /**
-   * Función para extraer la URL de la imagen
-   */
-  imageExtractor: (item: any) => string | undefined;
+  /** Tap en item */
+  onItemPress?: (item: T, index: number) => void;
 
-  /**
-   * Función para extraer el título principal
-   */
-  titleExtractor: (item: any) => string;
+  /** Layout / medidas */
+  cardWidth?: number;         // default: 140
+  imageHeight?: number;       // default: 140
+  circularImage?: boolean;    // default: false
+  imageBorderRadius?: number; // sobrescribe circularImage si viene
 
-  /**
-   * Función opcional para extraer el subtítulo
-   */
-  subtitleExtractor?: (item: any) => string | undefined;
+  /** Espaciado y estilos para igualar otras pantallas */
+  contentPaddingHorizontal?: number;          // default: 12 (match PlayerTabs)
+  gap?: number;                                // default: 16
+  sectionStyle?: StyleProp<ViewStyle>;
+  titleStyle?: StyleProp<TextStyle>;
+  subtitleStyle?: StyleProp<TextStyle>;
+  itemContainerStyle?: StyleProp<ViewStyle>;
+  imageStyle?: StyleProp<ImageStyle>;
+  contentContainerStyle?: StyleProp<ViewStyle>;
 
-  /**
-   * Callback al hacer tap en un item
-   */
-  onItemPress: (item: any, index: number) => void;
+  /** Líneas de texto */
+  titleLines?: number;    // default: 1
+  subtitleLines?: number; // default: 1
 
-  /**
-   * Ancho de cada card (default: 140)
-   */
-  cardWidth?: number;
+  /** Render personalizado (si lo pasás, ignora extractors) */
+  renderItem?: (item: T, index: number) => ReactNode;
 
-  /**
-   * Alto de la imagen (default: 140)
-   */
-  imageHeight?: number;
-
-  /**
-   * Si la imagen debe ser circular (default: false)
-   */
-  circularImage?: boolean;
-
-  /**
-   * Componente personalizado para renderizar cada item
-   * Si se provee, ignora los extractors y usa este render
-   */
-  renderItem?: (item: any, index: number) => ReactNode;
+  /** Perf knobs (pasan directo a FlatList) */
+  initialNumToRender?: number;       // default: 6
+  maxToRenderPerBatch?: number;      // default: 6
+  windowSize?: number;               // default: 5
+  removeClippedSubviews?: boolean;   // default: true
 }
 
-/**
- * Componente reutilizable para secciones con scroll horizontal
- * Usado para mostrar álbumes, artistas relacionados, playlists, etc.
- * 
- * @example
- * ```tsx
- * <HorizontalScrollSection
- *   title="Álbumes"
- *   items={albums}
- *   keyExtractor={(item) => item.id}
- *   imageExtractor={(item) => item.thumbnail}
- *   titleExtractor={(item) => item.title}
- *   subtitleExtractor={(item) => item.year}
- *   onItemPress={(item) => router.push(`/album/${item.id}`)}
- * />
- * ```
- */
-export default React.memo(function HorizontalScrollSection({
+export default React.memo(function HorizontalScrollSection<T>({
   title,
+  showTitle = true,
+  titlePaddingLeft = 8,
+
   items,
   keyExtractor,
   imageExtractor,
   titleExtractor,
   subtitleExtractor,
   onItemPress,
+
   cardWidth = 140,
   imageHeight = 140,
   circularImage = false,
+  imageBorderRadius,
+
+  contentPaddingHorizontal = 8, // ← por defecto igual que tus pantallas
+  gap = 16,
+  sectionStyle,
+  titleStyle,
+  subtitleStyle,
+  itemContainerStyle,
+  imageStyle,
+  contentContainerStyle,
+
+  titleLines = 1,
+  subtitleLines = 1,
+
   renderItem,
-}: HorizontalScrollSectionProps) {
-  if (!items || items.length === 0) {
-    return null;
-  }
+
+  initialNumToRender = 6,
+  maxToRenderPerBatch = 6,
+  windowSize = 5,
+  removeClippedSubviews = true,
+}: HorizontalScrollSectionProps<T>) {
+  if (!items || items.length === 0) return null;
+
+  const radius = imageBorderRadius ?? (circularImage ? cardWidth / 2 : 8);
 
   return (
-    <View style={styles.section}>
-      {!!title && <Text style={styles.title}>{title}</Text>}
+    <View style={[styles.section, sectionStyle]}>
+      {showTitle && !!title && (
+        <Text
+          style={[styles.title, { paddingLeft: titlePaddingLeft }, titleStyle]}
+        >
+          {title}
+        </Text>
+      )}
+
       <FlatList
         horizontal
         data={items}
         keyExtractor={keyExtractor}
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        initialNumToRender={4}  // ← Solo renderiza 4 al inicio
-        maxToRenderPerBatch={2}  // ← Carga de a 2
-        windowSize={3}  // ← Mantiene 3 ventanas en memoria
-        removeClippedSubviews={true}  // ← Optimización extra
+        contentContainerStyle={[
+          { paddingHorizontal: contentPaddingHorizontal },
+          contentContainerStyle,
+        ]}
+        initialNumToRender={initialNumToRender}
+        maxToRenderPerBatch={maxToRenderPerBatch}
+        windowSize={windowSize}
+        removeClippedSubviews={removeClippedSubviews}
         renderItem={({ item, index }) => {
-          // Si hay un render personalizado, usarlo
+          // Si viene un render personalizado, lo usamos tal cual
           if (renderItem) {
             const isLast = index === items.length - 1;
             return (
-              <View style={{ marginRight: isLast ? 0 : 16 }}>
+              <View style={{ marginRight: isLast ? 0 : gap }}>
                 {renderItem(item, index)}
               </View>
             );
           }
 
-          // Render por defecto
+          // Render por defecto DRY: imagen + títulos
           const isLast = index === items.length - 1;
-          const imageUrl = imageExtractor(item);
-          const itemTitle = titleExtractor(item);
+          const imageUrl = imageExtractor?.(item);
+          const itemTitle = titleExtractor?.(item);
           const subtitle = subtitleExtractor?.(item);
 
           return (
             <TouchableOpacity
-              style={[styles.card, { width: cardWidth, marginRight: isLast ? 0 : 16 }]}
-              onPress={() => onItemPress(item, index)}
               activeOpacity={0.85}
+              onPress={onItemPress ? () => onItemPress(item, index) : undefined}
+              style={[
+                styles.card,
+                { width: cardWidth, marginRight: isLast ? 0 : gap },
+                itemContainerStyle,
+              ]}
             >
               <View
                 style={[
                   styles.imageContainer,
-                  {
-                    width: cardWidth,
-                    height: imageHeight,
-                    borderRadius: circularImage ? cardWidth / 2 : 8,
-                  },
+                  { width: cardWidth, height: imageHeight, borderRadius: radius },
                 ]}
               >
                 {imageUrl ? (
                   <Image
                     source={{ uri: imageUrl }}
-                    style={[
-                      styles.image,
-                      { borderRadius: circularImage ? cardWidth / 2 : 8 },
-                    ]}
+                    style={[styles.image, { borderRadius: radius }, imageStyle]}
                   />
                 ) : (
                   <View
                     style={[
                       styles.image,
                       styles.imagePlaceholder,
-                      { borderRadius: circularImage ? cardWidth / 2 : 8 },
+                      { borderRadius: radius },
                     ]}
                   />
                 )}
               </View>
 
-              <Text
-                style={styles.itemTitle}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {itemTitle}
-              </Text>
+              {!!itemTitle && (
+                <Text
+                  style={styles.itemTitle}
+                  numberOfLines={titleLines}
+                  ellipsizeMode="tail"
+                >
+                  {itemTitle}
+                </Text>
+              )}
 
               {!!subtitle && (
-                <Text style={styles.subtitle} numberOfLines={1}>
+                <Text
+                  style={[styles.subtitle, subtitleStyle]}
+                  numberOfLines={subtitleLines}
+                >
                   {subtitle}
                 </Text>
               )}
@@ -189,17 +202,17 @@ export default React.memo(function HorizontalScrollSection({
 
 const styles = StyleSheet.create({
   section: {
-    paddingHorizontal: 4,
     marginTop: 12,
   },
   title: {
     color: "#fff",
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 8,
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 12,
+    paddingHorizontal: 12, // sólo aplica si showTitle=true
   },
-  scrollContent: {
-    paddingRight: 0,
+  card: {
+    // ancho dinámico por prop
   },
   imageContainer: {
     overflow: "hidden",

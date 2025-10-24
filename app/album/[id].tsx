@@ -131,7 +131,6 @@ export default function AlbumScreen() {
         }
 
         {/* Songs */}
-        {/* Songs */}
         <View style={styles.section}>
           {hasTracks ? (
             <FlatList

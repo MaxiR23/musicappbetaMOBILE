@@ -2,17 +2,21 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  FlatList,
   Image,
   Platform,
   Pressable,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import TrackRow from "../../shared/TrackRow";
+
+import HorizontalScrollSection from "@/src/components/shared/HorizontalScrollSection";
+import ProList from "@/src/components/shared/ProList";
+
 
 type TabType = "upnext" | "lyrics" | "related";
 
@@ -21,7 +25,7 @@ type TabType = "upnext" | "lyrics" | "related";
  */
 function getSectionType(section: any): "songs" | "artists" | "albums" | "unknown" {
   const title = section?.title?.toLowerCase() || "";
-  
+
   if (title.includes("song") || title.includes("track")) {
     return "songs";
   }
@@ -31,7 +35,7 @@ function getSectionType(section: any): "songs" | "artists" | "albums" | "unknown
   if (title.includes("album")) {
     return "albums";
   }
-  
+
   // Fallback: mirar el primer item
   const firstItem = section?.contents?.[0];
   if (firstItem) {
@@ -39,7 +43,7 @@ function getSectionType(section: any): "songs" | "artists" | "albums" | "unknown
     if (firstItem.browseId?.startsWith("UC")) return "artists";
     if (firstItem.browseId?.startsWith("MPREb_")) return "albums";
   }
-  
+
   return "unknown";
 }
 
@@ -78,10 +82,10 @@ interface PlayerTabsProps {
   onFetchLyrics: () => Promise<void>;
   onFetchUpNext: () => Promise<void>;
   onFetchRelated: () => Promise<void>;
-  
+
   // 🆕 Callbacks para Up Next
   onUpNextTrackPress?: (track: any, isFromAutoplay: boolean) => void;
-  
+
   // 🆕 Callbacks para Related
   onRelatedTrackPress?: (track: any) => void;
   onRelatedArtistPress?: (artistId: string) => void;
@@ -145,14 +149,14 @@ export function PlayerTabs({
 
   // Refrescar datos cuando cambia la canción
   const prevSongIdRef = useRef(currentSong?.id);
-  
+
   useEffect(() => {
     const currentSongId = currentSong?.id;
-    
+
     // Si cambió la canción (y no es la primera carga)
     if (prevSongIdRef.current && currentSongId && prevSongIdRef.current !== currentSongId) {
       console.log('🔄 Canción cambió, refrescando datos...');
-      
+
       // Refrescar según el tab activo
       if (activeTab === "lyrics") {
         onFetchLyrics();
@@ -165,7 +169,7 @@ export function PlayerTabs({
         onFetchRelated();
       }
     }
-    
+
     // Actualizar referencia
     prevSongIdRef.current = currentSongId;
   }, [currentSong?.id, activeTab]);
@@ -189,7 +193,7 @@ export function PlayerTabs({
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      
+
       {/* HEADER MINIMIZADO */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onCoverPress} activeOpacity={0.8}>
@@ -263,10 +267,13 @@ export function PlayerTabs({
       </View>
 
       {/* CONTENIDO DEL TAB ACTIVO */}
-      <ScrollView
+      <ProList
         style={styles.contentContainer}
         contentContainerStyle={styles.contentInner}
-        showsVerticalScrollIndicator={true}
+        showsVerticalScrollIndicator
+        blockSize={2}
+        initialBlocks={3}
+        onEndReachedThreshold={0.5}
       >
         {/* UP NEXT */}
         {activeTab === "upnext" && (
@@ -294,58 +301,57 @@ export function PlayerTabs({
 
                 {/* TODA LA COLA ORIGINAL COMPLETA (nada se oculta) */}
                 {(() => {
-                  // Mostrar TODA la cola original (del índice 0 hasta originalQueueSize)
                   const originalQueue = queue.slice(0, originalQueueSize);
-                  
-                  if (originalQueue.length > 0) {
-                    return (
-                      <View style={styles.queueSection}>
-                        <View style={styles.trackList}>
-                          {originalQueue.map((track: any, idx: number) => {
-                            const isCurrentTrack = idx === queueIndex; // Es la que está sonando
-                            
-                            return (
-                              <TrackRow
-                                key={track.id || idx}
-                                trackId={track.id}
-                                index={idx + 1}
-                                title={track.title}
-                                artist={track.artistName || track.artist}
-                                thumbnail={track.thumbnail || track.thumbnail_url}
-                                showIndex={false}
-                                showMoreButton={true}
-                                isPlaying={isCurrentTrack}
-                                onPress={() => {
-                                  // Si ya está sonando, no hacer nada
-                                  if (isCurrentTrack) return;
-                                  
-                                  // Saltar a esta canción
-                                  if (onUpNextTrackPress) {
-                                    onUpNextTrackPress({ ...track, __queueIndex: idx }, false);
-                                  }
-                                }}
-                              />
-                            );
-                          })}
-                        </View>
-                      </View>
-                    );
-                  }
-                  return null;
+                  if (originalQueue.length === 0) return null;
+
+                  return (
+                    <View style={styles.queueSection}>
+                      <FlatList
+                        data={originalQueue}
+                        keyExtractor={(track: any, idx: number) => `${track.id ?? idx}`}
+                        renderItem={({ item: track, index: idx }) => {
+                          const isCurrentTrack = idx === queueIndex;
+                          return (
+                            <TrackRow
+                              trackId={track.id}
+                              index={idx + 1}
+                              title={track.title}
+                              artist={track.artistName || track.artist}
+                              thumbnail={track.thumbnail || track.thumbnail_url}
+                              showIndex={false}
+                              showMoreButton={true}
+                              onPress={() => {
+                                if (isCurrentTrack) return;
+                                onUpNextTrackPress?.({ ...track, __queueIndex: idx }, false);
+                              }}
+                            />
+                          );
+                        }}
+                        style={styles.trackList}
+                        scrollEnabled={false}
+                        initialNumToRender={12}
+                        maxToRenderPerBatch={12}
+                        windowSize={6}
+                        updateCellsBatchingPeriod={80}
+                        removeClippedSubviews
+                        onEndReachedThreshold={0.2}
+                      />
+                    </View>
+                  );
                 })()}
 
-                {/* 🆕 SECCIÓN 2: AUTOPLAY (sugerencias que NO están en el queue aún) */}
                 {(() => {
+                  // 🆕 SECCIÓN 2: AUTOPLAY (sugerencias que NO están en el queue aún)
                   if (!upNextData?.upNext || upNextData.upNext.length <= 1) {
                     return null;
                   }
 
                   // Las sugerencias de autoplay (sin la primera que es la canción actual)
                   const autoplaySuggestions = upNextData.upNext.slice(1);
-                  
+
                   // IDs de canciones ya en el queue (para filtrar duplicados)
                   const queueIds = new Set(queue.map((s: any) => String(s.id)));
-                  
+
                   // Filtrar canciones que NO están en el queue
                   const autoplayNotInQueue = autoplaySuggestions.filter(
                     (track: any) => !queueIds.has(String(track.videoId || track.id))
@@ -363,17 +369,21 @@ export function PlayerTabs({
                           Based on your queue
                         </Text>
                       </View>
-                      <View style={styles.trackList}>
-                        {autoplayNotInQueue.map((track: any, idx: number) => (
+
+                      {/* FlatList para carga progresiva; sin scroll propio para no pelear con el contenedor padre */}
+                      <FlatList
+                        data={autoplayNotInQueue}
+                        keyExtractor={(track: any, idx: number) =>
+                          `${track.videoId ?? track.id ?? idx}`
+                        }
+                        renderItem={({ item: track, index: idx }) => (
                           <TrackRow
                             key={track.videoId || idx}
                             trackId={track.videoId}
                             index={idx + 1}
                             title={track.title}
                             artist={track.artists?.map((a: any) => a.name).join(", ")}
-                            thumbnail={
-                              track.thumbnail?.[0]?.url || track.thumbnails?.[0]?.url
-                            }
+                            thumbnail={track.thumbnail?.[0]?.url || track.thumbnails?.[0]?.url}
                             showIndex={false}
                             showMoreButton={false}
                             onPress={() => {
@@ -383,8 +393,16 @@ export function PlayerTabs({
                               }
                             }}
                           />
-                        ))}
-                      </View>
+                        )}
+                        style={styles.trackList}
+                        scrollEnabled={false}
+                        initialNumToRender={12}
+                        maxToRenderPerBatch={12}
+                        windowSize={6}
+                        updateCellsBatchingPeriod={80}
+                        removeClippedSubviews
+                        onEndReachedThreshold={0.2}
+                      />
                     </View>
                   );
                 })()}
@@ -460,10 +478,14 @@ export function PlayerTabs({
                     return (
                       <View key={sIdx} style={styles.relatedSection}>
                         <Text style={styles.relatedSectionTitle}>{section.title}</Text>
-                        <View style={styles.trackList}>
-                          {contents.map((track: any, tIdx: number) => (
+
+                        <FlatList
+                          data={contents}
+                          keyExtractor={(track: any, i: number) =>
+                            `${track.videoId || track.id || "song"}-${i}`
+                          }
+                          renderItem={({ item: track, index: tIdx }) => (
                             <TrackRow
-                              key={track.videoId || tIdx}
                               trackId={track.videoId}
                               index={tIdx + 1}
                               title={track.title}
@@ -471,15 +493,18 @@ export function PlayerTabs({
                               thumbnail={track.thumbnail?.[0]?.url || track.thumbnails?.[0]?.url}
                               showIndex={false}
                               showMoreButton={false}
-                              onPress={() => {
-                                if (onRelatedTrackPress) {
-                                  console.log('🎵 Reproduciendo canción desde Related:', track.title);
-                                  onRelatedTrackPress(track);
-                                }
-                              }}
+                              onPress={() => onRelatedTrackPress?.(track)}
                             />
-                          ))}
-                        </View>
+                          )}
+                          style={styles.trackList}
+                          scrollEnabled={false}
+                          initialNumToRender={12}
+                          maxToRenderPerBatch={12}
+                          windowSize={6}
+                          updateCellsBatchingPeriod={80}
+                          removeClippedSubviews
+                          onEndReachedThreshold={0.2}
+                        />
                       </View>
                     );
                   }
@@ -488,33 +513,25 @@ export function PlayerTabs({
                   if (sectionType === "artists") {
                     return (
                       <View key={sIdx} style={styles.relatedSection}>
-                        <Text style={styles.relatedSectionTitle}>{section.title}</Text>
-                        <ScrollView
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          contentContainerStyle={styles.horizontalScroll}
-                        >
-                          {contents.map((artist: any, aIdx: number) => (
-                            <TouchableOpacity
-                              key={artist.browseId || aIdx}
-                              style={styles.artistCard}
-                              onPress={() => {
-                                if (onRelatedArtistPress && artist.browseId) {
-                                  console.log('👤 Navegando a artista:', artist.title || artist.name);
-                                  onRelatedArtistPress(artist.browseId);
-                                }
-                              }}
-                            >
-                              <Image
-                                source={{ uri: artist.thumbnail?.[0]?.url || artist.thumbnails?.[0]?.url }}
-                                style={styles.artistImage}
-                              />
-                              <Text style={styles.artistName} numberOfLines={2}>
-                                {artist.title || artist.name}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
-                        </ScrollView>
+                        <HorizontalScrollSection
+                          title={section.title}
+                          items={contents}
+                          keyExtractor={(a: any, i: number) => a.browseId ?? String(i)}
+                          imageExtractor={(a: any) => a.thumbnail?.[0]?.url || a.thumbnails?.[0]?.url}
+                          titleExtractor={(a: any) => a.title || a.name}
+                          onItemPress={(a: any) => a.browseId && onRelatedArtistPress?.(a.browseId)}
+                          circularImage
+                          cardWidth={120}
+                          imageHeight={120}
+                          // match visual actual
+                          titleStyle={styles.relatedSectionTitle}
+                          contentPaddingHorizontal={12}
+                          gap={16}
+                          // perf equivalente a tu uso previo (opcional)
+                          initialNumToRender={4}
+                          maxToRenderPerBatch={2}
+                          windowSize={3}
+                        />
                       </View>
                     );
                   }
@@ -523,36 +540,27 @@ export function PlayerTabs({
                   if (sectionType === "albums") {
                     return (
                       <View key={sIdx} style={styles.relatedSection}>
-                        <Text style={styles.relatedSectionTitle}>{section.title}</Text>
-                        <ScrollView
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          contentContainerStyle={styles.horizontalScroll}
-                        >
-                          {contents.map((album: any, alIdx: number) => (
-                            <TouchableOpacity
-                              key={album.browseId || alIdx}
-                              style={styles.albumCard}
-                              onPress={() => {
-                                if (onRelatedAlbumPress && album.browseId) {
-                                  console.log('💿 Navegando a álbum:', album.title);
-                                  onRelatedAlbumPress(album.browseId);
-                                }
-                              }}
-                            >
-                              <Image
-                                source={{ uri: album.thumbnail?.[0]?.url || album.thumbnails?.[0]?.url }}
-                                style={styles.albumImage}
-                              />
-                              <Text style={styles.albumTitle} numberOfLines={2}>
-                                {album.title}
-                              </Text>
-                              <Text style={styles.albumSubtitle} numberOfLines={1}>
-                                {album.year || album.artists?.map((a: any) => a.name).join(", ") || ""}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
-                        </ScrollView>
+                        <HorizontalScrollSection
+                          title={section.title}
+                          items={contents}
+                          keyExtractor={(al: any, i: number) => al.browseId ?? String(i)}
+                          imageExtractor={(al: any) => al.thumbnail?.[0]?.url || al.thumbnails?.[0]?.url}
+                          titleExtractor={(al: any) => al.title}
+                          subtitleExtractor={(al: any) =>
+                            al.year || (al.artists?.map((a: any) => a.name).join(", ") || "")
+                          }
+                          onItemPress={(al: any) => al.browseId && onRelatedAlbumPress?.(al.browseId)}
+                          cardWidth={140}
+                          imageHeight={140}
+                          // match visual actual
+                          titleStyle={styles.relatedSectionTitle}
+                          contentPaddingHorizontal={12}
+                          gap={16}
+                          // perf opcional
+                          initialNumToRender={6}
+                          maxToRenderPerBatch={6}
+                          windowSize={5}
+                        />
                       </View>
                     );
                   }
@@ -569,7 +577,7 @@ export function PlayerTabs({
             )}
           </View>
         )}
-      </ScrollView>
+      </ProList>
     </View>
   );
 }
@@ -580,7 +588,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1a1a1a",
     paddingTop: Platform.OS === "ios" ? 44 : StatusBar.currentHeight || 24,
   },
-  
+
   // HEADER MINIMIZADO
   header: {
     flexDirection: "row",
@@ -663,7 +671,7 @@ const styles = StyleSheet.create({
   tabContent: {
     flex: 1,
   },
-  
+
   // UP NEXT
   playingFromHeader: {
     paddingHorizontal: 12,
@@ -685,7 +693,7 @@ const styles = StyleSheet.create({
   trackList: {
     paddingTop: 8,
   },
-  
+
   // 🆕 Secciones de Queue
   queueSection: {
     marginBottom: 24,
@@ -707,7 +715,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginTop: 4,
   },
-  
+
   // LYRICS
   lyricsContainer: {
     paddingHorizontal: 20,
@@ -721,7 +729,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     letterSpacing: 0.3,
   },
-  
+
   // RELATED
   relatedContent: {
     paddingTop: 8,
@@ -740,7 +748,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     gap: 16,
   },
-  
+
   // ARTISTAS
   artistCard: {
     alignItems: "center",
@@ -759,7 +767,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
   },
-  
+
   // ÁLBUMES
   albumCard: {
     width: 140,
@@ -781,7 +789,7 @@ const styles = StyleSheet.create({
     color: "#888",
     fontSize: 12,
   },
-  
+
   // ESTADOS
   loadingContainer: {
     paddingVertical: 60,

@@ -157,7 +157,7 @@ export default function HomeScreen() {
         {/* similar to (1) */}
         {!!items1.length && (
           <>
-            <SimilarToHeader name={seed1?.name} thumb={seed1?.thumb} />
+            <SimilarToHeader name={seed1?.name} thumb={seed1?.thumb} style={{ paddingHorizontal: 10, paddingTop: 4 }} />
             <HorizontalScrollSection
               title={""}
               items={items1}
@@ -173,6 +173,7 @@ export default function HomeScreen() {
               cardWidth={120}
               imageHeight={120}
               circularImage
+              sectionStyle={{ marginTop: 2 }}
             />
           </>
         )}
@@ -197,7 +198,7 @@ export default function HomeScreen() {
         {/* similar to (2) */}
         {!!items2.length && (
           <>
-            <SimilarToHeader name={seed2?.name} thumb={seed2?.thumb} />
+            <SimilarToHeader name={seed2?.name} thumb={seed2?.thumb} style={{ paddingHorizontal: 10, paddingTop: 4 }} />
             <HorizontalScrollSection
               title={""}
               items={items2}
@@ -213,6 +214,7 @@ export default function HomeScreen() {
               cardWidth={120}
               imageHeight={120}
               circularImage
+              sectionStyle={{ marginTop: 2 }}
             />
           </>
         )}
@@ -246,7 +248,7 @@ export default function HomeScreen() {
 
           return (
             <View key={`seed-${seedId}-${seedIdx}`} style={styles.section}>
-              <SimilarToHeader name={seedName} thumb={seedThumb} />
+              <SimilarToHeader name={seedName} thumb={seedThumb} style={{ paddingHorizontal: 10, paddingTop: 4 }} />
               <HorizontalScrollSection
                 title={""}
                 items={items}
@@ -262,6 +264,7 @@ export default function HomeScreen() {
                 cardWidth={120}
                 imageHeight={120}
                 circularImage
+                sectionStyle={{ marginTop: 2 }}
               />
             </View>
           );
@@ -303,6 +306,6 @@ export default function HomeScreen() {
 
 // estilos
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0e0e0e", padding: 16 },
+  container: { flex: 1, backgroundColor: "#0e0e0e", padding: 10 },
   section: { marginBottom: 20 },
 });
