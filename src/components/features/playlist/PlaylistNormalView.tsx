@@ -2,7 +2,7 @@
 import PlaybackButtons from "@/src/components/features/player/PlaybackButtons";
 import TrackRow from "@/src/components/shared/TrackRow";
 import React from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { FlatList, StyleSheet, View } from "react-native";
 import PlaylistHeader from "./PlaylistHeader";
 
 interface PlaylistNormalViewProps {
@@ -34,34 +34,39 @@ export default function PlaylistNormalView({
   onMenuPress,
 }: PlaylistNormalViewProps) {
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-      {/* Hero Header */}
-      <PlaylistHeader
-        playlist={playlist}
-        mosaicImages={mosaicImages}
-        onMenuPress={onMenuPress}
-      />
-
-      {/* Playback Buttons */}
-      <PlaybackButtons onPlay={onPlayAll} onShuffle={onShuffleAll} />
-
-      {/* Track List */}
-      <View style={{ paddingHorizontal: 16 }}>
-        {playlist.songs.map((song: any, index: number) => (
+    <FlatList
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 40 }}
+      data={playlist.songs || []}
+      keyExtractor={(song: any, index: number) => `${song.id}-${index}`}
+      renderItem={({ item: song, index }) => (
+        <View style={{ paddingHorizontal: 16 }}>
           <TrackRow
-            key={`${song.id}-${index}`}
             index={index + 1}
             title={song.title}
             artist={song.artist}
             thumbnail={song.albumCover}
             trackId={song.id}
-            showIndex={false} 
+            showIndex={false}
             onPress={() => onTrackPress(index)}
             onMorePress={() => onTrackMorePress(mappedSongs[index], index)}
           />
-        ))}
-      </View>
-    </ScrollView>
+        </View>
+      )}
+      ListHeaderComponent={
+        <>
+          {/* Hero Header */}
+          <PlaylistHeader
+            playlist={playlist}
+            mosaicImages={mosaicImages}
+            onMenuPress={onMenuPress}
+          />
+
+          {/* Playback Buttons */}
+          <PlaybackButtons onPlay={onPlayAll} onShuffle={onShuffleAll} />
+        </>
+      }
+    />
   );
 }
 
