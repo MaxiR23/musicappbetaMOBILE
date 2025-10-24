@@ -1,9 +1,9 @@
+import ProList from "@/src/components/shared/ProList";
 import { useMusic } from "@/src/hooks/use-music";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -55,7 +55,7 @@ export default function HomeScreen() {
       artistName: t.artist ?? "",
       artist: t.artist ?? "",
       artistId: t.artist_id ?? t.artistId,
-      artist_id: t.artist_id ?? t.artistId ?? null, 
+      artist_id: t.artist_id ?? t.artistId ?? null,
       thumbnail: t.thumb ?? t.thumbnail,
       thumbnail_url: t.thumb ?? t.thumbnail,
       duration: t.duration ?? null,
@@ -126,8 +126,15 @@ export default function HomeScreen() {
       </SafeAreaView>
 
       {/* contenido */}
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }} bounces={false} overScrollMode="never" showsVerticalScrollIndicator={false}>
-
+      <ProList
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 32 }}
+        bounces={false}
+        overScrollMode="never"
+        showsVerticalScrollIndicator={false}
+        blockSize={2}
+        initialBlocks={3}
+      >
         {/* banner */}
         <HomeBanner />
 
@@ -210,7 +217,7 @@ export default function HomeScreen() {
           </>
         )}
 
-        {/* WIP - TODO: FIX NEW SINGLES IN BACKEND */} 
+        {/* WIP - TODO: FIX NEW SINGLES IN BACKEND */}
         {/* singles nuevos */}
         {/* <FeedSection
           title="Singles nuevos"
@@ -220,7 +227,7 @@ export default function HomeScreen() {
             playFromList(mappedNewSingles, index, { type: "queue", name: queueName });
           }}
         /> */}
-        
+
         {/* seed tracks */}
         <FeedSection
           title="Desde tu seed"
@@ -267,7 +274,7 @@ export default function HomeScreen() {
           type="album"
         />
 
-      </ScrollView>
+      </ProList>
 
       {/* modal crear playlist */}
       <CreatePlaylistModal

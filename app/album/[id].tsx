@@ -3,8 +3,8 @@ import TrackActionsSheet from "@/src/components/shared/TrackActionsSheet";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
+  FlatList,
   Image,
-  ScrollView,
   StyleSheet,
   Text,
   View
@@ -15,6 +15,8 @@ import { useMusic } from "../../src/hooks/use-music";
 import { useMusicApi } from "../../src/hooks/use-music-api";
 
 import { mapAlbumTracks } from "@/src/utils/song-mapper";
+
+import ProList from "@/src/components/shared/ProList";
 
 import PlaybackButtons from "@/src/components/features/player/PlaybackButtons";
 import AlbumInfo from "@/src/components/shared/AlbumInfo";
@@ -70,19 +72,25 @@ export default function AlbumScreen() {
 
   if (loading || !album) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
+      <ProList style={styles.container} contentContainerStyle={{ paddingBottom: 32 }} blockSize={2} initialBlocks={4}>
         <AlbumSkeletonLayout
           theme={{ baseColor: "#2a2a2a", highlightColor: "#3b3b3b", duration: 1200 }}
           tracks={6}
           heroHeight={360}
         />
-      </ScrollView>
+      </ProList>
     );
   }
 
   return (
     <>
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: currentSong ? 18 : 32 }}>
+      <ProList
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: currentSong ? 18 : 32 }}
+        blockSize={2}
+        initialBlocks={3}
+        onEndReachedThreshold={0.5}
+      >
         <HeroSection backgroundImage={coverUrl} height={320} blurRadius={50}>
           <View style={styles.heroCoverWrap}>
             <Image source={{ uri: coverUrl }} style={styles.heroCover} />
@@ -100,50 +108,65 @@ export default function AlbumScreen() {
         />
 
         {/* Botones */}
-        {hasTracks && (
-          <PlaybackButtons
-            onPlay={() =>
-              playFromList(mappedSongs, 0, {
-                type: "album",
-                name: album.info?.title,
-                thumb: coverUrl,
-              })
-            }
-            onShuffle={() => {
-              const randomIndex = Math.floor(Math.random() * mappedSongs.length);
-              playFromList(mappedSongs, randomIndex, {
-                type: "album",
-                name: album.info?.title,
-                thumb: coverUrl,
-              });
-            }}
-          />
-        )}
+        {
+          hasTracks && (
+            <PlaybackButtons
+              onPlay={() =>
+                playFromList(mappedSongs, 0, {
+                  type: "album",
+                  name: album.info?.title,
+                  thumb: coverUrl,
+                })
+              }
+              onShuffle={() => {
+                const randomIndex = Math.floor(Math.random() * mappedSongs.length);
+                playFromList(mappedSongs, randomIndex, {
+                  type: "album",
+                  name: album.info?.title,
+                  thumb: coverUrl,
+                });
+              }}
+            />
+          )
+        }
 
+        {/* Songs */}
         {/* Songs */}
         <View style={styles.section}>
           {hasTracks ? (
-            album.tracks.map((song: any, index: number) => (
-              <TrackRow
-                key={`${song.id || "track"}-${index}`}
-                index={index + 1}
-                title={song.title}
-                artist={song.artists?.map((a: any) => a.name).join(", ")}
-                showThumbnail={false}
-                trackId={song.videoId}
-                onPress={() =>
-                  playFromList(mappedSongs, index, {
-                    type: "album",
-                    name: album.info?.title,
-                    thumb: coverUrl,
-                  })
-                }
-                onMorePress={() => {
-                  setSelectedTrack(mappedSongs[index]);
-                  setActionsOpen(true);
-                }}
-              />
-            ))
+            <FlatList
+              data={album.tracks}
+              keyExtractor={(song: any, index: number) =>
+                `${song.id || song.videoId || "track"}-${index}`
+              }
+              renderItem={({ item: song, index }) => (
+                <TrackRow
+                  index={index + 1}
+                  title={song.title}
+                  artist={song.artists?.map((a: any) => a.name).join(", ")}
+                  showThumbnail={false}
+                  trackId={song.videoId}
+                  onPress={() =>
+                    playFromList(mappedSongs, index, {
+                      type: "album",
+                      name: album.info?.title,
+                      thumb: coverUrl,
+                    })
+                  }
+                  onMorePress={() => {
+                    setSelectedTrack(mappedSongs[index]);
+                    setActionsOpen(true);
+                  }}
+                />
+              )}
+              scrollEnabled={false}
+              initialNumToRender={8}
+              maxToRenderPerBatch={8}
+              windowSize={6}
+              updateCellsBatchingPeriod={80}
+              removeClippedSubviews
+              onEndReachedThreshold={0.2}
+            />
           ) : (
             <Text style={[styles.songArtists, { marginTop: 8 }]}>
               Songs unavailable for this release.
@@ -152,66 +175,74 @@ export default function AlbumScreen() {
         </View>
 
         {/* Upcoming event */}
-        {!!album.upcomingEvents?.length && (
-          <View style={{ paddingHorizontal: 16, marginTop: 8, gap: 10 }}>
-            <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 6 }}>
-              Upcoming event
-            </Text>
-            <EventCard
-              event={album.upcomingEvents[0]}
-              artistName={album?.info?.artistName || album?.info?.artists?.[0]?.name}
-              defaultPoster={coverUrl}
-              variant="featured"
-            />
-          </View>
-        )}
+        {
+          !!album.upcomingEvents?.length && (
+            <View style={{ paddingHorizontal: 16, marginTop: 8, gap: 10 }}>
+              <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 6 }}>
+                Upcoming event
+              </Text>
+              <EventCard
+                event={album.upcomingEvents[0]}
+                artistName={album?.info?.artistName || album?.info?.artists?.[0]?.name}
+                defaultPoster={coverUrl}
+                variant="featured"
+              />
+            </View>
+          )
+        }
 
         {/* Other versions */}
-        {!!album.otherVersions?.length && (
-          <HorizontalScrollSection
-            title="Other versions"
-            items={album.otherVersions}
-            keyExtractor={(it, i) => `ov-${i}-${it.browseId || it.title}`}
-            imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
-            titleExtractor={(it) => it.title}
-            subtitleExtractor={(it) => formatReleaseSubtitle(it)}
-            onItemPress={(it) => router.push(`/album/${it.browseId}`)}
-          />
-        )}
+        {
+          !!album.otherVersions?.length && (
+            <HorizontalScrollSection
+              title="Other versions"
+              items={album.otherVersions}
+              keyExtractor={(it, i) => `ov-${i}-${it.browseId || it.title}`}
+              imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
+              titleExtractor={(it) => it.title}
+              subtitleExtractor={(it) => formatReleaseSubtitle(it)}
+              onItemPress={(it) => router.push(`/album/${it.browseId}`)}
+            />
+          )
+        }
 
         {/* More from artist */}
-        {!!album.moreFromArtist?.length && (
-          <HorizontalScrollSection
-            title="More from artist"
-            items={album.moreFromArtist}
-            keyExtractor={(it, i) => `mfa-${i}-${it.id || it.title}`}
-            imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
-            titleExtractor={(it) => it.title}
-            subtitleExtractor={(it) => formatReleaseSubtitle({ ...it, type: it.type || "Album" })}
-            onItemPress={(it) => router.push(`/album/${it.id}`)}
-          />
-        )}
+        {
+          !!album.moreFromArtist?.length && (
+            <HorizontalScrollSection
+              title="More from artist"
+              items={album.moreFromArtist}
+              keyExtractor={(it, i) => `mfa-${i}-${it.id || it.title}`}
+              imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
+              titleExtractor={(it) => it.title}
+              subtitleExtractor={(it) => formatReleaseSubtitle({ ...it, type: it.type || "Album" })}
+              onItemPress={(it) => router.push(`/album/${it.id}`)}
+            />
+          )
+        }
 
         {/* Releases for you */}
-        {!!album.releasesForYou?.length && (
-          <HorizontalScrollSection
-            title="Releases for you"
-            items={album.releasesForYou}
-            keyExtractor={(it, i) => `rfy-${i}-${it.browseId || it.title}`}
-            imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
-            titleExtractor={(it) => it.title}
-            subtitleExtractor={(it) => formatReleaseSubtitle({ ...it, type: it.type || "Release" })}
-            onItemPress={(it) => {
-              const route =
-                (it.type || "").toLowerCase() === "playlist"
-                  ? `/playlist/${it.browseId}`
-                  : `/album/${it.browseId}`;
-              router.push(route);
-            }}
-          />
-        )}
+        {
+          !!album.releasesForYou?.length && (
+            <HorizontalScrollSection
+              title="Releases for you"
+              items={album.releasesForYou}
+              keyExtractor={(it, i) => `rfy-${i}-${it.browseId || it.title}`}
+              imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
+              titleExtractor={(it) => it.title}
+              subtitleExtractor={(it) => formatReleaseSubtitle({ ...it, type: it.type || "Release" })}
+              onItemPress={(it) => {
+                const route =
+                  (it.type || "").toLowerCase() === "playlist"
+                    ? `/playlist/${it.browseId}`
+                    : `/album/${it.browseId}`;
+                router.push(route);
+              }}
+            />
+          )
+        }
 
-      </ScrollView>
+      </ProList >
 
       <TrackActionsSheet
         open={actionsOpen}

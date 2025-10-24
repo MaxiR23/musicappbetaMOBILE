@@ -1,7 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import {
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -18,6 +17,7 @@ import NewReleaseCard from "@/src/components/features/home/NewReleaseCard";
 import EventsList from "@/src/components/shared/EventList";
 import HeroSection from "@/src/components/shared/HeroSection";
 import HorizontalScrollSection from "@/src/components/shared/HorizontalScrollSection";
+import ProList from "@/src/components/shared/ProList";
 import TrackRow from "@/src/components/shared/TrackRow";
 import { normalizeRelatedArtists } from "@/src/utils/data-helpers";
 import { getUpgradedThumb, upgradeThumbUrl } from "@/src/utils/image-helpers";
@@ -65,26 +65,30 @@ export default function ArtistScreen() {
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0e0e0e" />
-      <ScrollView
+      <ProList
         style={styles.container}
-        contentContainerStyle={{ 
+        contentContainerStyle={{
           paddingTop: 0,
-          paddingBottom: currentSong ? 18 : 18 }}
+          paddingBottom: currentSong ? 18 : 18
+        }}
         showsVerticalScrollIndicator={false}
+        blockSize={2}
+        initialBlocks={2}
+        onEndReachedThreshold={0.5}
       >
         {/* Hero */}
         <View style={{ marginBottom: 20 }}>
-        <HeroSection
-          backgroundImage={heroUrl}
-          height={400}
-          useDirectImage={true}
-          paddingBottom={0}
-        >
-          <View style={styles.heroInfo}>
-            <Text style={styles.artistName}>{artist?.header?.name}</Text>
-            <Text style={styles.listeners}>{artist?.header?.monthlyListeners}</Text>
-          </View>
-        </HeroSection>
+          <HeroSection
+            backgroundImage={heroUrl}
+            height={400}
+            useDirectImage={true}
+            paddingBottom={0}
+          >
+            <View style={styles.heroInfo}>
+              <Text style={styles.artistName}>{artist?.header?.name}</Text>
+              <Text style={styles.listeners}>{artist?.header?.monthlyListeners}</Text>
+            </View>
+          </HeroSection>
         </View>
 
         {/* Nuevo lanzamiento */}
@@ -169,7 +173,7 @@ export default function ArtistScreen() {
             circularImage={true}
           />
         )}
-      </ScrollView>
+      </ProList>
     </>
   );
 }
