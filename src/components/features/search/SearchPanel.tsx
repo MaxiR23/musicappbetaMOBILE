@@ -1,3 +1,4 @@
+import { getUpgradedThumb } from "@/src/utils/image-helpers";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -82,16 +83,8 @@ export default function SearchPanel({
     return () => clearTimeout(t);
   }, []);
 
-  const normalizeUrl = (u?: string) => {
-    if (!u) return undefined;
-    if (u.startsWith("http")) return u;
-    return `https:${u.startsWith("//") ? "" : "//"}${u}`;
-  };
-
   // Mapea artists + songs + albums (artist card + generales) y filtra sin id
   const mapResults = (res: any): ResultItem[] => {
-    const norm = (u?: string) => (u?.startsWith("http") ? u : normalizeUrl(u));
-
     let artistsSrc: any[] = [];
     let songsSrc: any[] = [];
     let albumsSrc: any[] = [];
@@ -114,7 +107,7 @@ export default function SearchPanel({
       artistName: a.subtitle || "Artist",
       artistId: a.artistId ?? a.id ?? null,
       duration: "",
-      thumbnail: norm(a.thumbnails?.[1]?.url || a.thumbnails?.[0]?.url || a.thumbnailUrl),
+      thumbnail: getUpgradedThumb(a, 256),
       type: "artist",
     }));
 
@@ -124,7 +117,7 @@ export default function SearchPanel({
       artistName: (s.artists || []).map((ar: any) => ar.name).join(", ") || "",
       artistId: s.artists?.[0]?.browseId ?? s.artists?.[0]?.id ?? null,
       duration: s.duration || "",
-      thumbnail: norm(s.thumbnails?.[0]?.url || s.thumbnailUrl || s.albumArt?.url || s.thumbnail),
+      thumbnail: getUpgradedThumb(s, 512),
       type: "song",
     }));
 
@@ -134,7 +127,7 @@ export default function SearchPanel({
       artistName: (a.artists || []).map((ar: any) => ar.name).join(", ") || "",
       artistId: a.goTo?.artistId ?? a.artists?.[0]?.browseId ?? null,
       duration: "",
-      thumbnail: norm(a.thumbnails?.[0]?.url || a.thumbnailUrl),
+      thumbnail: getUpgradedThumb(a, 512),
       type: "album",
     }));
 

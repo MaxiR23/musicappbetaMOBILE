@@ -1,4 +1,5 @@
 // hooks/use-music-api.ts
+import { getUpgradedThumb, upgradeThumbUrl } from "@/src/utils/image-helpers";
 import Constants from "expo-constants";
 import { useCallback } from "react";
 import { supabase } from "../lib/supabase";
@@ -60,8 +61,8 @@ const toTrackPayload = (song: any) => {
       : mmssToMs(song?.duration));
 
   const thumbnail_url =
-    first(song?.thumbnail_url, song?.thumbnail, song?.albumCover) ??
-    song?.thumbnails?.[0]?.url ??
+    getUpgradedThumb(song, 512) ??
+    upgradeThumbUrl(first(song?.thumbnail_url, song?.thumbnail, song?.albumCover), 512) ??
     null;
 
   const artist_id = first(song?.artistId, song?.artist_id, song?.artists?.[0]?.id, null);
@@ -414,6 +415,6 @@ export function useMusicApi() {
     moveTrackInPlaylist,
     getTrackLyrics,
     getTrackUpNext,
-    getTrackRelated, 
+    getTrackRelated,
   };
 }
