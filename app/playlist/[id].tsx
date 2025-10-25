@@ -11,6 +11,7 @@ import { useMusicApi } from "@/src/hooks/use-music-api";
 import { usePlaylistEditor } from "@/src/hooks/use-playlist-editor";
 import { useUserProfile } from "@/src/hooks/use-user-profile";
 import { formatDuration, parseDurationToMs } from "@/src/utils/durations";
+import { upgradeThumbUrl } from "@/src/utils/image-helpers";
 import { emitPlaylistChange } from "@/src/utils/playlist-events";
 import { applyServerOrder } from "@/src/utils/reorder-logger";
 import { mapPlaylistSongs } from "@/src/utils/song-mapper";
@@ -67,7 +68,7 @@ export default function PlaylistScreen() {
             Math.floor((t.duration_ms % 60000) / 1000)
           ).padStart(2, "0")}`
           : "--:--",
-        albumCover: t.thumbnail_url || undefined,
+        albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
         _i: idx + 1,
       }));
 
@@ -275,8 +276,7 @@ export default function PlaylistScreen() {
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         track={selectedTrack}
-        playlistId={playlist.id}
-        onRemove={handleRemoveFromSheet}
+        onRemove={(_, trackId) => handleRemoveFromSheet(playlist.id, trackId)}
       />
     </>
   );
