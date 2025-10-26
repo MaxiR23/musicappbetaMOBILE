@@ -28,6 +28,8 @@ import { useHomePlaylists } from "@/src/hooks/use-home-playlists";
 import { useHomeRecent } from "@/src/hooks/use-home-recent";
 import { useUserProfile } from "@/src/hooks/use-user-profile";
 
+import { useCacheVersions } from "@/src/hooks/use-cache-version";
+
 export default function HomeScreen() {
   const router = useRouter();
   const { playFromList, currentSong } = useMusic();
@@ -36,6 +38,7 @@ export default function HomeScreen() {
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
 
   const { userName, userEmail, userId, initials, gradient } = useUserProfile();
+  useCacheVersions(userId);
   const { playlistsWithCreate, refreshPlaylists } = useHomePlaylists(userId);
   const { recentVisible } = useHomeRecent(userId, currentSong?.id);
   const {
