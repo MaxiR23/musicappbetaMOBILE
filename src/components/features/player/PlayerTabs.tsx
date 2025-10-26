@@ -16,7 +16,7 @@ import TrackRow from "../../shared/TrackRow";
 
 import HorizontalScrollSection from "@/src/components/shared/HorizontalScrollSection";
 import ProList from "@/src/components/shared/ProList";
-
+import { getUpgradedThumb } from "@/src/utils/image-helpers";
 
 type TabType = "upnext" | "lyrics" | "related";
 
@@ -383,7 +383,7 @@ export function PlayerTabs({
                             index={idx + 1}
                             title={track.title}
                             artist={track.artists?.map((a: any) => a.name).join(", ")}
-                            thumbnail={track.thumbnail?.[0]?.url || track.thumbnails?.[0]?.url}
+                            thumbnail={getUpgradedThumb(track, 256)}
                             showIndex={false}
                             showMoreButton={false}
                             onPress={() => {
@@ -490,7 +490,7 @@ export function PlayerTabs({
                               index={tIdx + 1}
                               title={track.title}
                               artist={track.artists?.map((a: any) => a.name).join(", ")}
-                              thumbnail={track.thumbnail?.[0]?.url || track.thumbnails?.[0]?.url}
+                              thumbnail={getUpgradedThumb(track, 256)}
                               showIndex={false}
                               showMoreButton={false}
                               onPress={() => onRelatedTrackPress?.(track)}
@@ -517,7 +517,7 @@ export function PlayerTabs({
                           title={section.title}
                           items={contents}
                           keyExtractor={(a: any, i: number) => a.browseId ?? String(i)}
-                          imageExtractor={(a: any) => a.thumbnail?.[0]?.url || a.thumbnails?.[0]?.url}
+                          imageExtractor={(a: any) => getUpgradedThumb(a, 256)}
                           titleExtractor={(a: any) => a.title || a.name}
                           onItemPress={(a: any) => a.browseId && onRelatedArtistPress?.(a.browseId)}
                           circularImage
@@ -544,7 +544,7 @@ export function PlayerTabs({
                           title={section.title}
                           items={contents}
                           keyExtractor={(al: any, i: number) => al.browseId ?? String(i)}
-                          imageExtractor={(al: any) => al.thumbnail?.[0]?.url || al.thumbnails?.[0]?.url}
+                          imageExtractor={(al: any) => getUpgradedThumb(al, 512)}
                           titleExtractor={(al: any) => al.title}
                           subtitleExtractor={(al: any) =>
                             al.year || (al.artists?.map((a: any) => a.name).join(", ") || "")
