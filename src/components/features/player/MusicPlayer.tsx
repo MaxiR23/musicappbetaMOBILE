@@ -10,6 +10,7 @@ import { useTrackLyrics } from "@/src/hooks/use-track-lyrics";
 import { useTrackMetadata } from "@/src/hooks/use-track-metadata";
 import { useTrackRelated } from "@/src/hooks/use-track-related";
 import { useTrackUpNext } from "@/src/hooks/use-track-upnext";
+import { getUpgradedThumb } from "@/src/utils/image-helpers";
 import { router, useLocalSearchParams, usePathname } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import { BackHandler } from "react-native";
@@ -339,7 +340,7 @@ export default function MusicPlayer({
           title: track.title,
           artistName: track.artists?.map((a: any) => a.name).join(", ") || "Unknown",
           artistId: track.artists?.[0]?.id || null,
-          thumbnail: track.thumbnail?.[0]?.url || track.thumbnails?.[0]?.url || null,
+          thumbnail: getUpgradedThumb(track, 256) || null,
           duration: track.duration || "--:--",
           durationSeconds: null,
           albumId: null,
@@ -375,7 +376,7 @@ export default function MusicPlayer({
         title: track.title,
         artistName: track.artists?.map((a: any) => a.name).join(", ") || "Unknown",
         artistId: track.artists?.[0]?.id || null,
-        thumbnail: track.thumbnail?.[0]?.url || track.thumbnails?.[0]?.url || null,
+        thumbnail: getUpgradedThumb(track, 256) || null,
         duration: track.duration || "--:--",
         durationSeconds: null,
         albumId: null,
@@ -418,7 +419,7 @@ export default function MusicPlayer({
       title: track.title,
       artistName: track.artists?.map((a: any) => a.name).join(", ") || "Unknown",
       artistId: track.artists?.[0]?.id || null,
-      thumbnail: track.thumbnail?.[0]?.url || track.thumbnails?.[0]?.url || null,
+      thumbnail: getUpgradedThumb(track, 256) || null,
       duration: track.duration || "--:--",
       durationSeconds: null,
       albumId: null,
