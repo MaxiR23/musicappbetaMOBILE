@@ -5,8 +5,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 export const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_TTL = DAY_MS;
 
+// ✨ NUEVO: TTLs específicos por tipo de contenido
+export const CACHE_TTL = {
+  artist: 60 * 60 * 1000,      // 1 hora
+  album: 60 * 60 * 1000,       // 1 hora
+  playlist: 30 * 60 * 1000,    // 30 min
+  track: 60 * 60 * 1000,       // 1 hora
+  feed: 30 * 60 * 1000,        // 30 min
+  default: 5 * 60 * 1000,      // 5 min
+};
+
+// ✨ NUEVO: No revalidar si es más reciente que esto
+const NO_REVALIDATE_MS = 10 * 60 * 1000; // 10 minutos
+
 /** Entrada interna guardada */
-type CacheEntry<T> = { v: T; exp: number };
+type CacheEntry<T> = { v: T; exp: number; ttl?: number }; // ✨ Agregado ttl
 
 /** Mem-cache para la sesión (rápido y evita deserializar) */
 const mem = new Map<string, CacheEntry<any>>();
@@ -14,6 +27,16 @@ const mem = new Map<string, CacheEntry<any>>();
 /** Arma la key con un posible scope por usuario */
 const k = (key: string, userId?: string | null) =>
   userId ? `cache:${key}::u:${userId}` : `cache:${key}`;
+
+// ✨ NUEVO: Auto-detectar TTL según el tipo de key
+function getTTLForKey(key: string): number {
+  if (key.includes('artist')) return CACHE_TTL.artist;
+  if (key.includes('album')) return CACHE_TTL.album;
+  if (key.includes('playlist')) return CACHE_TTL.playlist;
+  if (key.includes('track')) return CACHE_TTL.track;
+  if (key.includes('feed')) return CACHE_TTL.feed;
+  return CACHE_TTL.default;
+}
 
 /** Lee del cache (memoria → AsyncStorage). Devuelve null si no existe o está vencido. */
 export async function cacheGet<T>(
@@ -27,7 +50,13 @@ export async function cacheGet<T>(
   const m = mem.get(full);
   if (m) {
     if (m.exp > now) {
-      console.log(`[cache] HIT (mem) → ${full}`);
+      // ✨ NUEVO: Si es reciente (<10 min), marcar como "fresh"
+      const age = now - (m.exp - (m.ttl || DEFAULT_TTL));
+      if (age < NO_REVALIDATE_MS) {
+        console.log(`[cache] HIT (mem, fresh) → ${full}`);
+      } else {
+        console.log(`[cache] HIT (mem) → ${full}`);
+      }
       return m.v as T;
     }
     mem.delete(full);
@@ -61,8 +90,12 @@ export async function cacheSet<T>(
   opts?: { ttl?: number; userId?: string | null }
 ): Promise<void> {
   const full = k(key, opts?.userId);
-  const exp = Date.now() + (opts?.ttl ?? DEFAULT_TTL);
-  const entry: CacheEntry<T> = { v: value, exp };
+  
+  // ✨ NUEVO: Auto-detectar TTL si no se especifica
+  const ttl = opts?.ttl ?? getTTLForKey(key);
+  const exp = Date.now() + ttl;
+  
+  const entry: CacheEntry<T> = { v: value, exp, ttl }; // ✨ Guardar ttl
   mem.set(full, entry);
   try {
     await AsyncStorage.setItem(full, JSON.stringify(entry));
@@ -71,7 +104,7 @@ export async function cacheSet<T>(
 
 /**
  * Wrapper: intenta cache y si no hay, llama al productor, guarda y devuelve.
- * Loguea si pega cache o si “golpea DB / red”.
+ * Loguea si pega cache o si "golpea DB / red".
  */
 export async function cacheWrap<T>(
   key: string,
@@ -85,7 +118,7 @@ export async function cacheWrap<T>(
     if (hit !== null) return hit;
   }
 
-  console.log(`[cache] MISS → fetching (${full})`); // ← “golpea cache y NO DB” vs “MISS = va a red/DB”
+  console.log(`[cache] MISS → fetching (${full})`);
   const data = await producer();
   await cacheSet(key, data, { ttl: opts?.ttl ?? DEFAULT_TTL, userId: opts?.userId });
   return data;

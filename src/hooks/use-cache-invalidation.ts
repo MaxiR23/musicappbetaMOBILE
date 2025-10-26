@@ -4,16 +4,17 @@ import { emitRecentChange } from '@/src/utils/recent-events';
 import { useCallback } from 'react';
 
 export function useCacheInvalidation(userId?: string) {
-  
+
   const invalidatePlaylists = useCallback(async () => {
     console.log('[invalidate] playlists');
     await cacheDel('home:playlists:v1', userId);
+    await cacheDel('playlists:list');
   }, [userId]);
 
   const invalidateRecent = useCallback(async () => {
     console.log('[invalidate] recent plays');
     await cacheDel('home:recent:plays:12:v1', userId);
-    
+
     // emite evento para que hooks se enteren
     emitRecentChange();
   }, [userId]);

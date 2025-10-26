@@ -1,4 +1,5 @@
 // hooks/use-music-api.ts
+import { cacheDel, cacheWrap } from "@/src/utils/cache";
 import { getUpgradedThumb, upgradeThumbUrl } from "@/src/utils/image-helpers";
 import Constants from "expo-constants";
 import { useCallback } from "react";
@@ -138,30 +139,42 @@ export function useMusicApi() {
 
   const getArtist = useCallback(
     async (id: string): Promise<Artist> => {
-      return publicFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}`);
+      return cacheWrap(
+        `artist:${id}`,
+        () => publicFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}`)
+      );
     },
     []
   );
 
   const getAlbum = useCallback(
     async (id: string): Promise<AlbumDetails> => {
-      return publicFetch(`${BASE_URL}/music/album/${encodeURIComponent(id)}`);
+      return cacheWrap(
+        `album:${id}`,
+        () => publicFetch(`${BASE_URL}/music/album/${encodeURIComponent(id)}`)
+      );
     },
     []
   );
 
   // 🔒 privados
   const getPlaylists = useCallback(async (): Promise<any[]> => {
-    return authFetch(`${BASE_URL}/playlists/`);
+    return cacheWrap(
+      'playlists:list',
+      () => authFetch(`${BASE_URL}/playlists/`)
+    );
   }, []);
 
   const getPlaylistById = useCallback(async (id: string): Promise<any> => {
-    return authFetch(`${BASE_URL}/playlists/${encodeURIComponent(id)}`);
+    return cacheWrap(
+      `playlist:${id}`,
+      () => authFetch(`${BASE_URL}/playlists/${encodeURIComponent(id)}`)
+    );
   }, []);
 
   const createPlaylist = useCallback(
     async (title: string, description?: string, is_public?: boolean) => {
-      return authFetch(`${BASE_URL}/playlists`, {
+      const result = await authFetch(`${BASE_URL}/playlists`, {
         method: "POST",
         body: JSON.stringify({
           title,
@@ -169,6 +182,10 @@ export function useMusicApi() {
           is_public: !!is_public,
         }),
       });
+
+      await cacheDel('playlists:list');
+
+      return result;
     },
     []
   );
@@ -177,33 +194,49 @@ export function useMusicApi() {
     async (playlistId: string, song: Song) => {
       const payload = toTrackPayload(song as any);
       console.log("[API] addTrackToPlaylist →", { playlistId, payload });
-      return authFetch(
+
+      const result = await authFetch(
         `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/tracks`,
         {
           method: "POST",
           body: JSON.stringify(payload),
         }
       );
+
+      // invalidar caché de la playlist
+      await cacheDel(`playlist:${playlistId}`);
+
+      return result;
     },
     []
   );
 
   const deletePlaylist = useCallback(
     async (playlistId: string) => {
-      return authFetch(
+      const result = await authFetch(
         `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}`,
         { method: "DELETE" }
       );
+
+      // invalidar caché de la playlist
+      await cacheDel(`playlist:${playlistId}`);
+      await cacheDel('playlists:list');
+      return result;
     },
     []
   );
 
   const removeTrackFromPlaylist = useCallback(
     async (playlistId: string, trackId: string) => {
-      return authFetch(
+      const result = await authFetch(
         `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/tracks/${encodeURIComponent(trackId)}`,
         { method: "DELETE" }
       );
+
+      // invalidar caché de la playlist
+      await cacheDel(`playlist:${playlistId}`);
+
+      return result;
     },
     []
   );
@@ -339,14 +372,19 @@ export function useMusicApi() {
   // 🔥 NUEVO: mover track en playlist (para reordenar)
   const moveTrackInPlaylist = useCallback(
     async (playlistId: string, oldPosition: number, newPosition: number) => {
-      return authFetch(
+      const result = await authFetch(
         `${BASE_URL}/music/playlists/${encodeURIComponent(playlistId)}/move-track`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" }, // <-- por si acaso
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ old_position: oldPosition, new_position: newPosition }),
         }
       );
+
+      // invalidar caché de la playlist
+      await cacheDel(`playlist:${playlistId}`);
+
+      return result;
     },
     []
   );
