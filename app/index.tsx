@@ -2,14 +2,19 @@ import ProList from "@/src/components/shared/ProList";
 import { useMusic } from "@/src/hooks/use-music";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  InteractionManager,
   StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+
+import { cleanExpiredCache } from '@/src/utils/cache';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import HomeBanner from "@/src/components/features/home/HomeBanner";
 import RecentSection from "@/src/components/features/home/RecentSection";
@@ -50,6 +55,29 @@ export default function HomeScreen() {
     recoAlbums,
     recoBySeed,
   } = useHomeFeed(userId);
+
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(async () => {
+      try {
+        const lastClean = await AsyncStorage.getItem('cache:last-clean');
+        const now = Date.now();
+        const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+
+        if (!lastClean || now - parseInt(lastClean) > THREE_DAYS) {
+          console.log('[cache] Programando limpieza automática...');
+
+          setTimeout(async () => {
+            await cleanExpiredCache();
+            await AsyncStorage.setItem('cache:last-clean', String(now));
+          }, 2000);
+        }
+      } catch (err) {
+        console.warn('[cache] Error verificando limpieza:', err);
+      }
+    });
+
+    return () => task.cancel();
+  }, []);
 
   const mapTracksForPlayer = useCallback((arr: any[]) => {
     return arr.map((t: any) => ({
