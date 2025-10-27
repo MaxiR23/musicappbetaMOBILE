@@ -1,15 +1,11 @@
+// app/artist/[id]/index.tsx
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo } from "react";
-import {
-  StatusBar,
-  StyleSheet,
-  Text,
-  View
-} from "react-native";
-import { ArtistSkeletonLayout } from "../../src/components/shared/skeletons/Skeleton";
-import { useDetailScreen } from "./../../src/hooks/use-detail-screen";
-import { useMusic } from "./../../src/hooks/use-music";
-import { useMusicApi } from "./../../src/hooks/use-music-api";
+import { StatusBar, StyleSheet, Text, View } from "react-native";
+import { ArtistSkeletonLayout } from "../../../src/components/shared/skeletons/Skeleton";
+import { useDetailScreen } from "../../../src/hooks/use-detail-screen";
+import { useMusic } from "../../../src/hooks/use-music";
+import { useMusicApi } from "../../../src/hooks/use-music-api";
 
 import { mapArtistTopSongs } from "@/src/utils/song-mapper";
 
@@ -69,7 +65,7 @@ export default function ArtistScreen() {
         style={styles.container}
         contentContainerStyle={{
           paddingTop: 0,
-          paddingBottom: currentSong ? 18 : 18
+          paddingBottom: currentSong ? 18 : 18,
         }}
         showsVerticalScrollIndicator={false}
         blockSize={2}
@@ -125,24 +121,46 @@ export default function ArtistScreen() {
         {/* Albums */}
         <HorizontalScrollSection
           title="Álbumes"
+          has_more={!!artist.has_more?.albums}
           items={artist.albums}
           keyExtractor={(album, idx) => `album-${album.id}-${idx}`}
           imageExtractor={(album) => getUpgradedThumb(album, 512)}
           titleExtractor={(album) => album.title}
           subtitleExtractor={(album) => album.year}
           onItemPress={(album) => router.push(`/album/${album.id}`)}
+          onPressMore={
+            artist.has_more?.albums
+              ? () =>
+                  router.push(
+                    `/artist/${id}/releases?tab=albums&name=${encodeURIComponent(
+                      artist.header?.name || ""
+                    )}`
+                  )
+              : undefined
+          }
         />
 
         {/* Singles / EPs */}
         {Array.isArray(artist.singles_eps) && artist.singles_eps.length > 0 && (
           <HorizontalScrollSection
             title="Singles / EPs"
+            has_more={!!artist.has_more?.singles}
             items={artist.singles_eps}
             keyExtractor={(single, idx) => `single-${single.id}-${idx}`}
             imageExtractor={(single) => getUpgradedThumb(single, 512)}
             titleExtractor={(single) => single.title}
             subtitleExtractor={(single) => formatReleaseSubtitle(single)}
             onItemPress={(single) => router.push(`/album/${single.id}`)}
+            onPressMore={
+              artist.has_more?.singles
+                ? () =>
+                    router.push(
+                      `/artist/${id}/releases?tab=singles&name=${encodeURIComponent(
+                        artist.header?.name || ""
+                      )}`
+                    )
+                : undefined
+            }
           />
         )}
 

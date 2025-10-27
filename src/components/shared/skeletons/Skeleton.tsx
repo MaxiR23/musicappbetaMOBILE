@@ -1,4 +1,4 @@
-// src/components/skeletons/Skeleton.tsx
+// src/components/shared/skeletons/Skeleton.tsx
 import { LinearGradient } from "expo-linear-gradient";
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -244,6 +244,37 @@ export function PlaylistSkeletonLayout({
             <SkeletonImage width={40} height={40} radius={6} />
             <SkeletonLine height={14} style={{ width: "60%", marginLeft: 12 }} />
             <SkeletonLine width={42} height={12} style={{ marginLeft: "auto" }} />
+          </View>
+        ))}
+      </View>
+    </SkeletonProvider>
+  );
+}
+
+/* ====== ReleaseGridSkeletonLayout — Grid 2 columnas para albums/singles ====== */
+export function ReleaseGridSkeletonLayout({
+  theme,
+  count = 6,
+}: {
+  theme?: Partial<SkeletonTheme>;
+  count?: number;
+}) {
+  return (
+    <SkeletonProvider {...theme}>
+      <View style={{ 
+        flexDirection: "row", 
+        flexWrap: "wrap", 
+        gap: 12, 
+        padding: 12 
+      }}>
+        {Array.from({ length: count }).map((_, i) => (
+          <View 
+            key={`release-skeleton-${i}`} 
+            style={{ flexBasis: "48%", maxWidth: "48%" }}
+          >
+            <SkeletonImage width="100%" height={160} radius={12} />
+            <SkeletonLine height={16} style={{ marginTop: 8, width: "80%" }} />
+            <SkeletonLine height={12} style={{ marginTop: 4, width: "60%" }} />
           </View>
         ))}
       </View>

@@ -1,4 +1,5 @@
 // src/components/HorizontalScrollSection.tsx
+import { Ionicons } from "@expo/vector-icons";
 import React, { ReactNode } from "react";
 import {
   FlatList,
@@ -60,6 +61,11 @@ interface HorizontalScrollSectionProps<T = any> {
   maxToRenderPerBatch?: number;      // default: 6
   windowSize?: number;               // default: 5
   removeClippedSubviews?: boolean;   // default: true
+
+  /** Opcional: mostrar flechita a la derecha del título */
+  has_more?: boolean;
+  /** Opcional: acción al tocar la flechita (la navegación la decide el caller) */
+  onPressMore?: () => void;
 }
 
 export default React.memo(function HorizontalScrollSection<T>({
@@ -97,6 +103,9 @@ export default React.memo(function HorizontalScrollSection<T>({
   maxToRenderPerBatch = 6,
   windowSize = 5,
   removeClippedSubviews = true,
+
+  has_more = false,
+  onPressMore,
 }: HorizontalScrollSectionProps<T>) {
   if (!items || items.length === 0) return null;
 
@@ -105,11 +114,35 @@ export default React.memo(function HorizontalScrollSection<T>({
   return (
     <View style={[styles.section, sectionStyle]}>
       {showTitle && !!title && (
-        <Text
-          style={[styles.title, { paddingLeft: titlePaddingLeft }, titleStyle]}
-        >
-          {title}
-        </Text>
+        has_more ? (
+          <View style={styles.titleRow}>
+            <Text
+              style={[styles.titleTextOnly, titleStyle]}
+              numberOfLines={1}
+            >
+              {title}
+            </Text>
+            <TouchableOpacity
+              onPress={onPressMore}
+              disabled={!onPressMore}
+              accessibilityRole="button"
+              hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
+            >
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color="#fff"
+                style={{ opacity: onPressMore ? 1 : 0.6 }}
+              />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <Text
+            style={[styles.title, { paddingLeft: titlePaddingLeft }, titleStyle]}
+          >
+            {title}
+          </Text>
+        )
       )}
 
       <FlatList
@@ -126,7 +159,6 @@ export default React.memo(function HorizontalScrollSection<T>({
         windowSize={windowSize}
         removeClippedSubviews={removeClippedSubviews}
         renderItem={({ item, index }) => {
-          // Si viene un render personalizado, lo usamos tal cual
           if (renderItem) {
             const isLast = index === items.length - 1;
             return (
@@ -136,7 +168,6 @@ export default React.memo(function HorizontalScrollSection<T>({
             );
           }
 
-          // Render por defecto DRY: imagen + títulos
           const isLast = index === items.length - 1;
           const imageUrl = imageExtractor?.(item);
           const itemTitle = titleExtractor?.(item);
@@ -204,12 +235,27 @@ const styles = StyleSheet.create({
   section: {
     marginTop: 12,
   },
+  // Camino original (se mantiene tal cual)
   title: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 12,
-    paddingHorizontal: 12, // sólo aplica si showTitle=true
+    paddingHorizontal: 8,
+  },
+  // Mismo spacing que el título original, sin duplicar padding
+  titleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+    paddingHorizontal: 8,
+  },
+  // Tipografía idéntica a 'title', sin margin/padding
+  titleTextOnly: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "700",
   },
   card: {
     // ancho dinámico por prop

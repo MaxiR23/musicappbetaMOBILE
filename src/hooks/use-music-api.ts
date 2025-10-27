@@ -157,6 +157,26 @@ export function useMusicApi() {
     []
   );
 
+  const getArtistAlbums = useCallback(
+    async (id: string): Promise<{ artist_id: string; total: number; albums: any[] }> => {
+      return cacheWrap(
+        `artist:${id}:albums_all`,
+        () => publicFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}/albums`)
+      );
+    },
+    []
+  );
+
+  const getArtistSingles = useCallback(
+    async (id: string): Promise<{ artist_id: string; total: number; singles: any[] }> => {
+      return cacheWrap(
+        `artist:${id}:singles_all`,
+        () => publicFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}/singles`)
+      );
+    },
+    []
+  );
+
   // 🔒 privados
   const getPlaylists = useCallback(async (): Promise<any[]> => {
     return cacheWrap(
@@ -432,6 +452,8 @@ export function useMusicApi() {
     getReleases,
     getArtist,
     getAlbum,
+    getArtistAlbums,
+    getArtistSingles,
     getPlaylists,
     getPlaylistById,
     createPlaylist,
