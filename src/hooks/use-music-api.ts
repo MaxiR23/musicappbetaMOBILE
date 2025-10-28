@@ -177,6 +177,55 @@ export function useMusicApi() {
     []
   );
 
+  // 🎵 Genres (públicos)
+  const getGenres = useCallback(
+    async (): Promise<{ ok: boolean; genres: any[] }> => {
+      return cacheWrap(
+        'genres:list',
+        () => publicFetch(`${BASE_URL}/genres`)
+      );
+    },
+    []
+  );
+
+  const getGenrePlaylists = useCallback(
+    async (slug: string, category?: string): Promise<{ ok: boolean; genre: any; playlists: any[] }> => {
+      const url = category
+        ? `${BASE_URL}/genres/${encodeURIComponent(slug)}/playlists?category=${encodeURIComponent(category)}`
+        : `${BASE_URL}/genres/${encodeURIComponent(slug)}/playlists`;
+      
+      return cacheWrap(
+        `genre:${slug}:playlists${category ? `:${category}` : ''}`,
+        () => publicFetch(url)
+      );
+    },
+    []
+  );
+
+  const getGenreCategories = useCallback(
+    async (slug: string): Promise<{ ok: boolean; genre: any; categories: string[] }> => {
+      return cacheWrap(
+        `genre:${slug}:categories`,
+        () => publicFetch(`${BASE_URL}/genres/${encodeURIComponent(slug)}/categories`)
+      );
+    },
+    []
+  );
+
+  const getGenrePlaylistTracks = useCallback(
+    async (playlistId: string, limit?: number): Promise<{ ok: boolean; playlist: any; tracks: any[] }> => {
+      const url = limit
+        ? `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/tracks?limit=${limit}`
+        : `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/tracks`;
+      
+      return cacheWrap(
+        `genre-playlist:${playlistId}:tracks`,
+        () => publicFetch(url)
+      );
+    },
+    []
+  );
+
   // 🔒 privados
   const getPlaylists = useCallback(async (): Promise<any[]> => {
     return cacheWrap(
@@ -454,6 +503,10 @@ export function useMusicApi() {
     getAlbum,
     getArtistAlbums,
     getArtistSingles,
+    getGenres,
+    getGenrePlaylists,
+    getGenreCategories,
+    getGenrePlaylistTracks,
     getPlaylists,
     getPlaylistById,
     createPlaylist,

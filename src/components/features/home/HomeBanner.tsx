@@ -1,9 +1,12 @@
 // @/src/components/HomeBanner.tsx
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 export default function HomeBanner() {
+  const router = useRouter();
+
   return (
     <LinearGradient
       colors={["#00f2fe", "#4facfe"]}
@@ -15,7 +18,10 @@ export default function HomeBanner() {
       <Text style={styles.subtitle}>
         Explora los últimos lanzamientos y artistas destacados
       </Text>
-      <TouchableOpacity style={styles.button}>
+      <TouchableOpacity 
+        style={styles.button}
+        onPress={() => router.push('/genres')}
+      >
         <Text style={styles.buttonText}>Explorar Ahora</Text>
       </TouchableOpacity>
     </LinearGradient>
