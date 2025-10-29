@@ -275,8 +275,10 @@ export default function PlaylistScreen() {
       <TrackActionsSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
+        playlistId={playlist.id} 
         track={selectedTrack}
         onRemove={(_, trackId) => handleRemoveFromSheet(playlist.id, trackId)}
+        showAddTo={false}
       />
     </>
   );
