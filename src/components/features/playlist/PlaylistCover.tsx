@@ -1,3 +1,4 @@
+// src/components/features/playlist/PlaylistCover.tsx
 import React from "react";
 import { Image, StyleSheet, View } from "react-native";
 
@@ -6,10 +7,11 @@ import { Image, StyleSheet, View } from "react-native";
  * - Si no hay imágenes: placeholder.
  * - Si hay < 4: muestra la primera portada.
  * - Si hay >= 4: grilla 2x2 con las primeras 4.
+ * - Si no se pasa size, se adapta al 100% del contenedor.
  */
 export default function PlaylistCover({
   images,
-  size = 160,
+  size,
   borderRadius = 20,
 }: {
   images: string[];
@@ -18,13 +20,18 @@ export default function PlaylistCover({
 }) {
   const safe = Array.isArray(images) ? images.filter(Boolean) : [];
 
+  const containerStyle = size
+    ? { width: size, height: size, borderRadius }
+    : { width: "100%", height: "100%", borderRadius };
+
   // Placeholder sin imágenes
   if (safe.length === 0) {
     return (
       <View
         style={[
           styles.container,
-          { width: size, height: size, borderRadius, backgroundColor: "#333" },
+          containerStyle,
+          { backgroundColor: "#333" },
         ]}
       />
     );
@@ -33,7 +40,7 @@ export default function PlaylistCover({
   // Una sola imagen (o menos de 4)
   if (safe.length < 4) {
     return (
-      <View style={[styles.container, { width: size, height: size, borderRadius }]}>
+      <View style={[styles.container, containerStyle]}>
         <Image source={{ uri: safe[0] }} style={styles.single} />
       </View>
     );
@@ -42,7 +49,7 @@ export default function PlaylistCover({
   // 4 o más → 2x2
   const firstFour = safe.slice(0, 4);
   return (
-    <View style={[styles.container, { width: size, height: size, borderRadius }]}>
+    <View style={[styles.container, containerStyle]}>
       {firstFour.map((uri, i) => (
         <Image key={i} source={{ uri }} style={styles.quad} />
       ))}

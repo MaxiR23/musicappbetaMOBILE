@@ -5,34 +5,63 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BackButton from "../../shared/BackButton";
 
-const HERO_HEIGHT = 320;
+const HERO_HEIGHT_DEFAULT = 320;
+const HERO_HEIGHT_SIMPLE = 280;
 
 interface PlaylistHeaderProps {
   playlist: {
     name: string;
     description?: string;
-    isPublic: boolean;
+    isPublic?: boolean;
     songCount: number;
     duration: string;
-    songs: any[];
+    songs?: any[];
   };
-  mosaicImages: string[];
-  onMenuPress: () => void;
+  mosaicImages?: string[];
+  onMenuPress?: () => void;
   showBackButton?: boolean;
+  variant?: "default" | "simple";
 }
 
 export default function PlaylistHeader({
   playlist,
-  mosaicImages,
+  mosaicImages = [],
   onMenuPress,
   showBackButton = true,
+  variant = "default",
 }: PlaylistHeaderProps) {
   const heroBg = mosaicImages[0] || undefined;
+  const insets = useSafeAreaInsets();
+  const heroHeight = variant === "simple" ? HERO_HEIGHT_SIMPLE : HERO_HEIGHT_DEFAULT;
 
+  // Render simple variant (centrado, minimal - para genre/featured)
+  if (variant === "simple") {
+    return (
+      <View style={[styles.heroSimple, { paddingTop: 20 }]}>
+        {/* Cover: mosaico si tiene 4+, single si tiene 1-3, placeholder si está vacío */}
+        <PlaylistCover 
+          images={mosaicImages} 
+          size={200} 
+          borderRadius={8} 
+        />
+
+        {/* Info centrada */}
+        <Text style={styles.simpleTitle} numberOfLines={2}>
+          {playlist.name}
+        </Text>
+        <Text style={styles.simpleMeta}>
+          {playlist.songCount} canciones
+        </Text>
+      </View>
+    );
+  }
+
+  // Render default variant (horizontal, con blur - para playlists del usuario)
   return (
-    <View style={{ height: HERO_HEIGHT, backgroundColor: "#111" }}>
+    <View style={{ height: heroHeight, backgroundColor: "#111" }}>
       {heroBg ? (
         <ImageBackground
           source={{ uri: heroBg }}
@@ -54,11 +83,16 @@ export default function PlaylistHeader({
       {/* Top buttons */}
       {showBackButton && <BackButton />}
 
-      <TouchableOpacity style={styles.moreButtonTop} onPress={onMenuPress}>
-        <Ionicons name="ellipsis-vertical" size={18} color="#fff" />
-      </TouchableOpacity>
+      {onMenuPress && (
+        <TouchableOpacity 
+          style={[styles.moreButtonTop, { top: insets.top + 8 }]}
+          onPress={onMenuPress}
+        >
+          <Ionicons name="ellipsis-vertical" size={18} color="#fff" />
+        </TouchableOpacity>
+      )}
 
-      {/* Cover + metadata */}
+      {/* Cover + metadata horizontal */}
       <View style={styles.heroBottom}>
         <PlaylistCover images={mosaicImages} size={120} borderRadius={12} />
         <View style={{ marginLeft: 14, flex: 1 }}>
@@ -83,9 +117,9 @@ export default function PlaylistHeader({
 }
 
 const styles = StyleSheet.create({
+  // Estilos default variant
   moreButtonTop: {
     position: "absolute",
-    top: 40,
     right: 20,
     backgroundColor: "#0008",
     padding: 8,
@@ -103,4 +137,21 @@ const styles = StyleSheet.create({
   title: { color: "#fff", fontSize: 22, fontWeight: "800" },
   subtitle: { color: "#ddd", fontSize: 13, marginTop: 2 },
   meta: { color: "#bbb", fontSize: 12, marginTop: 6 },
+
+  // Estilos simple variant
+  heroSimple: {
+    paddingHorizontal: 20,
+    alignItems: "center",
+  },
+  simpleTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#fff",
+    textAlign: "center",
+  },
+  simpleMeta: {
+    fontSize: 13,
+    color: "#888",
+    marginBottom: 4,
+  },
 });

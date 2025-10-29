@@ -1,24 +1,25 @@
 // app/artist/[id]/releases/index.tsx
 import ReleaseCard from "@/src/components/shared/ReleaseCard";
+import ScreenHeader from "@/src/components/shared/ScreenHeader";
 import { ReleaseGridSkeletonLayout } from "@/src/components/shared/skeletons/Skeleton";
+import TabBar, { Tab } from "@/src/components/shared/TabBar";
+import { useMounted } from "@/src/hooks/use-mounted";
 import { useMusicApi } from "@/src/hooks/use-music-api";
+import { usePaginatedData } from "@/src/hooks/use-paginated-data";
 import { getUpgradedThumb } from "@/src/utils/image-helpers";
-import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  FlatList,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { FlatList, StatusBar, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type TabKey = "albums" | "singles";
 
 const ITEMS_PER_PAGE = 20;
+
+const TABS: Tab[] = [
+  { id: "albums", label: "Albums" },
+  { id: "singles", label: "Singles & EPs" },
+];
 
 export default function ArtistReleasesScreen() {
   const router = useRouter();
@@ -32,19 +33,15 @@ export default function ArtistReleasesScreen() {
   const artistName = typeof name === "string" ? name : undefined;
 
   const { getArtistAlbums, getArtistSingles } = useMusicApi();
+  const insets = useSafeAreaInsets();
+  const isMounted = useMounted();
 
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const [albums, setAlbums] = useState<any[] | null>(null);
   const [singles, setSingles] = useState<any[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [displayCount, setDisplayCount] = useState<number>(ITEMS_PER_PAGE);
 
-  // padding top seguro (evita solaparse con notificaciones/StatusBar)
-  const topPad = (StatusBar.currentHeight ?? 0) + 8;
-
-  // Carga perezosa por tab
   useEffect(() => {
-    let mounted = true;
     (async () => {
       if (!artistId) return;
       setLoading(true);
@@ -52,46 +49,29 @@ export default function ArtistReleasesScreen() {
         if (activeTab === "albums") {
           if (!albums) {
             const res = await getArtistAlbums(artistId);
-            if (mounted) setAlbums(res.albums || []);
+            if (isMounted()) setAlbums(res.albums || []);
           }
         } else {
           if (!singles) {
             const res = await getArtistSingles(artistId);
-            if (mounted) setSingles(res.singles || []);
+            if (isMounted()) setSingles(res.singles || []);
           }
         }
       } finally {
-        if (mounted) setLoading(false);
+        if (isMounted()) setLoading(false);
       }
     })();
-    return () => {
-      mounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, artistId]);
-
-  // Reset displayCount cuando cambia el tab
-  useEffect(() => {
-    setDisplayCount(ITEMS_PER_PAGE);
-  }, [activeTab]);
+  }, [activeTab, artistId, albums, singles, getArtistAlbums, getArtistSingles, isMounted]);
 
   const allData = useMemo(
     () => (activeTab === "albums" ? albums : singles) || [],
     [activeTab, albums, singles]
   );
 
-  // Data paginada
-  const data = useMemo(
-    () => allData.slice(0, displayCount),
-    [allData, displayCount]
-  );
-
-  // Infinite scroll
-  const handleEndReached = useCallback(() => {
-    if (displayCount < allData.length) {
-      setDisplayCount((prev) => Math.min(prev + ITEMS_PER_PAGE, allData.length));
-    }
-  }, [displayCount, allData.length]);
+  const { visibleData, loadMore } = usePaginatedData({
+    data: allData,
+    itemsPerPage: ITEMS_PER_PAGE,
+  });
 
   const renderCard = useCallback(
     ({ item }: { item: any }) => {
@@ -121,66 +101,27 @@ export default function ArtistReleasesScreen() {
   return (
     <>
       <StatusBar barStyle="light-content" />
-      <View style={[styles.container, { paddingTop: topPad }]}>
-        {/* Header con back */}
-        <View style={styles.headerRow}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            accessibilityRole="button"
-            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-            style={styles.backBtn}
-          >
-            <Ionicons name="chevron-back" size={22} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerName} numberOfLines={1}>
-            {artistName || "Artist"}
-          </Text>
-          {/* placeholder para balancear el espacio del back */}
-          <View style={styles.backBtn} />
-        </View>
+      <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
+        <ScreenHeader title={artistName || "Artist"} />
 
-        {/* Tabs locales */}
-        <View style={styles.tabsRow}>
-          <Pressable
-            onPress={() => setActiveTab("albums")}
-            style={[styles.tab, activeTab === "albums" && styles.tabActive]}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "albums" && styles.tabTextActive,
-              ]}
-            >
-              Albums
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setActiveTab("singles")}
-            style={[styles.tab, activeTab === "singles" && styles.tabActive]}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "singles" && styles.tabTextActive,
-              ]}
-            >
-              Singles & EPs
-            </Text>
-          </Pressable>
-        </View>
+        <TabBar
+          tabs={TABS}
+          activeTabId={activeTab}
+          onTabChange={(id) => setActiveTab(id as TabKey)}
+          scrollable={false}
+        />
 
-        {/* Grid */}
-        {loading && (!data || data.length === 0) ? (
+        {loading && visibleData.length === 0 ? (
           <ReleaseGridSkeletonLayout count={6} />
         ) : (
           <FlatList
-            data={data}
+            data={visibleData}
             keyExtractor={keyExtractor}
             numColumns={2}
             columnWrapperStyle={{ gap: 12, justifyContent: "space-between" }}
             contentContainerStyle={{ padding: 12, gap: 12, paddingBottom: 24 }}
             renderItem={renderCard}
-            onEndReached={handleEndReached}
+            onEndReached={loadMore}
             onEndReachedThreshold={0.5}
             removeClippedSubviews={true}
             initialNumToRender={20}
@@ -194,42 +135,8 @@ export default function ArtistReleasesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0e0e0e" },
-
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 8,
-    paddingBottom: 4,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerName: {
+  container: {
     flex: 1,
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "700",
-    textAlign: "center",
+    backgroundColor: "#0e0e0e",
   },
-
-  tabsRow: {
-    flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingBottom: 8,
-    marginTop: 4,
-  },
-  tab: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    backgroundColor: "#1e1e1e",
-  },
-  tabActive: { backgroundColor: "#fff" },
-  tabText: { color: "#ddd", fontWeight: "600" },
-  tabTextActive: { color: "#000" },
 });

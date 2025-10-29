@@ -57,6 +57,7 @@ export default function PlaylistNormalView({
         <>
           {/* Hero Header */}
           <PlaylistHeader
+            variant="default"
             playlist={playlist}
             mosaicImages={mosaicImages}
             onMenuPress={onMenuPress}

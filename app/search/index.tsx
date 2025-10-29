@@ -37,7 +37,7 @@ export default function SearchScreen() {
       <Stack.Screen
         options={{
           headerShown: false,
-          animation: "none",                    // nada de slide
+          animation: "none",
           fullScreenGestureEnabled: true,
           contentStyle: { backgroundColor: "#0f0f0f" },
         }}

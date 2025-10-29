@@ -1,16 +1,19 @@
 // src/components/shared/ReleaseCard.tsx
+import PlaylistCover from "@/src/components/features/playlist/PlaylistCover";
 import React from "react";
 import {
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 interface ReleaseCardProps {
   /** URL de la cover del album/single */
-  cover?: string;
+  cover?: string | null;
+  /** Array de thumbnails para mosaico (playlists) */
+  thumbnails?: string[];
   /** Título del album/single */
   title: string;
   /** Subtítulo (Album • 2024, Single • 2023, etc) */
@@ -20,11 +23,13 @@ interface ReleaseCardProps {
 }
 
 /**
- * Card reutilizable para mostrar albums/singles en grid de 2 columnas
- * Componente memoizado para optimizar performance en listas largas
+ * Card reutilizable para mostrar albums/singles/playlists en grid de 2 columnas.
+ * Soporta mosaico de thumbnails para playlists.
+ * Componente memoizado para optimizar performance en listas largas.
  */
 export default React.memo(function ReleaseCard({
   cover,
+  thumbnails,
   title,
   subtitle,
   onPress,
@@ -36,7 +41,12 @@ export default React.memo(function ReleaseCard({
       onPress={onPress}
     >
       <View style={styles.coverWrap}>
-        {cover ? (
+        {thumbnails && thumbnails.length > 0 ? (
+          <PlaylistCover
+            images={thumbnails}
+            borderRadius={0}
+          />
+        ) : cover ? (
           <Image source={{ uri: cover }} style={styles.cover} />
         ) : (
           <View style={[styles.cover, styles.coverPh]} />

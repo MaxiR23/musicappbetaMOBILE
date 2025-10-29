@@ -3,33 +3,22 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface GenreCardProps {
-  /** Nombre del género */
   name: string;
-  /** Slug del género (para navegación) */
-  slug: string;
-  /** Callback al presionar */
   onPress: () => void;
-  /** FUTURO: Gradient colors */
   gradient?: string[];
 }
 
-/**
- * Card para mostrar un género musical.
- * Preparada para agregar gradients en el futuro.
- */
 export default React.memo(function GenreCard({
   name,
-  slug,
   onPress,
   gradient,
 }: GenreCardProps) {
   return (
     <TouchableOpacity
-      activeOpacity={0.85}
+      activeOpacity={0.7}
       style={styles.card}
       onPress={onPress}
     >
-      {/* Por ahora background sólido, después gradient */}
       <View style={[styles.content, gradient ? null : styles.defaultBg]}>
         <Text style={styles.name} numberOfLines={2}>
           {name}
@@ -41,24 +30,26 @@ export default React.memo(function GenreCard({
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: 16,
-    marginVertical: 6,
-    borderRadius: 12,
+    marginHorizontal: 12,
+    marginVertical: 4,
+    borderRadius: 8,
     overflow: "hidden",
   },
   content: {
-    paddingVertical: 20,
+    paddingVertical: 16,
     paddingHorizontal: 16,
-    minHeight: 80,
+    minHeight: 56,
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.06)",
   },
   defaultBg: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#161616",
   },
   name: {
     color: "#fff",
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: 0.3,
+    fontSize: 16,
+    fontWeight: "600",
+    letterSpacing: 0.2,
   },
 });

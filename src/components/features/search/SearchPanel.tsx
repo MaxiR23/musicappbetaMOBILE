@@ -1,15 +1,15 @@
+import EmptyState from "@/src/components/shared/EmptyState";
+import SearchBar from "@/src/components/shared/SearchBar";
 import { getUpgradedThumb } from "@/src/utils/image-helpers";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Animated,
   FlatList,
   Image,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -58,7 +58,6 @@ export default function SearchPanel({
   const [results, setResults] = useState<ResultItem[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [recents, setRecents] = useState<string[]>([]);
-  const inputRef = useRef<TextInput>(null);
 
   const fade = useRef(new Animated.Value(0)).current;
   const ty = useRef(new Animated.Value(6)).current;
@@ -78,19 +77,13 @@ export default function SearchPanel({
     })();
   }, []);
 
-  useEffect(() => {
-    const t = setTimeout(() => inputRef.current?.focus(), 60);
-    return () => clearTimeout(t);
-  }, []);
-
-  // Mapea artists + songs + albums (artist card + generales) y filtra sin id
   const mapResults = (res: any): ResultItem[] => {
     let artistsSrc: any[] = [];
     let songsSrc: any[] = [];
     let albumsSrc: any[] = [];
 
     if (Array.isArray(res)) {
-      songsSrc = res; // compat viejo
+      songsSrc = res;
     } else if (res && typeof res === "object") {
       if (res.artist) artistsSrc.push(res.artist);
       if (Array.isArray(res.artists)) artistsSrc.push(...res.artists);
@@ -131,7 +124,6 @@ export default function SearchPanel({
       type: "album",
     }));
 
-    // dedupe por (type:id) y filtrá sin id
     const seen = new Set<string>();
     const merged = [...mappedArtists, ...mappedSongs, ...mappedAlbums].filter((it) => {
       if (!it.id) return false;
@@ -200,38 +192,22 @@ export default function SearchPanel({
         transform: [{ translateY: ty }],
       }}
     >
-      {/* Search bar */}
-      <View style={styles.searchBar}>
-        <Ionicons name="search" size={20} color="#888" />
-        <TextInput
-          ref={inputRef}
-          value={query}
-          onChangeText={(t) => {
-            setQuery(t);
-            if (t === "") setResults(null);
-          }}
-          onSubmitEditing={() => doSearch()}
-          placeholder={placeholder}
-          placeholderTextColor="#aaa"
-          style={styles.searchInput}
-          returnKeyType="search"
-        />
-        {loading && <ActivityIndicator size="small" color="#888" style={{ marginRight: 6 }} />}
-        {query.length > 0 && !loading && (
-          <TouchableOpacity
-            onPress={() => {
-              setQuery("");
-              setResults(null);
-              onClose();
-            }}
-            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-          >
-            <Ionicons name="close" size={18} color="#bbb" />
-          </TouchableOpacity>
-        )}
-      </View>
+      <SearchBar
+        value={query}
+        onChangeText={(t) => {
+          setQuery(t);
+          if (t === "") setResults(null);
+        }}
+        onSubmit={() => doSearch()}
+        onClear={() => {
+          setResults(null);
+          onClose();
+        }}
+        placeholder={placeholder}
+        loading={loading}
+        autoFocus
+      />
 
-      {/* HEADER de Recientes */}
       {showRecents && recents.length > 0 && (
         <View style={styles.recentsHeader}>
           <Text style={styles.sectionTitle}>{titleRecents}</Text>
@@ -241,15 +217,16 @@ export default function SearchPanel({
         </View>
       )}
 
-      {/* Recientes */}
       {showRecents && (
         <View style={{ flex: 1 }}>
           {recents.length === 0 ? (
-            <View style={styles.centerEmpty}>
-              <Ionicons name="search" size={72} color="#3a3a3a" />
-              <Text style={styles.centerTitle}>Sin búsquedas recientes</Text>
-              <Text style={styles.centerSubtitle}>Tus busquedas recientes van a aparecer aqui</Text>
-            </View>
+            <EmptyState
+              icon="search"
+              iconSize={72}
+              iconColor="#3a3a3a"
+              message="Sin búsquedas recientes"
+              submessage="Tus busquedas recientes van a aparecer aqui"
+            />
           ) : (
             <FlatList
               data={recents}
@@ -266,11 +243,10 @@ export default function SearchPanel({
         </View>
       )}
 
-      {/* Resultados */}
       {showResults && (
         <FlatList
           data={results!}
-          keyExtractor={(it) => `${it.type}:${it.id}`}  // evita colisiones
+          keyExtractor={(it) => `${it.type}:${it.id}`}
           contentContainerStyle={{ paddingTop: 8 }}
           keyboardShouldPersistTaps="handled"
           renderItem={({ item }) => (
@@ -285,7 +261,6 @@ export default function SearchPanel({
               <View style={{ flex: 1 }}>
                 <Text style={styles.resultTitle} numberOfLines={1}>{item.title}</Text>
                 <Text style={styles.resultSubtitle} numberOfLines={1}>
-                  {/* Texto plano del tipo + info */}
                   {item.type === "artist"
                     ? `${typeLabel(item.type)} • ${item.artistName}`
                     : item.type === "song"
@@ -299,30 +274,20 @@ export default function SearchPanel({
         />
       )}
 
-      {/* No hay resultados */}
       {showNoResults && (
-        <View style={styles.centerEmpty}>
-          <Ionicons name="search" size={72} color="#3a3a3a" />
-          <Text style={styles.centerTitle}>No hay resultados</Text>
-          <Text style={styles.centerSubtitle}>Probá con otro término</Text>
-        </View>
+        <EmptyState
+          icon="search"
+          iconSize={72}
+          iconColor="#3a3a3a"
+          message="No hay resultados"
+          submessage="Probá con otro término"
+        />
       )}
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#141414",
-    borderRadius: 28,
-    paddingHorizontal: 14,
-    height: 44,
-    marginHorizontal: 12,
-  },
-  searchInput: { flex: 1, marginHorizontal: 10, color: "#fff" },
-
   recentsHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -360,7 +325,4 @@ const styles = StyleSheet.create({
   },
   resultTitle: { color: "#fff", fontSize: 15, fontWeight: "600" },
   resultSubtitle: { color: "#9aa0a6", fontSize: 12, marginTop: 2 },
-  centerEmpty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10 },
-  centerTitle: { color: "#fff", fontSize: 16, fontWeight: "700", marginTop: 6 },
-  centerSubtitle: { color: "#9aa0a6", fontSize: 13 },
 });

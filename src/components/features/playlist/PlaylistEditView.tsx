@@ -46,6 +46,7 @@ export default function PlaylistEditView({
       {/* Hero Header */}
       <View style={{ height: 320 }}>
         <PlaylistHeader
+          variant="default"
           playlist={{ ...playlist, songCount: editSongs.length }}
           mosaicImages={mosaicImages}
           onMenuPress={onMenuPress}

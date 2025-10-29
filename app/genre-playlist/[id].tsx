@@ -1,5 +1,9 @@
 // app/genre-playlist/[id].tsx
+import PlaybackButtons from "@/src/components/features/player/PlaybackButtons";
+import PlaylistHeader from "@/src/components/features/playlist/PlaylistHeader";
+import BackButton from "@/src/components/shared/BackButton";
 import TrackActionsSheet from "@/src/components/shared/TrackActionsSheet";
+import TrackRow from "@/src/components/shared/TrackRow";
 import { PlaylistSkeletonLayout } from "@/src/components/shared/skeletons/Skeleton";
 import { useMusic } from "@/src/hooks/use-music";
 import { useMusicApi } from "@/src/hooks/use-music-api";
@@ -10,8 +14,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
-  Image,
-  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -48,11 +50,7 @@ export default function GenrePlaylistScreen() {
       setError(null);
 
       try {
-        //DBG
-        /* console.log("[genre-playlist] Cargando playlist:", id); */
         const result = await getGenrePlaylistTracks(id);
-
-        /* console.log("[genre-playlist] Resultado:", result); */
 
         if (mounted) {
           if (result?.ok) {
@@ -83,7 +81,7 @@ export default function GenrePlaylistScreen() {
   useEffect(() => {
     if (!tracks?.length) return;
     const ids = tracks.map((t: any) => t.track_id).filter(Boolean);
-    prefetchSongs(ids.slice(0, 30)).catch(() => {});
+    prefetchSongs(ids.slice(0, 30)).catch(() => { });
   }, [tracks, prefetchSongs]);
 
   // Mapear tracks a formato de Song
@@ -96,8 +94,8 @@ export default function GenrePlaylistScreen() {
       albumId: t.album ?? null,
       duration: t.duration_ms
         ? `${Math.floor(t.duration_ms / 60000)}:${String(
-            Math.floor((t.duration_ms % 60000) / 1000)
-          ).padStart(2, "0")}`
+          Math.floor((t.duration_ms % 60000) / 1000)
+        ).padStart(2, "0")}`
         : "--:--",
       thumbnail: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
       _i: idx + 1,
@@ -108,6 +106,14 @@ export default function GenrePlaylistScreen() {
   const totalDuration = useMemo(() => {
     const totalMs = tracks.reduce((acc, t) => acc + (t.duration_ms || 0), 0);
     return formatDuration(totalMs);
+  }, [tracks]);
+
+  // Extraer los primeros 4 thumbnails para el mosaico
+  const mosaicImages = useMemo(() => {
+    return tracks
+      .slice(0, 4)
+      .map((t: any) => upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url)
+      .filter(Boolean);
   }, [tracks]);
 
   // Handlers
@@ -151,9 +157,14 @@ export default function GenrePlaylistScreen() {
         <StatusBar barStyle="light-content" />
         <View style={[styles.page, { paddingTop: insets.top + 8 }]}>
           <View style={styles.headerRow}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <Ionicons name="chevron-back" size={22} color="#fff" />
-            </TouchableOpacity>
+            <BackButton
+              absolute={false}
+              withBackground={false}
+              icon="chevron-back"
+              iconSize={22}
+              width={36}
+              height={36}
+            />
             <View style={{ flex: 1 }} />
             <View style={styles.backBtn} />
           </View>
@@ -175,10 +186,15 @@ export default function GenrePlaylistScreen() {
       <StatusBar barStyle="light-content" />
       <View style={[styles.page, { paddingTop: insets.top }]}>
         {/* Header flotante */}
-         <View style={[styles.headerRow, { paddingTop: insets.top + 8 }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={22} color="#fff" />
-          </TouchableOpacity>
+        <View style={[styles.headerRow, { paddingTop: insets.top + 8 }]}>
+          <BackButton
+            absolute={false}
+            withBackground={false}
+            icon="chevron-back"
+            iconSize={22}
+            width={36}
+            height={36}
+          />
           <View style={{ flex: 1 }} />
           <View style={styles.backBtn} />
         </View>
@@ -187,65 +203,36 @@ export default function GenrePlaylistScreen() {
           data={mappedSongs}
           keyExtractor={(item, idx) => item.id || idx.toString()}
           ListHeaderComponent={
-            <View style={styles.hero}>
-              {/* Cover placeholder */}
-              <View style={styles.coverPlaceholder}>
-                <Ionicons name="musical-notes" size={80} color="#666" />
-              </View>
-
-              {/* Info */}
-              <Text style={styles.playlistTitle} numberOfLines={2}>
-                {playlist.title}
-              </Text>
-              <Text style={styles.playlistMeta}>
-                {playlist.track_count} canciones • {totalDuration}
-              </Text>
+            <>
+              {/* Header simple */}
+              <PlaylistHeader
+                variant="simple"
+                playlist={{
+                  name: playlist.title,
+                  songCount: playlist.track_count,
+                  duration: totalDuration,
+                }}
+                mosaicImages={mosaicImages}
+                showBackButton={false}
+              />
 
               {/* Botones */}
-              <View style={styles.buttonsRow}>
-                <TouchableOpacity style={styles.playBtn} onPress={handlePlayAll}>
-                  <Ionicons name="play" size={24} color="#000" />
-                  <Text style={styles.playBtnText}>Reproducir</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.shuffleBtn} onPress={handleShuffleAll}>
-                  <Ionicons name="shuffle" size={20} color="#fff" />
-                </TouchableOpacity>
-              </View>
-            </View>
+              <PlaybackButtons onPlay={handlePlayAll} onShuffle={handleShuffleAll} />
+            </>
           }
           renderItem={({ item, index }) => (
-            <Pressable
-              style={styles.trackRow}
-              onPress={() => handleTrackPress(index)}
-            >
-              <View style={styles.trackLeft}>
-                {item.thumbnail ? (
-                  <Image source={{ uri: item.thumbnail }} style={styles.trackThumb} />
-                ) : (
-                  <View style={[styles.trackThumb, styles.trackThumbPlaceholder]}>
-                    <Ionicons name="musical-note" size={20} color="#666" />
-                  </View>
-                )}
-
-                <View style={styles.trackInfo}>
-                  <Text style={styles.trackTitle} numberOfLines={1}>
-                    {item.title}
-                  </Text>
-                  <Text style={styles.trackArtist} numberOfLines={1}>
-                    {item.artist}
-                  </Text>
-                </View>
-              </View>
-
-              <TouchableOpacity
-                style={styles.trackMore}
-                onPress={() => handleTrackMorePress(item)}
-                hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-              >
-                <Ionicons name="ellipsis-horizontal" size={20} color="#888" />
-              </TouchableOpacity>
-            </Pressable>
+            <View style={{ paddingHorizontal: 16 }}>
+              <TrackRow
+                index={index + 1}
+                title={item.title}
+                artist={item.artist}
+                thumbnail={item.thumbnail}
+                trackId={item.id}
+                showIndex={false}
+                onPress={() => handleTrackPress(index)}
+                onMorePress={() => handleTrackMorePress(item)}
+              />
+            </View>
           )}
           contentContainerStyle={{ paddingBottom: 24 }}
         />
@@ -285,115 +272,6 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: "center",
     justifyContent: "center",
-  },
-
-  hero: {
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-    alignItems: "center",
-  },
-
-  coverPlaceholder: {
-    width: 200,
-    height: 200,
-    borderRadius: 8,
-    backgroundColor: "#1e1e1e",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
-  },
-
-  playlistTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#fff",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-
-  playlistMeta: {
-    fontSize: 14,
-    color: "#888",
-    marginBottom: 24,
-  },
-
-  buttonsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-
-  playBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 24,
-    gap: 8,
-  },
-
-  playBtnText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#000",
-  },
-
-  shuffleBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#1e1e1e",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  trackRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-
-  trackLeft: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-
-  trackThumb: {
-    width: 48,
-    height: 48,
-    borderRadius: 4,
-  },
-
-  trackThumbPlaceholder: {
-    backgroundColor: "#1e1e1e",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  trackInfo: {
-    flex: 1,
-  },
-
-  trackTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#fff",
-    marginBottom: 2,
-  },
-
-  trackArtist: {
-    fontSize: 13,
-    color: "#888",
-  },
-
-  trackMore: {
-    padding: 8,
   },
 
   errorContainer: {
