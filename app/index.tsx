@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-
 import { cleanExpiredCache } from '@/src/utils/cache';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -252,14 +251,14 @@ export default function HomeScreen() {
 
         {/* WIP - TODO: FIX NEW SINGLES IN BACKEND */}
         {/* singles nuevos */}
-        {/* <FeedSection
+        <FeedSection
           title="Singles nuevos"
           items={newSingles}
           type="track"
           onTrackPress={(index, queueName) => {
             playFromList(mappedNewSingles, index, { type: "queue", name: queueName });
           }}
-        /> */}
+        /> 
 
         {/* seed tracks */}
         <FeedSection

@@ -14,27 +14,39 @@ interface NewReleaseCardProps {
     thumb?: string | null;
     thumbnails?: any[];
   };
-  onPress: () => void;
-  badgeText?: string;
+  onPress?: () => void; 
+  badgeText?: string | null; // puede ser null para ocultarlo
+  showBadge?: boolean; // control explícito del badge
+  showChevron?: boolean; // control del chevron
 }
 
 export default function NewReleaseCard({
   release,
   onPress,
   badgeText = "Nuevo lanzamiento",
+  showBadge = true,
+  showChevron = true,
 }: NewReleaseCardProps) {
   const cover = getUpgradedThumb(release, 256);
 
+  // si no hay onPress, usamos View en lugar de TouchableOpacity
+  const Container = onPress ? TouchableOpacity : View;
+  const containerProps = onPress
+    ? { onPress, activeOpacity: 0.9 }
+    : {};
+
   return (
     <View style={styles.cardWrap}>
-      <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
-        {/* Badge arriba */}
-        <View style={styles.headerRow}>
-          <View style={styles.badge}>
-            <Ionicons name="sparkles" size={11} color="#111" />
-            <Text style={styles.badgeText}>{badgeText}</Text>
+      <Container style={styles.card} {...containerProps}>
+        {/* Badge arriba - solo si showBadge es true y hay texto */}
+        {showBadge && badgeText && (
+          <View style={styles.headerRow}>
+            <View style={styles.badge}>
+              <Ionicons name="sparkles" size={11} color="#111" />
+              <Text style={styles.badgeText}>{badgeText}</Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Contenido: cover + info + chevron */}
         <View style={styles.contentRow}>
@@ -55,16 +67,20 @@ export default function NewReleaseCard({
             )}
             {!!release.release_date && (
               <Text style={styles.meta} numberOfLines={1}>
-                {release.release_date} · {release.track_count ?? "—"} tracks
+                {release.release_date}
+                {release.track_count != null && ` · ${release.track_count} tracks`}
               </Text>
             )}
           </View>
 
-          <View style={styles.chevronBox}>
-            <Ionicons name="chevron-forward" size={20} color="#fff" />
-          </View>
+          {/* Chevron - solo si showChevron es true Y hay onPress */}
+          {showChevron && onPress && (
+            <View style={styles.chevronBox}>
+              <Ionicons name="chevron-forward" size={20} color="#fff" />
+            </View>
+          )}
         </View>
-      </TouchableOpacity>
+      </Container>
     </View>
   );
 }
@@ -82,7 +98,6 @@ const styles = StyleSheet.create({
     borderColor: "#242424",
     padding: 10,
     gap: 8,
-    // Sombra sutil
     shadowColor: "#000",
     shadowOpacity: 0.18,
     shadowRadius: 10,

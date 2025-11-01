@@ -104,7 +104,7 @@ type RecentItem = {
 };
 
 export function useMusicApi() {
-  // 🔎 públicos
+  // públicos
   const searchSongs = useCallback(
     async (query: string): Promise<Song[]> => {
       return authFetch(`${BASE_URL}/music/search?q=${encodeURIComponent(query)}`);
@@ -193,7 +193,7 @@ export function useMusicApi() {
       const url = category
         ? `${BASE_URL}/genres/${encodeURIComponent(slug)}/playlists?category=${encodeURIComponent(category)}`
         : `${BASE_URL}/genres/${encodeURIComponent(slug)}/playlists`;
-      
+
       return cacheWrap(
         `genre:${slug}:playlists${category ? `:${category}` : ''}`,
         () => publicFetch(url)
@@ -217,7 +217,7 @@ export function useMusicApi() {
       const url = limit
         ? `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/tracks?limit=${limit}`
         : `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/tracks`;
-      
+
       return cacheWrap(
         `genre-playlist:${playlistId}:tracks`,
         () => publicFetch(url)
@@ -310,7 +310,7 @@ export function useMusicApi() {
     []
   );
 
-  // 🔒 registrar "play" de álbum — enviar claves que el backend lee (NO anidar todo en source)
+  // registrar "play" de álbum — enviar claves que el backend lee (NO anidar todo en source)
   const logPlayAlbum = useCallback(
     async (albumId: string, source?: SourcePayload) => {
       const body: any = {};
@@ -324,7 +324,7 @@ export function useMusicApi() {
     []
   );
 
-  // 🔒 registrar "play" de artista — idem
+  // registrar "play" de artista — idem
   const logPlayArtist = useCallback(
     async (artistId: string, source?: SourcePayload) => {
       const body: any = {};
@@ -338,7 +338,7 @@ export function useMusicApi() {
     []
   );
 
-  // ❤️ Likes / Unlikes (auth)
+  // likes / unlikes (auth)
   const likeTrack = useCallback(
     async (trackId: string) => {
       return authFetch(
@@ -430,15 +430,18 @@ export function useMusicApi() {
     []
   );
 
-  // 🔥 NUEVO: recientes del usuario (álbumes/artistas)
+  // recientes del usuario (álbumes/artistas)
   const getRecentPlays = useCallback(
     async (limit = 20): Promise<{ items: RecentItem[] }> => {
-      return authFetch(`${BASE_URL}/music/me/recent?limit=${encodeURIComponent(limit)}`, { method: "GET" });
+      return cacheWrap(
+        'recent:plays',
+        () => authFetch(`${BASE_URL}/music/me/recent?limit=${encodeURIComponent(limit)}`, { method: "GET" })
+      );
     },
     []
   );
 
-  // 🔥 NUEVO: mover track en playlist (para reordenar)
+  // mover track en playlist (para reordenar)
   const moveTrackInPlaylist = useCallback(
     async (playlistId: string, oldPosition: number, newPosition: number) => {
       const result = await authFetch(
@@ -458,7 +461,7 @@ export function useMusicApi() {
     []
   );
 
-  // 🔤 Lyrics (público, no requiere auth)
+  // Lyrics (público, no requiere auth)
   const getTrackLyrics = useCallback(
     async (trackId: string): Promise<{ ok: boolean; lyrics?: string | null; source?: string | null }> => {
       return publicFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/lyrics`, {

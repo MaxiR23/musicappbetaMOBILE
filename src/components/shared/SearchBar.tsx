@@ -2,11 +2,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef } from "react";
 import {
-    ActivityIndicator,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 interface SearchBarProps {
@@ -14,9 +15,12 @@ interface SearchBarProps {
   onChangeText: (text: string) => void;
   onSubmit?: () => void;
   onClear?: () => void;
+  onPress?: () => void;
   placeholder?: string;
   loading?: boolean;
   autoFocus?: boolean;
+  editable?: boolean;
+  variant?: "default" | "playlist";
 }
 
 export default function SearchBar({
@@ -24,26 +28,34 @@ export default function SearchBar({
   onChangeText,
   onSubmit,
   onClear,
+  onPress,
   placeholder = "Buscar...",
   loading = false,
   autoFocus = false,
+  editable = true,
+  variant = "default",
 }: SearchBarProps) {
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    if (autoFocus) {
+    if (autoFocus && editable) {
       const timer = setTimeout(() => inputRef.current?.focus(), 60);
       return () => clearTimeout(timer);
     }
-  }, [autoFocus]);
+  }, [autoFocus, editable]);
 
   const handleClear = () => {
     onChangeText("");
     if (onClear) onClear();
   };
 
-  return (
-    <View style={styles.container}>
+  const containerStyle = [
+    styles.container,
+    variant === "playlist" && styles.containerPlaylist,
+  ];
+
+  const content = (
+    <View style={containerStyle}>
       <Ionicons name="search" size={20} color="#888" />
       <TextInput
         ref={inputRef}
@@ -51,9 +63,10 @@ export default function SearchBar({
         onChangeText={onChangeText}
         onSubmitEditing={onSubmit}
         placeholder={placeholder}
-        placeholderTextColor="#aaa"
+        placeholderTextColor={variant === "playlist" ? "#ccc" : "#aaa"}
         style={styles.input}
         returnKeyType="search"
+        editable={editable}
       />
       {loading && (
         <ActivityIndicator size="small" color="#888" style={styles.loader} />
@@ -68,6 +81,16 @@ export default function SearchBar({
       )}
     </View>
   );
+
+  if (!editable && onPress) {
+    return (
+      <Pressable onPress={onPress}>
+        {content}
+      </Pressable>
+    );
+  }
+
+  return content;
 }
 
 const styles = StyleSheet.create({
@@ -79,6 +102,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 44,
     marginHorizontal: 12,
+  },
+  containerPlaylist: {
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
   },
   input: {
     flex: 1,

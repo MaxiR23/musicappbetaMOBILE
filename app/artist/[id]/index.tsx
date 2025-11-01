@@ -32,7 +32,17 @@ export default function ArtistScreen() {
     fetcher: getArtist,
   });
 
+  //DBG: {
+  /* React.useEffect(() => {
+    if (artist) {
+      console.log((id));
+    }
+  }, [artist]); */
+  //DBG: }
+
   const newRelease = artist?.newReleases?.[0];
+  const upcomingReleases = artist?.upcoming_album ? [artist.upcoming_album] : [];
+
   const mappedTop = useMemo(() => {
     if (!artist) return [];
     return mapArtistTopSongs(artist.topSongs, {
@@ -87,6 +97,26 @@ export default function ArtistScreen() {
           </HeroSection>
         </View>
 
+        {/* Upcoming Releases */}
+        {upcomingReleases.length > 0 && (
+          <View style={styles.upcomingSection}>
+            {upcomingReleases.map((release: any, index: number) => (
+              <NewReleaseCard
+                key={`upcoming-${release.id || index}`}
+                release={{
+                  id: release.id,
+                  title: release.album,
+                  artist: release.artist,
+                  release_date: release.release_date || "TBA",
+                  track_count: release.track_count,
+                  thumb: release.thumbnail,
+                }}
+                badgeText={release.is_tba ? "Próximamente" : "Estreno próximo"}
+              />
+            ))}
+          </View>
+        )}
+
         {/* Nuevo lanzamiento */}
         {newRelease && (
           <NewReleaseCard
@@ -131,11 +161,11 @@ export default function ArtistScreen() {
           onPressMore={
             artist.has_more?.albums
               ? () =>
-                  router.push(
-                    `/artist/${id}/releases?tab=albums&name=${encodeURIComponent(
-                      artist.header?.name || ""
-                    )}`
-                  )
+                router.push(
+                  `/artist/${id}/releases?tab=albums&name=${encodeURIComponent(
+                    artist.header?.name || ""
+                  )}`
+                )
               : undefined
           }
         />
@@ -154,11 +184,11 @@ export default function ArtistScreen() {
             onPressMore={
               artist.has_more?.singles
                 ? () =>
-                    router.push(
-                      `/artist/${id}/releases?tab=singles&name=${encodeURIComponent(
-                        artist.header?.name || ""
-                      )}`
-                    )
+                  router.push(
+                    `/artist/${id}/releases?tab=singles&name=${encodeURIComponent(
+                      artist.header?.name || ""
+                    )}`
+                  )
                 : undefined
             }
           />
@@ -208,6 +238,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 12,
+  },
+
+  upcomingSection: {
+    marginBottom: 20,
+    paddingHorizontal: 0,
   },
 
   // Hero

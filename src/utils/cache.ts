@@ -7,12 +7,13 @@ const DEFAULT_TTL = DAY_MS;
 
 // TTLs específicos por tipo de contenido
 export const CACHE_TTL = {
-  artist: 60 * 60 * 1000,      // 1 hora
-  album: 60 * 60 * 1000,       // 1 hora
-  playlist: 30 * 60 * 1000,    // 30 min
-  track: 60 * 60 * 1000,       // 1 hora
-  feed: 30 * 60 * 1000,        // 30 min
-  default: 5 * 60 * 1000,      // 5 min
+  artist: 60 * 60 * 1000,   // 1 hora
+  album: 60 * 60 * 1000,    // 1 hora
+  playlist: 30 * 60 * 1000, // 30 min
+  track: 60 * 60 * 1000,    // 1 hora
+  feed: 30 * 60 * 1000,     // 30 min
+  recent: DAY_MS * 7,       // 7 dias pero se invalida manualmente.
+  default: 5 * 60 * 1000,   // 5 min
 };
 
 // No revalidar si es más reciente que esto
@@ -35,6 +36,7 @@ function getTTLForKey(key: string): number {
   if (key.includes('playlist')) return CACHE_TTL.playlist;
   if (key.includes('track')) return CACHE_TTL.track;
   if (key.includes('feed')) return CACHE_TTL.feed;
+  if (key.includes('recent')) return CACHE_TTL.recent;
   return CACHE_TTL.default;
 }
 
