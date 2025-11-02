@@ -7,7 +7,7 @@ import TrackRow from "@/src/components/shared/TrackRow";
 import { PlaylistSkeletonLayout } from "@/src/components/shared/skeletons/Skeleton";
 import { useMusic } from "@/src/hooks/use-music";
 import { useMusicApi } from "@/src/hooks/use-music-api";
-import { formatDuration } from "@/src/utils/durations";
+import { formatDurationCustom } from "@/src/utils/durations";
 import { upgradeThumbUrl } from "@/src/utils/image-helpers";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -105,7 +105,7 @@ export default function GenrePlaylistScreen() {
   // Calcular duración total
   const totalDuration = useMemo(() => {
     const totalMs = tracks.reduce((acc, t) => acc + (t.duration_ms || 0), 0);
-    return formatDuration(totalMs);
+    return formatDurationCustom(totalMs, { format: 'compact', round: true });
   }, [tracks]);
 
   // Extraer los primeros 4 thumbnails para el mosaico

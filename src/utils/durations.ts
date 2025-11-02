@@ -91,3 +91,109 @@ export function formatDurationReadable(ms: number): string {
   
   return `${s} seg`;
 }
+
+/**
+ * Opciones para formatear duración de manera customizable
+ */
+export type DurationFormat = 'clock' | 'compact' | 'full';
+
+export interface DurationOptions {
+  /** Formato de salida: 'clock' (3:45), 'compact' (3h 45min), 'full' (3 h 45 min) */
+  format?: DurationFormat;
+  /** Redondear al minuto más cercano (ignora segundos) */
+  round?: boolean;
+  /** Mostrar segundos (solo aplica si round=false) */
+  showSeconds?: boolean;
+}
+
+/**
+ * Formatea duración con opciones personalizables y reutilizables
+ * 
+ * @param ms - Milisegundos a convertir
+ * @param options - Opciones de formato
+ * @returns String formateado según las opciones
+ * 
+ * @example
+ * // Formato reloj (default)
+ * formatDurationCustom(185000) // "3:05"
+ * formatDurationCustom(3665000) // "1:01:05"
+ * 
+ * // Formato compacto sin redondeo
+ * formatDurationCustom(185000, { format: 'compact' }) // "3min 5s"
+ * formatDurationCustom(3665000, { format: 'compact' }) // "1h 1min 5s"
+ * 
+ * // Formato compacto redondeado (para playlists)
+ * formatDurationCustom(261170000, { format: 'compact', round: true }) // "4h 22min"
+ * formatDurationCustom(3570000, { format: 'compact', round: true }) // "1h"
+ * formatDurationCustom(2700000, { format: 'compact', round: true }) // "45min"
+ * 
+ * // Formato completo
+ * formatDurationCustom(185000, { format: 'full' }) // "3 min 5 seg"
+ * formatDurationCustom(3665000, { format: 'full' }) // "1 h 1 min 5 seg"
+ * 
+ * // Sin segundos
+ * formatDurationCustom(3665000, { format: 'compact', showSeconds: false }) // "1h 1min"
+ */
+export function formatDurationCustom(ms: number, options: DurationOptions = {}): string {
+  const {
+    format = 'clock',
+    round = false,
+    showSeconds = true
+  } = options;
+
+  if (!ms || ms <= 0) {
+    return format === 'clock' ? '0:00' : '0min';
+  }
+
+  // Modo redondeado (para totales de playlists)
+  if (round) {
+    const totalMinutes = Math.round(ms / 60000);
+    
+    if (totalMinutes < 60) {
+      return format === 'compact' ? `${totalMinutes}min` : `${totalMinutes} min`;
+    }
+    
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    if (format === 'compact') {
+      return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}min`;
+    }
+    
+    return minutes === 0 ? `${hours} h` : `${hours} h ${minutes} min`;
+  }
+
+  // Modo preciso (sin redondear)
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+
+  // Formato reloj (3:45 o 1:01:05)
+  if (format === 'clock') {
+    if (h > 0) {
+      return showSeconds 
+        ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+        : `${h}:${String(m).padStart(2, '0')}`;
+    }
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  // Formato compacto (3h 45min 5s)
+  if (format === 'compact') {
+    const parts: string[] = [];
+    if (h > 0) parts.push(`${h}h`);
+    if (m > 0) parts.push(`${m}min`);
+    if (showSeconds && s > 0) parts.push(`${s}s`);
+    
+    return parts.length > 0 ? parts.join(' ') : '0s';
+  }
+
+  // Formato completo (3 h 45 min 5 seg)
+  const parts: string[] = [];
+  if (h > 0) parts.push(`${h} h`);
+  if (m > 0) parts.push(`${m} min`);
+  if (showSeconds && s > 0) parts.push(`${s} seg`);
+  
+  return parts.length > 0 ? parts.join(' ') : '0 seg';
+}

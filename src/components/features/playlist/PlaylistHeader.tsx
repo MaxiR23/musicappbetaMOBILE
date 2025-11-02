@@ -53,7 +53,7 @@ export default function PlaylistHeader({
           {playlist.name}
         </Text>
         <Text style={styles.simpleMeta}>
-          {playlist.songCount} canciones
+          {playlist.songCount} canciones • {playlist.duration}
         </Text>
       </View>
     );
