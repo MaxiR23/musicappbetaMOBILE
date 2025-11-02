@@ -1,5 +1,4 @@
 // hooks/use-home-playlists.ts
-import { cacheWrap, DAY_MS } from '@/src/utils/cache';
 import { onPlaylistChange } from '@/src/utils/playlist-events';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCacheInvalidation } from './use-cache-invalidation';
@@ -14,16 +13,12 @@ export function useHomePlaylists(userId: string) {
     try {
       if (force) await invalidatePlaylists();
 
-      const pls = await cacheWrap(
-        `home:playlists:v1`,
-        () => getPlaylists(),
-        { userId, ttl: DAY_MS }
-      );
+      const pls = await getPlaylists();  // ← YA cachea internamente con versión
       setPlaylists(pls);
     } catch (e: any) {
       console.warn("[API] getPlaylists error:", e?.message || e);
     }
-  }, [getPlaylists, userId, invalidatePlaylists]);
+  }, [getPlaylists, invalidatePlaylists]);
 
   const playlistsWithCreate = useMemo(() => {
     return [{ id: '__create__', isCreateButton: true }, ...playlists];

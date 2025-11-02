@@ -21,7 +21,6 @@ export function useHomeRecent(userId: string, _currentSongId?: string) {
   
   const fetchingRef = useRef(false);
 
-  // fetch con caché INDEFINIDO + FUERZA bypass si acabamos de invalidar
   const fetchRecent = useCallback(async (forceBypassCache = false) => {
     if (!userId || fetchingRef.current) return;
 
@@ -30,14 +29,12 @@ export function useHomeRecent(userId: string, _currentSongId?: string) {
 
       // 1. Si NO es bypass, intenta leer de caché
       if (!forceBypassCache) {
-        const cached = await cacheGet<RecentItem[]>(CACHE_KEY, userId);
+        const cached = await cacheGet<RecentItem[]>(CACHE_KEY, { userId });  // ← CAMBIO: objeto { userId }
         if (cached && Array.isArray(cached)) {
           setRecent(cached);
           fetchingRef.current = false;
           return;
         }
-      } else {
-        //console.log('[HOME] Bypass caché forzado');
       }
 
       // 2. Fetch (si no hay caché o es bypass)
@@ -46,7 +43,7 @@ export function useHomeRecent(userId: string, _currentSongId?: string) {
       const items = resp?.items ?? [];
 
       // 3. Guarda en caché (indefinido, hasta invalidación manual)
-      await cacheSet(CACHE_KEY, items, userId);
+      await cacheSet(CACHE_KEY, items, { userId });  // ← CAMBIO: objeto { userId }
       
       setRecent(items);
     } catch (e: any) {
@@ -66,19 +63,17 @@ export function useHomeRecent(userId: string, _currentSongId?: string) {
     [recent]
   );
 
-  // ✅ Carga inicial (solo una vez)
   useEffect(() => {
     if (!userId) return;
     fetchRecent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  // ✅ Escucha eventos de invalidación (con delay + bypass cache)
   useEffect(() => {
     const unsubscribe = subscribeToRecentChanges(() => {
       setTimeout(() => {
         console.log('[HOME] refetching recientes (bypass cache)...');
-        fetchRecent(true); // ← FUERZA bypass del caché
+        fetchRecent(true);
       }, 3000);
     });
 

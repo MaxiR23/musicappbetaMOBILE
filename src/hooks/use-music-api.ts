@@ -1,10 +1,11 @@
 // hooks/use-music-api.ts
-import { cacheDel, cacheWrap } from "@/src/utils/cache";
+import { cacheClearPrefix, cacheWrap } from "@/src/utils/cache";
 import { getUpgradedThumb, upgradeThumbUrl } from "@/src/utils/image-helpers";
 import Constants from "expo-constants";
 import { useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { AlbumDetails, Artist, Song } from "./../types/music";
+import { useCacheVersions } from "./use-cache-version";
 
 const BASE_URL =
   (Constants?.expoConfig as any)?.extra?.EXPO_PUBLIC_API_URL
@@ -91,8 +92,8 @@ const toTrackPayload = (song: any) => {
 /* =========================================================== */
 
 type SourcePayload = {
-  name?: string | null;   // display name para UI
-  thumb?: string | null;  // thumbnail url
+  name?: string | null;
+  thumb?: string | null;
 };
 
 type RecentItem = {
@@ -104,6 +105,8 @@ type RecentItem = {
 };
 
 export function useMusicApi() {
+  const { versions } = useCacheVersions();  // ← NUEVO: obtener versiones del backend
+
   // públicos
   const searchSongs = useCallback(
     async (query: string): Promise<Song[]> => {
@@ -141,51 +144,56 @@ export function useMusicApi() {
     async (id: string): Promise<Artist> => {
       return cacheWrap(
         `artist:${id}`,
-        () => publicFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}`)
+        () => publicFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}`),
+        { version: versions['artist'] }  // ← NUEVO
       );
     },
-    []
+    [versions]  // ← NUEVO: dependencia
   );
 
   const getAlbum = useCallback(
     async (id: string): Promise<AlbumDetails> => {
       return cacheWrap(
         `album:${id}`,
-        () => publicFetch(`${BASE_URL}/music/album/${encodeURIComponent(id)}`)
+        () => publicFetch(`${BASE_URL}/music/album/${encodeURIComponent(id)}`),
+        { version: versions['album'] }  // ← NUEVO
       );
     },
-    []
+    [versions]  // ← NUEVO
   );
 
   const getArtistAlbums = useCallback(
     async (id: string): Promise<{ artist_id: string; total: number; albums: any[] }> => {
       return cacheWrap(
         `artist:${id}:albums_all`,
-        () => publicFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}/albums`)
+        () => publicFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}/albums`),
+        { version: versions['artist-albums'] }  // ← NUEVO
       );
     },
-    []
+    [versions]  // ← NUEVO
   );
 
   const getArtistSingles = useCallback(
     async (id: string): Promise<{ artist_id: string; total: number; singles: any[] }> => {
       return cacheWrap(
         `artist:${id}:singles_all`,
-        () => publicFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}/singles`)
+        () => publicFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}/singles`),
+        { version: versions['artist-singles'] }  // ← NUEVO
       );
     },
-    []
+    [versions]  // ← NUEVO
   );
 
-  // 🎵 Genres (públicos)
+  // Genres (públicos)
   const getGenres = useCallback(
     async (): Promise<{ ok: boolean; genres: any[] }> => {
       return cacheWrap(
         'genres:list',
-        () => publicFetch(`${BASE_URL}/genres`)
+        () => publicFetch(`${BASE_URL}/genres`),
+        { version: versions['genre-playlists'] }  // ← NUEVO
       );
     },
-    []
+    [versions]  // ← NUEVO
   );
 
   const getGenrePlaylists = useCallback(
@@ -196,20 +204,22 @@ export function useMusicApi() {
 
       return cacheWrap(
         `genre:${slug}:playlists${category ? `:${category}` : ''}`,
-        () => publicFetch(url)
+        () => publicFetch(url),
+        { version: versions['genre-playlists'] }  // ← NUEVO
       );
     },
-    []
+    [versions]  // ← NUEVO
   );
 
   const getGenreCategories = useCallback(
     async (slug: string): Promise<{ ok: boolean; genre: any; categories: string[] }> => {
       return cacheWrap(
         `genre:${slug}:categories`,
-        () => publicFetch(`${BASE_URL}/genres/${encodeURIComponent(slug)}/categories`)
+        () => publicFetch(`${BASE_URL}/genres/${encodeURIComponent(slug)}/categories`),
+        { version: versions['genre-playlists'] }  // ← NUEVO
       );
     },
-    []
+    [versions]  // ← NUEVO
   );
 
   const getGenrePlaylistTracks = useCallback(
@@ -220,26 +230,29 @@ export function useMusicApi() {
 
       return cacheWrap(
         `genre-playlist:${playlistId}:tracks`,
-        () => publicFetch(url)
+        () => publicFetch(url),
+        { version: versions['genre-playlists'] }  // ← NUEVO
       );
     },
-    []
+    [versions]  // ← NUEVO
   );
 
   // 🔒 privados
   const getPlaylists = useCallback(async (): Promise<any[]> => {
     return cacheWrap(
       'playlists:list',
-      () => authFetch(`${BASE_URL}/playlists/`)
+      () => authFetch(`${BASE_URL}/playlists/`),
+      { version: versions['user-playlists'] }  // ← NUEVO
     );
-  }, []);
+  }, [versions]);  // ← NUEVO
 
   const getPlaylistById = useCallback(async (id: string): Promise<any> => {
     return cacheWrap(
       `playlist:${id}`,
-      () => authFetch(`${BASE_URL}/playlists/${encodeURIComponent(id)}`)
+      () => authFetch(`${BASE_URL}/playlists/${encodeURIComponent(id)}`),
+      { version: versions['user-playlists'] }  // ← NUEVO
     );
-  }, []);
+  }, [versions]);  // ← NUEVO
 
   const createPlaylist = useCallback(
     async (title: string, description?: string, is_public?: boolean) => {
@@ -252,7 +265,7 @@ export function useMusicApi() {
         }),
       });
 
-      await cacheDel('playlists:list');
+      await cacheClearPrefix('playlists:list');
 
       return result;
     },
@@ -272,8 +285,7 @@ export function useMusicApi() {
         }
       );
 
-      // invalidar caché de la playlist
-      await cacheDel(`playlist:${playlistId}`);
+      await cacheClearPrefix(`playlist:${playlistId}`);
 
       return result;
     },
@@ -287,9 +299,8 @@ export function useMusicApi() {
         { method: "DELETE" }
       );
 
-      // invalidar caché de la playlist
-      await cacheDel(`playlist:${playlistId}`);
-      await cacheDel('playlists:list');
+      await cacheClearPrefix(`playlist:${playlistId}`);
+      await cacheClearPrefix('playlists:list');
       return result;
     },
     []
@@ -302,15 +313,13 @@ export function useMusicApi() {
         { method: "DELETE" }
       );
 
-      // invalidar caché de la playlist
-      await cacheDel(`playlist:${playlistId}`);
+      await cacheClearPrefix(`playlist:${playlistId}`);
 
       return result;
     },
     []
   );
 
-  // registrar "play" de álbum — enviar claves que el backend lee (NO anidar todo en source)
   const logPlayAlbum = useCallback(
     async (albumId: string, source?: SourcePayload) => {
       const body: any = {};
@@ -324,7 +333,6 @@ export function useMusicApi() {
     []
   );
 
-  // registrar "play" de artista — idem
   const logPlayArtist = useCallback(
     async (artistId: string, source?: SourcePayload) => {
       const body: any = {};
@@ -338,7 +346,6 @@ export function useMusicApi() {
     []
   );
 
-  // likes / unlikes (auth)
   const likeTrack = useCallback(
     async (trackId: string) => {
       return authFetch(
@@ -419,7 +426,6 @@ export function useMusicApi() {
     []
   );
 
-  // Checker disponible en tu backend
   const isTrackLiked = useCallback(
     async (trackId: string): Promise<{ track_id: string; liked: boolean }> => {
       return authFetch(
@@ -430,7 +436,6 @@ export function useMusicApi() {
     []
   );
 
-  // recientes del usuario (álbumes/artistas)
   const getRecentPlays = useCallback(
     async (limit = 20): Promise<{ items: RecentItem[] }> => {
       return authFetch(
@@ -441,7 +446,6 @@ export function useMusicApi() {
     []
   );
 
-  // mover track en playlist (para reordenar)
   const moveTrackInPlaylist = useCallback(
     async (playlistId: string, oldPosition: number, newPosition: number) => {
       const result = await authFetch(
@@ -453,15 +457,13 @@ export function useMusicApi() {
         }
       );
 
-      // invalidar caché de la playlist
-      await cacheDel(`playlist:${playlistId}`);
+      await cacheClearPrefix(`playlist:${playlistId}`);
 
       return result;
     },
     []
   );
 
-  // Lyrics (público, no requiere auth)
   const getTrackLyrics = useCallback(
     async (trackId: string): Promise<{ ok: boolean; lyrics?: string | null; source?: string | null }> => {
       return publicFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/lyrics`, {

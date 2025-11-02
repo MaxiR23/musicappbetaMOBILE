@@ -1,4 +1,4 @@
-import { cacheDel } from '@/src/utils/cache';
+// hooks/useCacheVersions.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from "expo-constants";
 import { useEffect, useState } from 'react';
@@ -11,8 +11,9 @@ const API_BASE =
 const BACKEND_URL = `${API_BASE}/feed/cache/versions`;
 const VERSIONS_KEY = 'cache:backend-versions';
 
-export function useCacheVersions(userId?: string) {
-  const [versions, setVersions] = useState<Record<string, string> | null>(null);
+export function useCacheVersions() {
+  const [versions, setVersions] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     checkVersions();
@@ -23,6 +24,7 @@ export function useCacheVersions(userId?: string) {
       const res = await fetch(BACKEND_URL);
       if (!res.ok) {
         console.error('[cache-versions] HTTP error:', res.status);
+        setLoading(false);
         return;
       }
 
@@ -31,9 +33,11 @@ export function useCacheVersions(userId?: string) {
 
       if (!newVersions || typeof newVersions !== 'object') {
         console.error('[cache-versions] Invalid response:', json);
+        setLoading(false);
         return;
       }
 
+      // Comparar con versiones anteriores (solo para logging)
       const stored = await AsyncStorage.getItem(VERSIONS_KEY);
       const oldVersions = stored ? JSON.parse(stored) : {};
 
@@ -41,35 +45,24 @@ export function useCacheVersions(userId?: string) {
         const oldVer = oldVersions[type];
         
         if (oldVer && oldVer !== newVer) {
-          console.log(`[cache-versions] ${type} cambió: ${oldVer} → ${newVer}`);
-          await invalidateByType(type, userId);
+          console.log(`[cache-versions] ✅ ${type} cambió: ${oldVer} → ${newVer}`);
         }
       }
 
+      // Guardar nuevas versiones
       await AsyncStorage.setItem(VERSIONS_KEY, JSON.stringify(newVersions));
       setVersions(newVersions);
+      setLoading(false);
 
     } catch (err) {
       console.error('[cache-versions] Error:', err);
+      setLoading(false);
     }
   }
 
-  async function invalidateByType(type: string, userId?: string) {
-    switch (type) {
-      case 'new-releases':
-        await cacheDel('home:feed:new_releases:AR:albums:20:v1', userId);
-        break;
-      case 'top-tracks':
-        await cacheDel('home:feed:most_played:tracks:20:v1', userId);
-        break;
-      case 'top-albums':
-        await cacheDel('home:feed:most_played:albums:20:v1', userId);
-        break;
-      case 'seed-tracks':
-        await cacheDel('home:feed:seed_tracks:tracks:20:v1', userId);
-        break;
-    }
-  }
-
-  return { versions, checkVersions };
+  return { 
+    versions,      // ← expone las versiones
+    loading,       // ← indica si está cargando
+    checkVersions  // ← permite refrescar manualmente
+  };
 }

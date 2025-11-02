@@ -3,8 +3,11 @@ import { fetchFeed } from '@/src/services/feedService';
 import { fetchRecommendations } from '@/src/services/recommendService';
 import { cacheWrap, DAY_MS } from '@/src/utils/cache';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCacheVersions } from './use-cache-version';
 
 export function useHomeFeed(userId: string) {
+  const { versions } = useCacheVersions();
+  
   const [newReleases, setNewReleases] = useState<any[]>([]);
   const [topAlbums, setTopAlbums] = useState<any[]>([]);
   const [topTracks, setTopTracks] = useState<any[]>([]);
@@ -18,77 +21,77 @@ export function useHomeFeed(userId: string) {
       const albums = await cacheWrap(
         `home:feed:new_releases:AR:albums:20:v1`,
         () => fetchFeed({ kind: "new_releases", type: "album", store: "AR", limit: 20 }),
-        { userId, ttl: DAY_MS }
+        { userId, ttl: DAY_MS, version: versions['new-releases'] }
       );
       setNewReleases(albums);
     } catch (e: any) {
       console.warn("[API] new_releases error:", e?.message || e);
       setNewReleases([]);
     }
-  }, [userId]);
+  }, [userId, versions]);
 
   const refreshTopAlbums = useCallback(async () => {
     try {
       const albums = await cacheWrap(
         `home:feed:most_played:albums:20:v1`,
         () => fetchFeed({ kind: "most_played", type: "album", limit: 20 }),
-        { userId, ttl: DAY_MS }
+        { userId, ttl: DAY_MS, version: versions['top-albums'] }
       );
       setTopAlbums(albums);
     } catch (e: any) {
       console.warn("[API] most_played/albums error:", e?.message || e);
       setTopAlbums([]);
     }
-  }, [userId]);
+  }, [userId, versions]);
 
   const refreshTopTracks = useCallback(async () => {
     try {
       const tracks = await cacheWrap(
         `home:feed:most_played:tracks:20:v1`,
         () => fetchFeed({ kind: "most_played", type: "track", limit: 20 }),
-        { userId, ttl: DAY_MS }
+        { userId, ttl: DAY_MS, version: versions['top-tracks'] }
       );
       setTopTracks(tracks);
     } catch (e: any) {
       console.warn("[API] most_played/tracks error:", e?.message || e);
       setTopTracks([]);
     }
-  }, [userId]);
+  }, [userId, versions]);
 
   const refreshNewSingles = useCallback(async () => {
     try {
       const tracks = await cacheWrap(
         `home:feed:new_singles:tracks:20:v1`,
         () => fetchFeed({ kind: "new_singles", type: "track", limit: 20 }),
-        { userId, ttl: DAY_MS }
+        { userId, ttl: DAY_MS, version: versions['new-releases'] }
       );
       setNewSingles(tracks);
     } catch (e: any) {
       console.warn("[API] new_singles error:", e?.message || e);
       setNewSingles([]);
     }
-  }, [userId]);
+  }, [userId, versions]);
 
   const refreshSeedTracks = useCallback(async () => {
     try {
       const tracks = await cacheWrap(
         `home:feed:seed_tracks:tracks:20:v1`,
         () => fetchFeed({ kind: "seed_tracks", type: "track", limit: 20 }),
-        { userId, ttl: DAY_MS }
+        { userId, ttl: DAY_MS, version: versions['seed-tracks'] }
       );
       setSeedTracks(tracks);
     } catch (e: any) {
       console.warn("[API] seed_tracks error:", e?.message || e);
       setSeedTracks([]);
     }
-  }, [userId]);
+  }, [userId, versions]);
 
   const refreshRecommendations = useCallback(async () => {
     try {
       const data = await cacheWrap(
         `home:recommendations:weekly_2025w41:v1`,
         () => fetchRecommendations("weekly_2025w41"),
-        { userId, ttl: DAY_MS }
+        { userId, ttl: DAY_MS, version: versions['user-recommendations'] }
       );
       setRecoArtists(Array.isArray(data.artists) ? data.artists : []);
       setRecoAlbums(Array.isArray(data.albums) ? data.albums : []);
@@ -97,7 +100,7 @@ export function useHomeFeed(userId: string) {
       setRecoArtists([]);
       setRecoAlbums([]);
     }
-  }, [userId]);
+  }, [userId, versions]);
 
   const recoBySeed = useMemo(() => {
     const map = new Map<string, any[]>();
@@ -111,7 +114,6 @@ export function useHomeFeed(userId: string) {
 
   const ready = !!userId;
 
-  // Carga secundaria con delay
   useEffect(() => {
     if (!ready) return;
 

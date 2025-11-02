@@ -7,29 +7,28 @@ const DEFAULT_TTL = DAY_MS;
 
 // TTLs específicos por tipo de contenido
 export const CACHE_TTL = {
-  artist: 60 * 60 * 1000,   // 1 hora
-  album: 60 * 60 * 1000,    // 1 hora
-  playlist: 30 * 60 * 1000, // 30 min
-  track: 60 * 60 * 1000,    // 1 hora
-  feed: 30 * 60 * 1000,     // 30 min
-  recent: DAY_MS * 7,       // 7 dias pero se invalida manualmente.
-  default: 5 * 60 * 1000,   // 5 min
+  artist: 60 * 60 * 1000,
+  album: 60 * 60 * 1000,
+  playlist: 30 * 60 * 1000,
+  track: 60 * 60 * 1000,
+  feed: 30 * 60 * 1000,
+  recent: DAY_MS * 7,
+  default: 5 * 60 * 1000,
 };
 
-// No revalidar si es más reciente que esto
-const NO_REVALIDATE_MS = 10 * 60 * 1000; // 10 minutos
+const NO_REVALIDATE_MS = 10 * 60 * 1000;
 
-/** Entrada interna guardada */
 type CacheEntry<T> = { v: T; exp: number; ttl?: number };
 
-/** Mem-cache para la sesión (rápido y evita deserializar) */
 const mem = new Map<string, CacheEntry<any>>();
 
-/** Arma la key con un posible scope por usuario */
-const k = (key: string, userId?: string | null) =>
-  userId ? `cache:${key}::u:${userId}` : `cache:${key}`;
+/** Arma la key con scope de usuario y VERSIÓN del backend */
+const k = (key: string, userId?: string | null, version?: string | null) => {
+  let full = userId ? `cache:${key}::u:${userId}` : `cache:${key}`;
+  if (version) full += `::ver:${version}`;  // ← NUEVO: incluye versión
+  return full;
+};
 
-// Auto-detectar TTL según el tipo de key
 function getTTLForKey(key: string): number {
   if (key.includes('artist')) return CACHE_TTL.artist;
   if (key.includes('album')) return CACHE_TTL.album;
@@ -40,12 +39,12 @@ function getTTLForKey(key: string): number {
   return CACHE_TTL.default;
 }
 
-/** Lee del cache (memoria → AsyncStorage). Devuelve null si no existe o está vencido. */
+/** Lee del cache con versión opcional */
 export async function cacheGet<T>(
   key: string,
-  opts?: { userId?: string | null }
+  opts?: { userId?: string | null; version?: string | null }  // ← NUEVO: version
 ): Promise<T | null> {
-  const full = k(key, opts?.userId);
+  const full = k(key, opts?.userId, opts?.version);  // ← usa version
   const now = Date.now();
 
   // 1) memoria
@@ -84,13 +83,13 @@ export async function cacheGet<T>(
   }
 }
 
-/** Guarda en cache (memoria + AsyncStorage) */
+/** Guarda en cache con versión opcional */
 export async function cacheSet<T>(
   key: string,
   value: T,
-  opts?: { ttl?: number; userId?: string | null }
+  opts?: { ttl?: number; userId?: string | null; version?: string | null }  // ← NUEVO: version
 ): Promise<void> {
-  const full = k(key, opts?.userId);
+  const full = k(key, opts?.userId, opts?.version);  // ← usa version
   const ttl = opts?.ttl ?? getTTLForKey(key);
   const exp = Date.now() + ttl;
   const entry: CacheEntry<T> = { v: value, exp, ttl };
@@ -100,30 +99,32 @@ export async function cacheSet<T>(
   } catch {}
 }
 
-/**
- * Wrapper: intenta cache y si no hay, llama al productor, guarda y devuelve.
- */
+/** Wrapper con versión opcional */
 export async function cacheWrap<T>(
   key: string,
   producer: () => Promise<T>,
-  opts?: { ttl?: number; userId?: string | null; skipCache?: boolean }
+  opts?: { ttl?: number; userId?: string | null; skipCache?: boolean; version?: string | null }  // ← NUEVO: version
 ): Promise<T> {
-  const full = k(key, opts?.userId);
+  const full = k(key, opts?.userId, opts?.version);
 
   if (!opts?.skipCache) {
-    const hit = await cacheGet<T>(key, { userId: opts?.userId });
+    const hit = await cacheGet<T>(key, { userId: opts?.userId, version: opts?.version });  // ← pasa version
     if (hit !== null) return hit;
   }
 
   console.log(`[cache] MISS → fetching (${full})`);
   const data = await producer();
-  await cacheSet(key, data, { ttl: opts?.ttl ?? DEFAULT_TTL, userId: opts?.userId });
+  await cacheSet(key, data, { 
+    ttl: opts?.ttl ?? DEFAULT_TTL, 
+    userId: opts?.userId,
+    version: opts?.version  // ← pasa version
+  });
   return data;
 }
 
 /** Invalidaciones útiles */
-export async function cacheDel(key: string, userId?: string | null) {
-  const full = k(key, userId);
+export async function cacheDel(key: string, userId?: string | null, version?: string | null) {  // ← NUEVO: version
+  const full = k(key, userId, version);
   mem.delete(full);
   try { await AsyncStorage.removeItem(full); } catch {}
 }
@@ -147,14 +148,7 @@ export async function cacheClearAll() {
   }
 }
 
-/**
- * Limpia entries expiradas de forma segura
- * - Timeout de 5 segundos para evitar trabas
- * - Procesa máximo 100 keys por limpieza
- * - Solo borra entries definitivamente expiradas
- */
 export async function cleanExpiredCache(): Promise<void> {
-  // Timeout de 5 segundos para evitar trabas
   const timeoutPromise = new Promise<void>((_, reject) => 
     setTimeout(() => reject(new Error('timeout')), 5000)
   );
@@ -166,7 +160,6 @@ export async function cleanExpiredCache(): Promise<void> {
       const now = Date.now();
       const toDelete: string[] = [];
 
-      // Procesar máximo 100 keys por limpieza (seguridad)
       const keysToCheck = cacheKeys.slice(0, 100);
 
       for (const key of keysToCheck) {
@@ -174,14 +167,12 @@ export async function cleanExpiredCache(): Promise<void> {
           const raw = await AsyncStorage.getItem(key);
           if (raw) {
             const parsed = JSON.parse(raw);
-            // Solo borrar si DEFINITIVAMENTE expiró
             if (parsed.exp && parsed.exp <= now) {
               toDelete.push(key);
               mem.delete(key);
             }
           }
         } catch {
-          // Entry corrupto → borrarlo
           toDelete.push(key);
           mem.delete(key);
         }
