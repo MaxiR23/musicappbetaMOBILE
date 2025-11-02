@@ -10,7 +10,7 @@ import { useMusic } from "@/src/hooks/use-music";
 import { useMusicApi } from "@/src/hooks/use-music-api";
 import { usePlaylistEditor } from "@/src/hooks/use-playlist-editor";
 import { useUserProfile } from "@/src/hooks/use-user-profile";
-import { formatDuration, parseDurationToMs } from "@/src/utils/durations";
+import { formatDurationCustom, parseDurationToMs } from "@/src/utils/durations";
 import { upgradeThumbUrl } from "@/src/utils/image-helpers";
 import { emitPlaylistChange } from "@/src/utils/playlist-events";
 import { applyServerOrder } from "@/src/utils/reorder-logger";
@@ -78,7 +78,7 @@ export default function PlaylistScreen() {
         description: rawData.description,
         isPublic: rawData.is_public,
         songCount: songs.length,
-        duration: formatDuration(totalMs),
+        duration: formatDurationCustom(totalMs, { format: 'compact', round: true }),
         songs,
       };
     },
@@ -192,7 +192,7 @@ export default function PlaylistScreen() {
               ...prev,
               songs: nextSongs,
               songCount: nextSongs.length,
-              duration: formatDuration(nextTotalMs),
+              duration: formatDurationCustom(nextTotalMs, { format: 'compact', round: true }),
             };
           })()
           : prev
