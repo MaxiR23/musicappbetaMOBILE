@@ -433,9 +433,9 @@ export function useMusicApi() {
   // recientes del usuario (álbumes/artistas)
   const getRecentPlays = useCallback(
     async (limit = 20): Promise<{ items: RecentItem[] }> => {
-      return cacheWrap(
-        'recent:plays',
-        () => authFetch(`${BASE_URL}/music/me/recent?limit=${encodeURIComponent(limit)}`, { method: "GET" })
+      return authFetch(
+        `${BASE_URL}/music/me/recent?limit=${encodeURIComponent(limit)}`,
+        { method: "GET" }
       );
     },
     []
