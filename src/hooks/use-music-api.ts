@@ -1,501 +1,160 @@
 // hooks/use-music-api.ts
-import { cacheClearPrefix, cacheWrap } from "@/src/utils/cache";
-import { getUpgradedThumb, upgradeThumbUrl } from "@/src/utils/image-helpers";
-import Constants from "expo-constants";
 import { useCallback } from "react";
-import { supabase } from "../lib/supabase";
-import { AlbumDetails, Artist, Song } from "./../types/music";
+import { musicService } from "../services/musicService";
+import { AlbumDetails, Artist, Song } from "../types/music";
 import { useCacheVersions } from "./use-cache-versions";
 
-const BASE_URL =
-  (Constants?.expoConfig as any)?.extra?.EXPO_PUBLIC_API_URL
-  ?? process.env.EXPO_PUBLIC_API_URL
-  ?? "http://66.55.75.224:8000/api";
-
-async function publicFetch<T = any>(url: string, options: RequestInit = {}): Promise<T> {
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-  };
-  const res = await fetch(url, { ...options, headers });
-  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-  return res.json();
-}
-
-async function authFetch<T = any>(url: string, init: RequestInit = {}): Promise<T> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-
-  const headers = new Headers(init.headers || {});
-  if (token) headers.set("Authorization", `Bearer ${token}`);
-  if (init.body && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  const res = await fetch(url, { ...init, headers });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`${res.status} ${res.statusText}${text ? ` - ${text}` : ""}`);
-  }
-  const ct = res.headers.get("content-type") || "";
-  if (ct.includes("application/json")) return (await res.json()) as T;
-  return undefined as T;
-}
-
-/* ===================== helpers payload ===================== */
-const first = (...vals: any[]) => vals.find(v => v !== undefined && v !== null && v !== "");
-const mmssToMs = (s?: string | null) => {
-  if (!s) return null;
-  const m = String(s).match(/^(\d+):(\d{1,2})$/);
-  if (!m) return null;
-  const min = parseInt(m[1], 10);
-  const sec = parseInt(m[2], 10);
-  return (min * 60 + sec) * 1000;
-};
-
-const toTrackPayload = (song: any) => {
-  const id = first(song?.id, song?.videoId, song?.track_id, song?.video_id);
-
-  const duration_ms =
-    song?.duration_ms ??
-    (song?.durationSeconds != null
-      ? Math.round(Number(song.durationSeconds) * 1000)
-      : mmssToMs(song?.duration));
-
-  const thumbnail_url =
-    getUpgradedThumb(song, 512) ??
-    upgradeThumbUrl(first(song?.thumbnail_url, song?.thumbnail, song?.albumCover), 512) ??
-    null;
-
-  const artist_id = first(song?.artistId, song?.artist_id, song?.artists?.[0]?.id, null);
-  const artist =
-    first(
-      song?.artistName,
-      song?.artist,
-      Array.isArray(song?.artists) ? song.artists.map((a: any) => a?.name).filter(Boolean).join(", ") : null
-    ) ?? null;
-
-  const album = first(song?.albumId, song?.album, null);
-
-  return {
-    id,
-    track_id: id,
-    artist_id,
-    album,
-    duration_ms,
-    thumbnail_url,
-    extra: song,
-    title: song?.title ?? null,
-    artist,
-  };
-};
-/* =========================================================== */
-
-type SourcePayload = {
-  name?: string | null;
-  thumb?: string | null;
-};
-
-type RecentItem = {
-  type: "album" | "artist";
-  id: string;
-  occurred_at: string;
-  name?: string | null;
-  thumbnail_url?: string | null;
-};
-
 export function useMusicApi() {
-  const { versions } = useCacheVersions();  // ← NUEVO: obtener versiones del backend
+  const { versions } = useCacheVersions();
 
-  // públicos
+  // ==================== PUBLIC ====================
+  
   const searchSongs = useCallback(
-    async (query: string): Promise<Song[]> => {
-      return authFetch(`${BASE_URL}/music/search?q=${encodeURIComponent(query)}`);
-    },
+    (query: string): Promise<Song[]> => musicService.searchSongs(query),
     []
   );
 
   const playSongUrl = useCallback(
-    (id: string): string => {
-      return `${BASE_URL}/music/play?id=${encodeURIComponent(id)}&redir=1`;
-    },
+    (id: string): string => musicService.playSongUrl(id),
     []
   );
 
   const prefetchSongs = useCallback(
-    async (ids: string[]): Promise<void> => {
-      if (!ids?.length) return;
-      return publicFetch(`${BASE_URL}/music/prefetch`, {
-        method: "POST",
-        body: JSON.stringify({ ids }),
-      });
-    },
+    (ids: string[]): Promise<void> => musicService.prefetchSongs(ids),
     []
   );
 
   const getReleases = useCallback(
-    async (): Promise<Song[]> => {
-      return publicFetch(`${BASE_URL}/music/releases`);
-    },
+    (): Promise<Song[]> => musicService.getReleases(),
     []
   );
 
   const getArtist = useCallback(
-    async (id: string): Promise<Artist> => {
-      return cacheWrap(
-        `artist:${id}`,
-        () => publicFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}`),
-        { version: versions['artist'] }  // ← NUEVO
-      );
-    },
-    [versions]  // ← NUEVO: dependencia
+    (id: string): Promise<Artist> => musicService.getArtist(id, versions),
+    [versions]
   );
 
   const getAlbum = useCallback(
-    async (id: string): Promise<AlbumDetails> => {
-      return cacheWrap(
-        `album:${id}`,
-        () => publicFetch(`${BASE_URL}/music/album/${encodeURIComponent(id)}`),
-        { version: versions['album'] }  // ← NUEVO
-      );
-    },
-    [versions]  // ← NUEVO
+    (id: string): Promise<AlbumDetails> => musicService.getAlbum(id, versions),
+    [versions]
   );
 
   const getArtistAlbums = useCallback(
-    async (id: string): Promise<{ artist_id: string; total: number; albums: any[] }> => {
-      return cacheWrap(
-        `artist:${id}:albums_all`,
-        () => publicFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}/albums`),
-        { version: versions['artist-albums'] }  // ← NUEVO
-      );
-    },
-    [versions]  // ← NUEVO
+    (id: string) => musicService.getArtistAlbums(id, versions),
+    [versions]
   );
 
   const getArtistSingles = useCallback(
-    async (id: string): Promise<{ artist_id: string; total: number; singles: any[] }> => {
-      return cacheWrap(
-        `artist:${id}:singles_all`,
-        () => publicFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}/singles`),
-        { version: versions['artist-singles'] }  // ← NUEVO
-      );
-    },
-    [versions]  // ← NUEVO
+    (id: string) => musicService.getArtistSingles(id, versions),
+    [versions]
   );
 
-  // Genres (públicos)
+  // ==================== GENRES ====================
+
   const getGenres = useCallback(
-    async (): Promise<{ ok: boolean; genres: any[] }> => {
-      return cacheWrap(
-        'genres:list',
-        () => publicFetch(`${BASE_URL}/genres`),
-        { version: versions['genre-playlists'] }  // ← NUEVO
-      );
-    },
-    [versions]  // ← NUEVO
+    () => musicService.getGenres(versions),
+    [versions]
   );
 
   const getGenrePlaylists = useCallback(
-    async (slug: string, category?: string): Promise<{ ok: boolean; genre: any; playlists: any[] }> => {
-      const url = category
-        ? `${BASE_URL}/genres/${encodeURIComponent(slug)}/playlists?category=${encodeURIComponent(category)}`
-        : `${BASE_URL}/genres/${encodeURIComponent(slug)}/playlists`;
-
-      return cacheWrap(
-        `genre:${slug}:playlists${category ? `:${category}` : ''}`,
-        () => publicFetch(url),
-        { version: versions['genre-playlists'] }  // ← NUEVO
-      );
-    },
-    [versions]  // ← NUEVO
+    (slug: string, category?: string) => musicService.getGenrePlaylists(slug, versions, category),
+    [versions]
   );
 
   const getGenreCategories = useCallback(
-    async (slug: string): Promise<{ ok: boolean; genre: any; categories: string[] }> => {
-      return cacheWrap(
-        `genre:${slug}:categories`,
-        () => publicFetch(`${BASE_URL}/genres/${encodeURIComponent(slug)}/categories`),
-        { version: versions['genre-playlists'] }  // ← NUEVO
-      );
-    },
-    [versions]  // ← NUEVO
+    (slug: string) => musicService.getGenreCategories(slug, versions),
+    [versions]
   );
 
   const getGenrePlaylistTracks = useCallback(
-    async (playlistId: string, limit?: number): Promise<{ ok: boolean; playlist: any; tracks: any[] }> => {
-      const url = limit
-        ? `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/tracks?limit=${limit}`
-        : `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/tracks`;
-
-      return cacheWrap(
-        `genre-playlist:${playlistId}:tracks`,
-        () => publicFetch(url),
-        { version: versions['genre-playlists'] }  // ← NUEVO
-      );
-    },
-    [versions]  // ← NUEVO
+    (playlistId: string, limit?: number) => musicService.getGenrePlaylistTracks(playlistId, versions, limit),
+    [versions]
   );
 
-  // 🔒 privados
-  const getPlaylists = useCallback(async (): Promise<any[]> => {
-    return cacheWrap(
-      'playlists:list',
-      () => authFetch(`${BASE_URL}/playlists/`),
-      { version: versions['user-playlists'] }  // ← NUEVO
-    );
-  }, [versions]);  // ← NUEVO
+  // ==================== PRIVATE (AUTH) ====================
 
-  const getPlaylistById = useCallback(async (id: string): Promise<any> => {
-    return cacheWrap(
-      `playlist:${id}`,
-      () => authFetch(`${BASE_URL}/playlists/${encodeURIComponent(id)}`),
-      { version: versions['user-playlists'] }  // ← NUEVO
-    );
-  }, [versions]);  // ← NUEVO
+  const getPlaylists = useCallback(
+    () => musicService.getPlaylists(versions),
+    [versions]
+  );
+
+  const getPlaylistById = useCallback(
+    (id: string) => musicService.getPlaylistById(id, versions),
+    [versions]
+  );
 
   const createPlaylist = useCallback(
-    async (title: string, description?: string, is_public?: boolean) => {
-      const result = await authFetch(`${BASE_URL}/playlists`, {
-        method: "POST",
-        body: JSON.stringify({
-          title,
-          description: description ?? null,
-          is_public: !!is_public,
-        }),
-      });
-
-      await cacheClearPrefix('playlists:list');
-
-      return result;
-    },
+    (title: string, description?: string, is_public?: boolean) =>
+      musicService.createPlaylist(title, description, is_public),
     []
   );
 
   const addTrackToPlaylist = useCallback(
-    async (playlistId: string, song: Song) => {
-      const payload = toTrackPayload(song as any);
-      console.log("[API] addTrackToPlaylist →", { playlistId, payload });
-
-      const result = await authFetch(
-        `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/tracks`,
-        {
-          method: "POST",
-          body: JSON.stringify(payload),
-        }
-      );
-
-      await cacheClearPrefix(`playlist:${playlistId}`);
-
-      return result;
-    },
+    (playlistId: string, song: Song) => musicService.addTrackToPlaylist(playlistId, song),
     []
   );
 
   const deletePlaylist = useCallback(
-    async (playlistId: string) => {
-      const result = await authFetch(
-        `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}`,
-        { method: "DELETE" }
-      );
-
-      await cacheClearPrefix(`playlist:${playlistId}`);
-      await cacheClearPrefix('playlists:list');
-      return result;
-    },
+    (playlistId: string) => musicService.deletePlaylist(playlistId),
     []
   );
 
   const removeTrackFromPlaylist = useCallback(
-    async (playlistId: string, trackId: string) => {
-      const result = await authFetch(
-        `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/tracks/${encodeURIComponent(trackId)}`,
-        { method: "DELETE" }
-      );
-
-      await cacheClearPrefix(`playlist:${playlistId}`);
-
-      return result;
-    },
+    (playlistId: string, trackId: string) => musicService.removeTrackFromPlaylist(playlistId, trackId),
     []
   );
 
+  // ==================== PLAY LOGS ====================
+
   const logPlayAlbum = useCallback(
-    async (albumId: string, source?: SourcePayload) => {
-      const body: any = {};
-      if (source?.name) body.display_name = source.name;
-      if (source?.thumb) body.thumbnail_url = source.thumb;
-      return authFetch(
-        `${BASE_URL}/music/plays/albums/${encodeURIComponent(albumId)}`,
-        { method: "POST", body: JSON.stringify(body) }
-      );
-    },
+    (albumId: string, source?: { name?: string | null; thumb?: string | null }) =>
+      musicService.logPlayAlbum(albumId, source),
     []
   );
 
   const logPlayArtist = useCallback(
-    async (artistId: string, source?: SourcePayload) => {
-      const body: any = {};
-      if (source?.name) body.display_name = source.name;
-      if (source?.thumb) body.thumbnail_url = source.thumb;
-      return authFetch(
-        `${BASE_URL}/music/plays/artists/${encodeURIComponent(artistId)}`,
-        { method: "POST", body: JSON.stringify(body) }
-      );
-    },
+    (artistId: string, source?: { name?: string | null; thumb?: string | null }) =>
+      musicService.logPlayArtist(artistId, source),
     []
   );
 
-  const likeTrack = useCallback(
-    async (trackId: string) => {
-      return authFetch(
-        `${BASE_URL}/music/likes/tracks/${encodeURIComponent(trackId)}`,
-        { method: "POST" }
-      );
-    },
-    []
-  );
+  // ==================== LIKES ====================
 
-  const unlikeTrack = useCallback(
-    async (trackId: string) => {
-      return authFetch(
-        `${BASE_URL}/music/unlikes/tracks/${encodeURIComponent(trackId)}`,
-        { method: "POST" }
-      );
-    },
-    []
-  );
+  const likeTrack = useCallback((trackId: string) => musicService.likeTrack(trackId), []);
+  const unlikeTrack = useCallback((trackId: string) => musicService.unlikeTrack(trackId), []);
+  const likeAlbum = useCallback((albumId: string) => musicService.likeAlbum(albumId), []);
+  const unlikeAlbum = useCallback((albumId: string) => musicService.unlikeAlbum(albumId), []);
+  const likeArtist = useCallback((artistId: string) => musicService.likeArtist(artistId), []);
+  const unlikeArtist = useCallback((artistId: string) => musicService.unlikeArtist(artistId), []);
+  const likePlaylist = useCallback((playlistId: string) => musicService.likePlaylist(playlistId), []);
+  const unlikePlaylist = useCallback((playlistId: string) => musicService.unlikePlaylist(playlistId), []);
+  const isTrackLiked = useCallback((trackId: string) => musicService.isTrackLiked(trackId), []);
 
-  const likeAlbum = useCallback(
-    async (albumId: string) => {
-      return authFetch(
-        `${BASE_URL}/music/likes/albums/${encodeURIComponent(albumId)}`,
-        { method: "POST" }
-      );
-    },
-    []
-  );
-
-  const unlikeAlbum = useCallback(
-    async (albumId: string) => {
-      return authFetch(
-        `${BASE_URL}/music/unlikes/albums/${encodeURIComponent(albumId)}`,
-        { method: "POST" }
-      );
-    },
-    []
-  );
-
-  const likeArtist = useCallback(
-    async (artistId: string) => {
-      return authFetch(
-        `${BASE_URL}/music/likes/artists/${encodeURIComponent(artistId)}`,
-        { method: "POST" }
-      );
-    },
-    []
-  );
-
-  const unlikeArtist = useCallback(
-    async (artistId: string) => {
-      return authFetch(
-        `${BASE_URL}/music/unlikes/artists/${encodeURIComponent(artistId)}`,
-        { method: "POST" }
-      );
-    },
-    []
-  );
-
-  const likePlaylist = useCallback(
-    async (playlistId: string) => {
-      return authFetch(
-        `${BASE_URL}/music/likes/playlists/${encodeURIComponent(playlistId)}`,
-        { method: "POST" }
-      );
-    },
-    []
-  );
-
-  const unlikePlaylist = useCallback(
-    async (playlistId: string) => {
-      return authFetch(
-        `${BASE_URL}/music/unlikes/playlists/${encodeURIComponent(playlistId)}`,
-        { method: "POST" }
-      );
-    },
-    []
-  );
-
-  const isTrackLiked = useCallback(
-    async (trackId: string): Promise<{ track_id: string; liked: boolean }> => {
-      return authFetch(
-        `${BASE_URL}/music/likes/tracks/${encodeURIComponent(trackId)}`,
-        { method: "GET" }
-      );
-    },
-    []
-  );
+  // ==================== OTHER ====================
 
   const getRecentPlays = useCallback(
-    async (limit = 20): Promise<{ items: RecentItem[] }> => {
-      return authFetch(
-        `${BASE_URL}/music/me/recent?limit=${encodeURIComponent(limit)}`,
-        { method: "GET" }
-      );
-    },
+    (limit = 20) => musicService.getRecentPlays(limit),
     []
   );
 
   const moveTrackInPlaylist = useCallback(
-    async (playlistId: string, oldPosition: number, newPosition: number) => {
-      const result = await authFetch(
-        `${BASE_URL}/music/playlists/${encodeURIComponent(playlistId)}/move-track`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ old_position: oldPosition, new_position: newPosition }),
-        }
-      );
-
-      await cacheClearPrefix(`playlist:${playlistId}`);
-
-      return result;
-    },
+    (playlistId: string, oldPosition: number, newPosition: number) =>
+      musicService.moveTrackInPlaylist(playlistId, oldPosition, newPosition),
     []
   );
 
   const getTrackLyrics = useCallback(
-    async (trackId: string): Promise<{ ok: boolean; lyrics?: string | null; source?: string | null }> => {
-      return publicFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/lyrics`, {
-        method: "GET",
-      });
-    },
+    (trackId: string) => musicService.getTrackLyrics(trackId),
     []
   );
 
   const getTrackUpNext = useCallback(
-    async (trackId: string): Promise<{
-      ok: boolean;
-      current?: any;
-      upNext?: any[];
-      autoplay?: any;
-    }> => {
-      return publicFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/upnext`, {
-        method: "GET",
-      });
-    },
+    (trackId: string) => musicService.getTrackUpNext(trackId),
     []
   );
 
   const getTrackRelated = useCallback(
-    async (trackId: string): Promise<{
-      ok: boolean;
-      related?: any[];
-    }> => {
-      return publicFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/related`, {
-        method: "GET",
-      });
-    },
+    (trackId: string) => musicService.getTrackRelated(trackId),
     []
   );
 
