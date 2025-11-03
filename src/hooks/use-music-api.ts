@@ -5,7 +5,7 @@ import Constants from "expo-constants";
 import { useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { AlbumDetails, Artist, Song } from "./../types/music";
-import { useCacheVersions } from "./use-cache-version";
+import { useCacheVersions } from "./use-cache-versions";
 
 const BASE_URL =
   (Constants?.expoConfig as any)?.extra?.EXPO_PUBLIC_API_URL

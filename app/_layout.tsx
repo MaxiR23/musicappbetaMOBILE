@@ -8,6 +8,7 @@ import TrackPlayer, { State as TPState } from "react-native-track-player";
 import AuthContainer from "@/src/components/features/auth/AuthContainer";
 import { useAuth } from "@/src/hooks/use-auth";
 import AuthProvider from "@/src/providers/AuthProvider";
+import CacheVersionsProvider from "@/src/providers/CacheVersionsProvider";
 
 import MusicPlayer from "@/src/components/features/player/MusicPlayer";
 import { MusicProvider } from "../src/providers/MusicProvider";
@@ -30,9 +31,11 @@ const MyTheme = {
 export default function Layout() {
   return (
     <AuthProvider>
-      <ThemeProvider value={MyTheme}>
-        <Gate />
-      </ThemeProvider>
+      <CacheVersionsProvider>
+        <ThemeProvider value={MyTheme}>
+          <Gate />
+        </ThemeProvider>
+      </CacheVersionsProvider>
     </AuthProvider>
   );
 }

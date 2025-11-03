@@ -3,11 +3,13 @@ import { fetchFeed } from '@/src/services/feedService';
 import { fetchRecommendations } from '@/src/services/recommendService';
 import { cacheWrap, DAY_MS } from '@/src/utils/cache';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useCacheVersions } from './use-cache-version';
+import { useAuth } from './use-auth';
+import { useCacheVersions } from './use-cache-versions';
 
 export function useHomeFeed(userId: string) {
   const { versions } = useCacheVersions();
-  
+  const { fetchWithAuth } = useAuth();
+
   const [newReleases, setNewReleases] = useState<any[]>([]);
   const [topAlbums, setTopAlbums] = useState<any[]>([]);
   const [topTracks, setTopTracks] = useState<any[]>([]);
@@ -89,8 +91,8 @@ export function useHomeFeed(userId: string) {
   const refreshRecommendations = useCallback(async () => {
     try {
       const data = await cacheWrap(
-        `home:recommendations:weekly_2025w41:v1`,
-        () => fetchRecommendations("weekly_2025w41"),
+        `home:recommendations:v1`,
+        () => fetchRecommendations(undefined, fetchWithAuth),
         { userId, ttl: DAY_MS, version: versions['user-recommendations'] }
       );
       setRecoArtists(Array.isArray(data.artists) ? data.artists : []);

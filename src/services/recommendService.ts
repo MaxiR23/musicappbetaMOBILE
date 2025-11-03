@@ -32,44 +32,39 @@ export type UserRecommendations = {
   albums:  AlbumReco[];
 };
 
-/**
- * Trae recomendaciones guardadas (DB) para el usuario logueado.
- * El límite por tipo lo decide el servidor (no va en la URL).
- */
-export async function fetchRecommendations(bucket: string = "seed_v1"): Promise<UserRecommendations> {
-  // auth (token + userId)
-  const { data: sessionData } = await supabase.auth.getSession();
-  const token = sessionData.session?.access_token || "";
-  const userId = sessionData.session?.user?.id;
-  if (!userId) throw new Error("Not authenticated");
-
-  const url = `${BASE_URL}/feed/recommendations?user_id=${encodeURIComponent(userId)}&bucket=${encodeURIComponent(bucket)}`; //TODO: CAMBIAR URGENTE PARA NO PASAR USER ID POR URL
+export async function fetchRecommendations(
+  bucket?: string,
+  fetchWithAuth?: (url: string, init?: RequestInit) => Promise<any>
+): Promise<UserRecommendations> {
+  const url = bucket 
+    ? `${BASE_URL}/feed/recommendations/me?bucket=${encodeURIComponent(bucket)}`
+    : `${BASE_URL}/feed/recommendations/me`;
+  
   console.log("[recommend] GET", url);
 
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  let res: Response;
-  try {
-    res = await fetch(url, { method: "GET", headers });
-  } catch (err: any) {
-    console.warn("[recommend] NETWORK ERROR:", err?.message || err);
-    throw err;
-  }
-
-  if (!res.ok) {
-    let body = "";
-    try { body = await res.text(); } catch {}
-    console.warn(`[recommend] HTTP ${res.status} ${res.statusText} — body:`, (body || "").slice(0, 1200));
-    throw new Error(`recommend: ${res.status}`);
-  }
-
   let json: any;
-  try { json = await res.json(); }
-  catch (err: any) {
-    let body = ""; try { body = await res.text(); } catch {}
-    console.warn("[recommend] JSON PARSE ERROR:", err?.message || err, "— raw body:", (body || "").slice(0, 1200));
-    throw err;
+  
+  if (fetchWithAuth) {
+    json = await fetchWithAuth(url);
+  } else {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token || "";
+    const userId = sessionData.session?.user?.id;
+    if (!userId) throw new Error("Not authenticated");
+
+    const headers: Record<string, string> = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const res = await fetch(url, { method: "GET", headers });
+    
+    if (!res.ok) {
+      let body = "";
+      try { body = await res.text(); } catch {}
+      console.warn(`[recommend] HTTP ${res.status} ${res.statusText} — body:`, (body || "").slice(0, 1200));
+      throw new Error(`recommend: ${res.status}`);
+    }
+
+    json = await res.json();
   }
 
   const rec = (json?.recommendations ?? {}) as {
@@ -77,7 +72,6 @@ export async function fetchRecommendations(bucket: string = "seed_v1"): Promise<
     albums?: any[];
   };
 
-  // Map a shape estable para el front
   const artists: ArtistReco[] = (Array.isArray(rec.artists) ? rec.artists : []).map((a: any) => ({
     type: "artist",
     id: String(a?.id ?? ""),
@@ -103,7 +97,7 @@ export async function fetchRecommendations(bucket: string = "seed_v1"): Promise<
   })).filter(x => x.id);
 
   return {
-    bucket: String(json?.bucket ?? bucket),
+    bucket: String(json?.bucket ?? bucket ?? "seed_recos_v1"),
     artists,
     albums,
   };
