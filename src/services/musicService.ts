@@ -63,7 +63,7 @@ type CacheVersions = Record<string, string>;
 
 export const musicService = {
   // ==================== PUBLIC ====================
-  
+
   searchSongs: async (query: string): Promise<Song[]> => {
     return authFetch(`${BASE_URL}/music/search?q=${encodeURIComponent(query)}`);
   },
@@ -245,6 +245,16 @@ export const musicService = {
     if (source?.thumb) body.thumbnail_url = source.thumb;
     return authFetch(
       `${BASE_URL}/music/plays/artists/${encodeURIComponent(artistId)}`,
+      { method: "POST", body: JSON.stringify(body) }
+    );
+  },
+
+  logPlayTrack: async (trackId: string, source?: SourcePayload) => {
+    const body: any = {};
+    if (source?.name) body.display_name = source.name;
+    if (source?.thumb) body.thumbnail_url = source.thumb;
+    return authFetch(
+      `${BASE_URL}/music/plays/tracks/${encodeURIComponent(trackId)}`,
       { method: "POST", body: JSON.stringify(body) }
     );
   },

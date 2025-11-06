@@ -27,12 +27,14 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const userId = user?.id ?? undefined;
 
-  const { logPlayAlbum, logPlayArtist } = useMusicApi();
+  const { logPlayAlbum, logPlayArtist, logPlayTrack } = useMusicApi();
   const { invalidateRecent } = useCacheInvalidation(userId);
 
   const syncingRef = useRef(false);
   const switchingRef = useRef(false);
   const lastLoggedContextKeyRef = useRef<string | null>(null);
+  const lastLoggedTrackIdRef = useRef<string | null>(null);
+  const trackPlayTimeRef = useRef<{ trackId: string; seconds: number } | null>(null);
   const endingRef = useRef(false);
 
   // Refs para mantener valores actualizados en callbacks
@@ -519,7 +521,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
       return;
     }
-    
+
     // ======== ACTIVAR SHUFFLE ========
     console.log('🔀 [SHUFFLE ON] Mezclando temas originales...');
     console.log('📊 [SHUFFLE ON] Original size:', originalQueueSize, 'Total:', queue.length);
@@ -653,6 +655,42 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
     const subActive = TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, onActiveChanged);
 
+    // 🎵 Listener para tracking de tiempo de reproducción (30 segundos)
+    const subProgress = TrackPlayer.addEventListener(Event.PlaybackProgressUpdated, async (progress) => {
+      const pos = await findActiveIndex();
+      if (pos == null) return;
+
+      const trackToLog = queue[pos];
+      if (!trackToLog) return;
+
+      const trackId = String(trackToLog.id);
+      const currentPosition = progress.position; // ← TIEMPO REAL en segundos
+
+      // Si cambió de track, resetear
+      const currentTracking = trackPlayTimeRef.current;
+      if (!currentTracking || currentTracking.trackId !== trackId) {
+        trackPlayTimeRef.current = { trackId, seconds: 0 };
+        return;
+      }
+
+      // Verificar si YA pasaron 30 segundos REALES
+      if (currentPosition >= 30) {
+        const lastLog = lastLoggedTrackIdRef.current;
+        const alreadyLogged = lastLog && lastLog.split(':')[0] === trackId;
+
+        if (!alreadyLogged) {
+          const now = Date.now();
+          lastLoggedTrackIdRef.current = `${trackId}:${now}`;
+          const trackMeta = {
+            name: (trackToLog as any).title ?? null,
+            thumb: (trackToLog as any).thumbnail ?? null
+          };
+          logPlayTrack(trackId, trackMeta).catch(() => { });
+          console.log("[tracklog] track logged after 30s REAL:", trackId, `position: ${currentPosition}s`, trackMeta);
+        }
+      }
+    });
+    
     // 🔥 CASO 2: Evento cuando termina la cola
     const subEnded = TrackPlayer.addEventListener(Event.PlaybackQueueEnded, async () => {
       if (syncingRef.current) return;
@@ -746,6 +784,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
     return () => {
       subActive.remove();
+      subProgress.remove();
       subEnded.remove();
       subLegacy.remove();
     };

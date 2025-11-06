@@ -8,7 +8,7 @@ export function useMusicApi() {
   const { versions } = useCacheVersions();
 
   // ==================== PUBLIC ====================
-  
+
   const searchSongs = useCallback(
     (query: string): Promise<Song[]> => musicService.searchSongs(query),
     []
@@ -118,6 +118,12 @@ export function useMusicApi() {
     []
   );
 
+  const logPlayTrack = useCallback(
+    (trackId: string, source?: { name?: string | null; thumb?: string | null }) =>
+      musicService.logPlayTrack(trackId, source),
+    []
+  );
+
   // ==================== LIKES ====================
 
   const likeTrack = useCallback((trackId: string) => musicService.likeTrack(trackId), []);
@@ -179,6 +185,7 @@ export function useMusicApi() {
     removeTrackFromPlaylist,
     logPlayAlbum,
     logPlayArtist,
+    logPlayTrack,
     likeTrack,
     unlikeTrack,
     likeAlbum,
