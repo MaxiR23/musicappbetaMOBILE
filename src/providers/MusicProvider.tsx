@@ -142,7 +142,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     if (switchingRef.current) return;
     switchingRef.current = true;
 
-    // 🆕 Resetear autoplay reproducidos al cambiar contexto
+    // Resetear autoplay reproducidos al cambiar contexto
     playedAutoplayIdsRef.current.clear();
 
     setQueue(list);
@@ -174,7 +174,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
             try {
               await invalidateRecent();
             } catch (e) {
-              console.warn("[cache] ❌ Error invalidando:", e);
+              console.warn("[cache] Error invalidando:", e);
             }
           }, 2000);
 
@@ -200,10 +200,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     if (switchingRef.current) return;
     switchingRef.current = true;
 
-    console.log('🎵 Reproduciendo desde Related:', song.title);
-    console.log('🗑️ Borrando queue anterior y creando nueva');
+    console.log('Reproduciendo desde Related:', song.title);
+    console.log('Borrando queue anterior y creando nueva');
 
-    // 🆕 Resetear autoplay reproducidos
+    // Resetear autoplay reproducidos
     playedAutoplayIdsRef.current.clear();
 
     const newQueue = [song];
@@ -221,7 +221,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       setPlaySource({ type: "related", id: String(song.id), name: "Recommended", thumb: null });
       await syncWithTrackPlayer(newQueue, 0);
 
-      console.log('✅ Reproducción desde Related iniciada');
+      console.log('Reproducción desde Related iniciada');
     } catch (err) {
       console.error("[RNTP] error en syncWithTrackPlayer:", err);
     } finally {
@@ -229,14 +229,14 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // 🔥 CASO 1: Click manual en autoplay (agrega y reproduce inmediatamente)
+  //CASO 1: Click manual en autoplay (agrega y reproduce inmediatamente)
   async function addToQueueAndPlay(song: Song) {
-    console.log('🎵 [CASO 1] Click en autoplay:', song.title);
+    console.log('[CASO 1] Click en autoplay:', song.title);
 
     // Verificar si ya existe
     const alreadyExists = queue.some(s => String(s.id) === String(song.id));
     if (alreadyExists) {
-      console.log('⚠️ Canción ya existe en cola');
+      console.log('Canción ya existe en cola');
       return;
     }
 
@@ -252,14 +252,14 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     setQueue(newQueue);
     setOriginalQueueSize(originalQueueSize + 1);
 
-    console.log('📊 Nueva cola:', newQueue.map(s => (s as any).title));
-    console.log('📊 originalQueueSize:', originalQueueSize, '→', originalQueueSize + 1);
+    console.log('Nueva cola:', newQueue.map(s => (s as any).title));
+    console.log('originalQueueSize:', originalQueueSize, '→', originalQueueSize + 1);
 
     // RE-SINCRONIZAR TrackPlayer completamente
     try {
       syncingRef.current = true;
       await syncWithTrackPlayer(newQueue, insertPosition);
-      console.log('✅ TrackPlayer re-sincronizado y reproduciendo en posición', insertPosition);
+      console.log('TrackPlayer re-sincronizado y reproduciendo en posición', insertPosition);
     } catch (e) {
       console.error('[addToQueueAndPlay] ERROR:', e);
     } finally {
@@ -285,25 +285,25 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // 🔥 CASO 2: Autoplay automático al terminar la última canción
+    // CASO 2: Autoplay automático al terminar la última canción
     if (isAutoplayEnabled() && autoplayProviderRef.current) {
       let nextAutoplaySong = autoplayProviderRef.current();
 
       // Buscar una canción que no haya sido reproducida
       let attempts = 0;
       while (nextAutoplaySong && playedAutoplayIdsRef.current.has(String(nextAutoplaySong.id)) && attempts < 10) {
-        console.log('⚠️ Canción ya reproducida, buscando otra...');
+        console.log('Canción ya reproducida, buscando otra...');
         nextAutoplaySong = autoplayProviderRef.current();
         attempts++;
       }
 
       if (nextAutoplaySong && !playedAutoplayIdsRef.current.has(String(nextAutoplaySong.id))) {
-        console.log('🎵 [CASO 2] Agregando autoplay automático:', nextAutoplaySong.title);
+        console.log('[CASO 2] Agregando autoplay automático:', nextAutoplaySong.title);
 
         // Marcar como reproducida
         playedAutoplayIdsRef.current.add(String(nextAutoplaySong.id));
 
-        // ✅ Agregar AL FINAL (tanto en state como en TrackPlayer)
+        // Agregar AL FINAL (tanto en state como en TrackPlayer)
         const newQueue = [...queue, nextAutoplaySong];
         const newIndex = queue.length;
 
@@ -332,7 +332,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           await TrackPlayer.skipToNext();
           await TrackPlayer.play();
 
-          console.log('✅ Autoplay automático agregado en posición', newIndex);
+          console.log('Autoplay automático agregado en posición', newIndex);
         } catch (e) {
           console.error("[next] ERROR agregando autoplay:", e);
         }
@@ -340,7 +340,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    console.log('🎵 Última canción, sin autoplay');
+    console.log('Última canción, sin autoplay');
   }
 
   async function skipToIndex(index: number) {
@@ -413,19 +413,19 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   // Dentro de MusicProvider, después de la función prev()
   async function toggleShuffle() {
     if (originalQueueSize <= 1) {
-      console.log('⚠️ [SHUFFLE] No hay suficientes temas para shuffle');
+      console.log('[SHUFFLE] No hay suficientes temas para shuffle');
       return;
     }
 
     const currentSongId = currentSong?.id;
     if (!currentSongId) {
-      console.warn('⚠️ [SHUFFLE] No hay canción actual');
+      console.warn('[SHUFFLE] No hay canción actual');
       return;
     }
 
     // ======== DESACTIVAR SHUFFLE ========
     if (isShuffled) {
-      console.log('🔀 [SHUFFLE OFF] Restaurando orden original...');
+      console.log('[SHUFFLE OFF] Restaurando orden original...');
 
       // Encontrar la canción actual en la queue original
       const currentSongIndexInOriginal = originalQueueBeforeShuffle.findIndex(
@@ -433,11 +433,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       );
 
       if (currentSongIndexInOriginal === -1) {
-        console.warn('⚠️ [SHUFFLE OFF] No se encontró la canción en la queue original');
+        console.warn('[SHUFFLE OFF] No se encontró la canción en la queue original');
         return;
       }
 
-      console.log('📍 [SHUFFLE OFF] Canción actual está en posición original:', currentSongIndexInOriginal);
+      console.log('[SHUFFLE OFF] Canción actual está en posición original:', currentSongIndexInOriginal);
 
       // Restaurar estados
       setQueue(originalQueueBeforeShuffle);
@@ -466,7 +466,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           await TrackPlayer.remove(indicesToRemove[i]);
         }
 
-        // 🔥 CRÍTICO: Agregar pistas ANTES de la actual (en orden inverso)
+        // Agregar pistas ANTES de la actual (en orden inverso)
         const tracksBeforeCurrent = originalQueueBeforeShuffle
           .slice(0, currentSongIndexInOriginal)
           .reverse() // Invertir para agregar de atrás hacia adelante
@@ -489,7 +489,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           await TrackPlayer.add(track, 0);
         }
 
-        // 🔥 CRÍTICO: Agregar pistas DESPUÉS de la actual
+        // Agregar pistas DESPUÉS de la actual
         const tracksAfterCurrent = originalQueueBeforeShuffle
           .slice(currentSongIndexInOriginal + 1)
           .map((s) => ({
@@ -511,7 +511,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           await TrackPlayer.add(tracksAfterCurrent);
         }
 
-        console.log('✅ [SHUFFLE OFF] Orden original restaurado');
+        console.log('[SHUFFLE OFF] Orden original restaurado');
       } catch (e) {
         console.error('[SHUFFLE OFF] Error:', e);
       } finally {
@@ -523,8 +523,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     }
 
     // ======== ACTIVAR SHUFFLE ========
-    console.log('🔀 [SHUFFLE ON] Mezclando temas originales...');
-    console.log('📊 [SHUFFLE ON] Original size:', originalQueueSize, 'Total:', queue.length);
+    console.log('[SHUFFLE ON] Mezclando temas originales...');
+    console.log('[SHUFFLE ON] Original size:', originalQueueSize, 'Total:', queue.length);
 
     // Guardar estado original ANTES de mezclar
     setOriginalQueueBeforeShuffle([...queue]);
@@ -588,7 +588,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         await TrackPlayer.add(tracksToAdd);
       }
 
-      console.log('✅ [SHUFFLE ON] Queue mezclada');
+      console.log('[SHUFFLE ON] Queue mezclada');
     } catch (e) {
       console.error('[SHUFFLE ON] Error:', e);
     } finally {
@@ -638,6 +638,15 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       const pos = await findActiveIndex();
       if (pos == null) return;
 
+      const newTrackId = queue[pos] ? String(queue[pos].id) : null;
+      const prevTrackId = currentSong ? String(currentSong.id) : null;
+
+      // Si cambió de track, resetear el log para permitir nuevo conteo
+      if (newTrackId && newTrackId !== prevTrackId) {
+        lastLoggedTrackIdRef.current = null;
+        console.log('[tracklog] Track cambió, reseteando log para permitir nuevo conteo');
+      }
+
       setQueueIndex((prev) => (prev !== pos ? pos : prev));
       setCurrentSong((prev) => (queue[pos] && prev?.id !== queue[pos].id ? queue[pos] : prev));
 
@@ -655,7 +664,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
     const subActive = TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, onActiveChanged);
 
-    // 🎵 Listener para tracking de tiempo de reproducción (30 segundos)
+    // Listener para tracking de tiempo de reproducción (30 segundos)
     const subProgress = TrackPlayer.addEventListener(Event.PlaybackProgressUpdated, async (progress) => {
       const pos = await findActiveIndex();
       if (pos == null) return;
@@ -664,12 +673,15 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       if (!trackToLog) return;
 
       const trackId = String(trackToLog.id);
-      const currentPosition = progress.position; // ← TIEMPO REAL en segundos
+      const currentPosition = progress.position;
 
-      // Si cambió de track, resetear
-      const currentTracking = trackPlayTimeRef.current;
-      if (!currentTracking || currentTracking.trackId !== trackId) {
-        trackPlayTimeRef.current = { trackId, seconds: 0 };
+      // Si la posición vuelve a < 5 seg Y ya se había logueado → resetear para permitir nuevo log
+      if (currentPosition < 5) {
+        const lastLog = lastLoggedTrackIdRef.current;
+        if (lastLog && lastLog.split(':')[0] === trackId) {
+          lastLoggedTrackIdRef.current = null;
+          console.log('[tracklog] Posición volvió a 0, reseteando log para permitir nuevo conteo');
+        }
         return;
       }
 
@@ -690,15 +702,15 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         }
       }
     });
-    
-    // 🔥 CASO 2: Evento cuando termina la cola
+
+    // CASO 2: Evento cuando termina la cola
     const subEnded = TrackPlayer.addEventListener(Event.PlaybackQueueEnded, async () => {
       if (syncingRef.current) return;
       if (endingRef.current) return;
       endingRef.current = true;
 
       try {
-        console.log('🎵 PlaybackQueueEnded disparado - verificando autoplay...');
+        console.log('PlaybackQueueEnded disparado - verificando autoplay...');
 
         // Verificar si hay autoplay disponible
         if (isAutoplayEnabledRef.current && autoplayProviderRef.current) {
@@ -710,13 +722,13 @@ export function MusicProvider({ children }: { children: ReactNode }) {
             // Buscar una canción que no haya sido reproducida
             let attempts = 0;
             while (nextAutoplaySong && playedAutoplayIdsRef.current.has(String(nextAutoplaySong.id)) && attempts < 10) {
-              console.log('⚠️ Canción ya reproducida, buscando otra...');
+              console.log('Canción ya reproducida, buscando otra...');
               nextAutoplaySong = autoplayProviderRef.current();
               attempts++;
             }
 
             if (nextAutoplaySong && !playedAutoplayIdsRef.current.has(String(nextAutoplaySong.id))) {
-              console.log('🎵 [CASO 2] Agregando siguiente autoplay:', nextAutoplaySong.title);
+              console.log('[CASO 2] Agregando siguiente autoplay:', nextAutoplaySong.title);
 
               // Marcar como reproducida
               playedAutoplayIdsRef.current.add(String(nextAutoplaySong.id));
@@ -725,7 +737,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
               const currentQueue = queueRef.current;
               const currentOriginalSize = originalQueueSizeRef.current;
 
-              // ✅ Agregar AL FINAL en TrackPlayer
+              // Agregar AL FINAL en TrackPlayer
               await TrackPlayer.add({
                 id: String(nextAutoplaySong.id),
                 url: `${getBaseUrl()}/music/play?id=${encodeURIComponent(nextAutoplaySong.id)}&redir=2`,
@@ -740,7 +752,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
                 },
               } as any);
 
-              // ✅ Agregar AL FINAL en state
+              // Agregar AL FINAL en state
               const newQueue = [...currentQueue, nextAutoplaySong];
               const newIndex = currentQueue.length;
 
@@ -753,7 +765,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
               await TrackPlayer.skipToNext();
               await TrackPlayer.play();
 
-              console.log('✅ Autoplay agregado y reproduciendo en posición', newIndex);
+              console.log('Autoplay agregado y reproduciendo en posición', newIndex);
               endingRef.current = false;
               return;
             }
@@ -761,7 +773,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         }
 
         // Si NO hay autoplay, pausar al final
-        console.log('🎵 No hay más autoplay, pausando al final');
+        console.log('No hay más autoplay, pausando al final');
         const lastIdx = Math.max(0, queue.length - 1);
         const lastSong = queue[lastIdx];
         if (!lastSong) { endingRef.current = false; return; }
