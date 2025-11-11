@@ -255,7 +255,7 @@ export default function HomeScreen() {
           onTrackPress={(index, queueName) => {
             playFromList(mappedNewSingles, index, { type: "queue", name: queueName });
           }}
-        /> 
+        />
 
         {/* seed tracks */}
         <FeedSection

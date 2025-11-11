@@ -6,6 +6,26 @@ const BASE_URL =
   ?? (process?.env?.EXPO_PUBLIC_API_URL)
   ?? "http://66.55.75.224:8000/api";
 
+async function authFetch<T = any>(url: string, init: RequestInit = {}): Promise<T> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+
+  const headers = new Headers(init.headers || {});
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  if (init.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const res = await fetch(url, { ...init, headers });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`${res.status} ${res.statusText}${text ? ` - ${text}` : ""}`);
+  }
+  const ct = res.headers.get("content-type") || "";
+  if (ct.includes("application/json")) return (await res.json()) as T;
+  return undefined as T;
+}
+
 export type ArtistReco = {
   type: "artist";
   id: string;
@@ -32,40 +52,14 @@ export type UserRecommendations = {
   albums:  AlbumReco[];
 };
 
-export async function fetchRecommendations(
-  bucket?: string,
-  fetchWithAuth?: (url: string, init?: RequestInit) => Promise<any>
-): Promise<UserRecommendations> {
+export async function fetchRecommendations(bucket?: string): Promise<UserRecommendations> {
   const url = bucket 
     ? `${BASE_URL}/feed/recommendations/me?bucket=${encodeURIComponent(bucket)}`
     : `${BASE_URL}/feed/recommendations/me`;
   
   console.log("[recommend] GET", url);
 
-  let json: any;
-  
-  if (fetchWithAuth) {
-    json = await fetchWithAuth(url);
-  } else {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token || "";
-    const userId = sessionData.session?.user?.id;
-    if (!userId) throw new Error("Not authenticated");
-
-    const headers: Record<string, string> = {};
-    if (token) headers.Authorization = `Bearer ${token}`;
-
-    const res = await fetch(url, { method: "GET", headers });
-    
-    if (!res.ok) {
-      let body = "";
-      try { body = await res.text(); } catch {}
-      console.warn(`[recommend] HTTP ${res.status} ${res.statusText} — body:`, (body || "").slice(0, 1200));
-      throw new Error(`recommend: ${res.status}`);
-    }
-
-    json = await res.json();
-  }
+  const json = await authFetch(url);
 
   const rec = (json?.recommendations ?? {}) as {
     artists?: any[];

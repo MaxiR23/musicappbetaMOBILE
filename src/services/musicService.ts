@@ -74,20 +74,20 @@ export const musicService = {
 
   prefetchSongs: async (ids: string[]): Promise<void> => {
     if (!ids?.length) return;
-    return publicFetch(`${BASE_URL}/music/prefetch`, {
+    return authFetch(`${BASE_URL}/music/prefetch`, {
       method: "POST",
       body: JSON.stringify({ ids }),
     });
   },
 
   getReleases: async (): Promise<Song[]> => {
-    return publicFetch(`${BASE_URL}/music/releases`);
+    return authFetch(`${BASE_URL}/music/releases`);
   },
 
   getArtist: async (id: string, versions: CacheVersions): Promise<Artist> => {
     return cacheWrap(
       `artist:${id}`,
-      () => publicFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}`),
+      () => authFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}`),
       { version: versions['artist'] }
     );
   },
@@ -95,7 +95,7 @@ export const musicService = {
   getAlbum: async (id: string, versions: CacheVersions): Promise<AlbumDetails> => {
     return cacheWrap(
       `album:${id}`,
-      () => publicFetch(`${BASE_URL}/music/album/${encodeURIComponent(id)}`),
+      () => authFetch(`${BASE_URL}/music/album/${encodeURIComponent(id)}`),
       { version: versions['album'] }
     );
   },
@@ -103,7 +103,7 @@ export const musicService = {
   getArtistAlbums: async (id: string, versions: CacheVersions): Promise<{ artist_id: string; total: number; albums: any[] }> => {
     return cacheWrap(
       `artist:${id}:albums_all`,
-      () => publicFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}/albums`),
+      () => authFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}/albums`),
       { version: versions['artist-albums'] }
     );
   },
@@ -111,7 +111,7 @@ export const musicService = {
   getArtistSingles: async (id: string, versions: CacheVersions): Promise<{ artist_id: string; total: number; singles: any[] }> => {
     return cacheWrap(
       `artist:${id}:singles_all`,
-      () => publicFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}/singles`),
+      () => authFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}/singles`),
       { version: versions['artist-singles'] }
     );
   },
@@ -121,7 +121,7 @@ export const musicService = {
   getGenres: async (versions: CacheVersions): Promise<{ ok: boolean; genres: any[] }> => {
     return cacheWrap(
       'genres:list',
-      () => publicFetch(`${BASE_URL}/genres`),
+      () => authFetch(`${BASE_URL}/genres`),
       { version: versions['genre-playlists'] }
     );
   },
@@ -133,7 +133,7 @@ export const musicService = {
 
     return cacheWrap(
       `genre:${slug}:playlists${category ? `:${category}` : ''}`,
-      () => publicFetch(url),
+      () => authFetch(url),
       { version: versions['genre-playlists'] }
     );
   },
@@ -141,7 +141,7 @@ export const musicService = {
   getGenreCategories: async (slug: string, versions: CacheVersions): Promise<{ ok: boolean; genre: any; categories: string[] }> => {
     return cacheWrap(
       `genre:${slug}:categories`,
-      () => publicFetch(`${BASE_URL}/genres/${encodeURIComponent(slug)}/categories`),
+      () => authFetch(`${BASE_URL}/genres/${encodeURIComponent(slug)}/categories`),
       { version: versions['genre-playlists'] }
     );
   },
@@ -153,7 +153,7 @@ export const musicService = {
 
     return cacheWrap(
       `genre-playlist:${playlistId}:tracks`,
-      () => publicFetch(url),
+      () => authFetch(url),
       { version: versions['genre-playlists'] }
     );
   },
@@ -348,7 +348,7 @@ export const musicService = {
   },
 
   getTrackLyrics: async (trackId: string): Promise<{ ok: boolean; lyrics?: string | null; source?: string | null }> => {
-    return publicFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/lyrics`, {
+    return authFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/lyrics`, {
       method: "GET",
     });
   },
@@ -359,7 +359,7 @@ export const musicService = {
     upNext?: any[];
     autoplay?: any;
   }> => {
-    return publicFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/upnext`, {
+    return authFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/upnext`, {
       method: "GET",
     });
   },
@@ -368,7 +368,7 @@ export const musicService = {
     ok: boolean;
     related?: any[];
   }> => {
-    return publicFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/related`, {
+    return authFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/related`, {
       method: "GET",
     });
   },

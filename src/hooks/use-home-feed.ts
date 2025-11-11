@@ -27,7 +27,7 @@ export function useHomeFeed(userId: string) {
       );
       setNewReleases(albums);
     } catch (e: any) {
-      console.warn("[API] new_releases error:", e?.message || e);
+      console.warn("[useHomeFeed] new_releases error:", e?.message || e);
       setNewReleases([]);
     }
   }, [userId, versions]);
@@ -65,7 +65,7 @@ export function useHomeFeed(userId: string) {
       const tracks = await cacheWrap(
         `home:feed:new_singles:tracks:20:v1`,
         () => fetchFeed({ kind: "new_singles", type: "track", limit: 20 }),
-        { userId, ttl: DAY_MS, version: versions['new-releases'] }
+        { userId, ttl: DAY_MS, version: versions['new-singles'] }
       );
       setNewSingles(tracks);
     } catch (e: any) {
