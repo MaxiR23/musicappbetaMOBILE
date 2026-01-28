@@ -308,7 +308,7 @@ export function PlayerTabs({
                     <View style={styles.queueSection}>
                       <FlatList
                         data={originalQueue}
-                        keyExtractor={(track: any, idx: number) => `${track.id ?? idx}`}
+                        keyExtractor={(track: any, idx: number) => `queue-${track.id}-${idx}`}
                         renderItem={({ item: track, index: idx }) => {
                           const isCurrentTrack = idx === queueIndex;
                           return (
@@ -374,7 +374,7 @@ export function PlayerTabs({
                       <FlatList
                         data={autoplayNotInQueue}
                         keyExtractor={(track: any, idx: number) =>
-                          `${track.videoId ?? track.id ?? idx}`
+                          `autoplay-${track.videoId ?? track.id}-${idx}`
                         }
                         renderItem={({ item: track, index: idx }) => (
                           <TrackRow
@@ -467,6 +467,7 @@ export function PlayerTabs({
             {!relatedLoading && !relatedError && relatedData && (
               <View style={styles.relatedContent}>
                 {relatedData.map((section: any, sIdx: number) => {
+                  const sectionKey = `section-${section.title || ''}-${sIdx}`;
                   const sectionType = getSectionType(section);
                   const contents = section?.contents || [];
 
@@ -476,13 +477,13 @@ export function PlayerTabs({
                   // 🎵 CANCIONES → Usar TrackRow
                   if (sectionType === "songs") {
                     return (
-                      <View key={sIdx} style={styles.relatedSection}>
+                      <View key={sectionKey} style={styles.relatedSection}>
                         <Text style={styles.relatedSectionTitle}>{section.title}</Text>
 
                         <FlatList
                           data={contents}
                           keyExtractor={(track: any, i: number) =>
-                            `${track.videoId || track.id || "song"}-${i}`
+                            `related-song-${sIdx}-${track.videoId || track.id || i}`
                           }
                           renderItem={({ item: track, index: tIdx }) => (
                             <TrackRow
@@ -512,11 +513,11 @@ export function PlayerTabs({
                   // 👤 ARTISTAS → Scroll horizontal con fotos circulares
                   if (sectionType === "artists") {
                     return (
-                      <View key={sIdx} style={styles.relatedSection}>
+                      <View key={sectionKey} style={styles.relatedSection}>
                         <HorizontalScrollSection
                           title={section.title}
                           items={contents}
-                          keyExtractor={(a: any, i: number) => a.browseId ?? String(i)}
+                          keyExtractor={(a: any, i: number) => `artist-${sIdx}-${a.browseId ?? i}`}
                           imageExtractor={(a: any) => getUpgradedThumb(a, 256)}
                           titleExtractor={(a: any) => a.title || a.name}
                           onItemPress={(a: any) => a.browseId && onRelatedArtistPress?.(a.browseId)}
@@ -539,11 +540,11 @@ export function PlayerTabs({
                   // 💿 ÁLBUMES → Scroll horizontal con fotos cuadradas
                   if (sectionType === "albums") {
                     return (
-                      <View key={sIdx} style={styles.relatedSection}>
+                      <View key={sectionKey} style={styles.relatedSection}>
                         <HorizontalScrollSection
                           title={section.title}
                           items={contents}
-                          keyExtractor={(al: any, i: number) => al.browseId ?? String(i)}
+                          keyExtractor={(al: any, i: number) => `album-${sIdx}-${al.browseId ?? i}`}
                           imageExtractor={(al: any) => getUpgradedThumb(al, 512)}
                           titleExtractor={(al: any) => al.title}
                           subtitleExtractor={(al: any) =>
