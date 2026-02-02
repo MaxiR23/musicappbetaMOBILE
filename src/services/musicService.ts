@@ -372,4 +372,15 @@ export const musicService = {
       method: "GET",
     });
   },
+
+  //test {
+
+  getMonthlyStats: async (month?: string): Promise<any> => {
+    const url = month
+      ? `${BASE_URL}/music/me/monthly-stats?month=${encodeURIComponent(month)}`
+      : `${BASE_URL}/music/me/monthly-stats`;
+    return authFetch(url);
+  },
+
+  //}
 };

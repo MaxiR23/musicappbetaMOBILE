@@ -30,14 +30,18 @@ import SimilarToHeader from "@/src/components/shared/SimilarToHeader";
 import { useHomeFeed } from "@/src/hooks/use-home-feed";
 import { useHomePlaylists } from "@/src/hooks/use-home-playlists";
 import { useHomeRecent } from "@/src/hooks/use-home-recent";
+import { useMusicApi } from "@/src/hooks/use-music-api";
 import { useUserProfile } from "@/src/hooks/use-user-profile";
 
 export default function HomeScreen() {
   const router = useRouter();
   const { playFromList, currentSong } = useMusic();
+  const { getMonthlyStats } = useMusicApi();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+  const [showActivityData, setShowActivityData] = useState(false);
+  const [activityData, setActivityData] = useState<any>(null);
 
   const { userName, userEmail, userId, initials, gradient } = useUserProfile();
   const { playlistsWithCreate, refreshPlaylists } = useHomePlaylists(userId);
@@ -51,6 +55,17 @@ export default function HomeScreen() {
     recoAlbums,
     recoBySeed,
   } = useHomeFeed(userId);
+
+  const handleTestActivity = useCallback(async () => {
+    try {
+      const data = await getMonthlyStats();
+      setActivityData(data);
+      setShowActivityData(true);
+    } catch (error) {
+      console.log("Error", "No se pudieron cargar las estadísticas");
+      console.error("Error cargando activity:", error);
+    }
+  }, [getMonthlyStats]);
 
   useEffect(() => {
     const task = InteractionManager.runAfterInteractions(async () => {
@@ -117,6 +132,49 @@ export default function HomeScreen() {
     }
   }, [router]);
 
+  /* JUST TESTING: monthly stats view */
+  if (showActivityData && activityData) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#0e0e0e" }}>
+        <View style={{ padding: 16 }}>
+          <TouchableOpacity onPress={() => setShowActivityData(false)} style={{ backgroundColor: "#1a1a1a", padding: 12, borderRadius: 8, marginBottom: 16 }}>
+            <Text style={{ color: "#fff", fontWeight: "600" }}> Volver</Text>
+          </TouchableOpacity>
+
+          <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold", marginBottom: 8 }}>Activity Data - {activityData.month}</Text>
+
+          {activityData.data?.artist && (
+            <View style={{ marginBottom: 20 }}>
+              <Text style={{ color: "#aaa", fontSize: 16, fontWeight: "600", marginBottom: 8 }}>Artists ({activityData.data.artist.count})</Text>
+              {activityData.data.artist.stats?.map((item: any, idx: number) => (
+                <Text key={idx} style={{ color: "#fff", marginBottom: 4 }}>{idx + 1}. {item.display_name || "Sin nombre"} - {item.play_count} plays</Text>
+              ))}
+            </View>
+          )}
+
+          {activityData.data?.album && (
+            <View style={{ marginBottom: 20 }}>
+              <Text style={{ color: "#aaa", fontSize: 16, fontWeight: "600", marginBottom: 8 }}>Albums ({activityData.data.album.count})</Text>
+              {activityData.data.album.stats?.map((item: any, idx: number) => (
+                <Text key={idx} style={{ color: "#fff", marginBottom: 4 }}>{idx + 1}. {item.display_name || "Sin nombre"} - {item.play_count} plays</Text>
+              ))}
+            </View>
+          )}
+
+          {activityData.data?.track && (
+            <View style={{ marginBottom: 20 }}>
+              <Text style={{ color: "#aaa", fontSize: 16, fontWeight: "600", marginBottom: 8 }}>Tracks ({activityData.data.track.count})</Text>
+              {activityData.data.track.stats?.map((item: any, idx: number) => (
+                <Text key={idx} style={{ color: "#fff", marginBottom: 4 }}>{idx + 1}. {item.display_name || "Sin nombre"} - {item.play_count} plays</Text>
+              ))}
+            </View>
+          )}
+        </View>
+      </SafeAreaView>
+    );
+  }
+  /* JUST TESTING: monthly stats view */
+
   return (
     <>
       {/* 🔍 Barra de búsqueda */}
@@ -149,6 +207,13 @@ export default function HomeScreen() {
               </LinearGradient>
             </TouchableOpacity>
           </View>
+
+          {/* JUST TESTING: Monthly stats */}
+          <TouchableOpacity onPress={handleTestActivity} style={{ marginTop: 12, backgroundColor: "#1a1a1a", padding: 12, borderRadius: 8, borderWidth: 1, borderColor: "#333" }}>
+            <Text style={{ color: "#fff", fontWeight: "600", textAlign: "center" }}>Ver Activity Data</Text>
+          </TouchableOpacity>
+          {/* JUST TESTING: */}
+
         </View>
       </SafeAreaView>
 

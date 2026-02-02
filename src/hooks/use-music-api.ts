@@ -164,6 +164,13 @@ export function useMusicApi() {
     []
   );
 
+  // Test {
+  const getMonthlyStats = useCallback(
+    (month?: string) => musicService.getMonthlyStats(month),
+    []
+  );
+  // Test }
+
   return {
     searchSongs,
     playSongUrl,
@@ -200,5 +207,6 @@ export function useMusicApi() {
     getTrackLyrics,
     getTrackUpNext,
     getTrackRelated,
+    getMonthlyStats // Test Monthly stats
   };
 }
