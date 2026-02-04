@@ -2,6 +2,7 @@ import CreatePlaylistModal from "@/src/components/shared/CreatePlaylistModal";
 import LoadingView from "@/src/components/shared/LoadingView";
 import ReleaseCard from "@/src/components/shared/ReleaseCard";
 import ScreenHeader from "@/src/components/shared/ScreenHeader";
+import { useContentPadding } from "@/src/hooks/use-content-padding";
 import { useHomePlaylists } from "@/src/hooks/use-home-playlists";
 import { useUserProfile } from "@/src/hooks/use-user-profile";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +17,7 @@ export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
   const { playlistsWithCreate, refreshPlaylists } = useHomePlaylists(userId);
   const [createOpen, setCreateOpen] = useState(false);
+  const contentPadding = useContentPadding();
 
   const playlists = playlistsWithCreate.filter(pl => !pl.isCreateButton);
 
@@ -57,7 +59,10 @@ export default function LibraryScreen() {
           keyExtractor={keyExtractor}
           numColumns={2}
           columnWrapperStyle={{ gap: 12, justifyContent: "space-between" }}
-          contentContainerStyle={{ padding: 12, gap: 12, paddingBottom: 100 }}
+           contentContainerStyle={[
+            { padding: 12, gap: 12 },
+            contentPadding 
+          ]}
           renderItem={renderPlaylist}
           removeClippedSubviews={true}
           initialNumToRender={20}
@@ -67,7 +72,7 @@ export default function LibraryScreen() {
 
         {/* Botón flotante */}
         <TouchableOpacity
-          style={[styles.fab, { bottom: insets.bottom + 80 }]}
+          style={[styles.fab, { bottom: contentPadding.fabBottom }]}
           onPress={() => setCreateOpen(true)}
           activeOpacity={0.9}
         >

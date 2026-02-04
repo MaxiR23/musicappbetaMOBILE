@@ -24,6 +24,7 @@ import EventCard from "@/src/components/shared/EventCard";
 import HeroSection from "@/src/components/shared/HeroSection";
 import HorizontalScrollSection from "@/src/components/shared/HorizontalScrollSection";
 import TrackRow from "@/src/components/shared/TrackRow";
+import { useContentPadding } from "@/src/hooks/use-content-padding";
 import { extractIncludedArtists } from "@/src/utils/data-helpers";
 import { getUpgradedThumb } from "@/src/utils/image-helpers";
 import { formatAlbumMeta, formatReleaseSubtitle } from "@/src/utils/subtitle-helpers";
@@ -34,6 +35,7 @@ export default function AlbumScreen() {
   const { playFromList, currentSong } = useMusic();
   const { getAlbum } = useMusicApi();
   const router = useRouter();
+  const contentPadding = useContentPadding();
 
   const [actionsOpen, setActionsOpen] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<any | null>(null);
@@ -86,7 +88,7 @@ export default function AlbumScreen() {
     <>
       <ProList
         style={styles.container}
-        contentContainerStyle={{ paddingBottom: currentSong ? 150 : 80 }}
+        contentContainerStyle={contentPadding}
         blockSize={2}
         initialBlocks={3}
         onEndReachedThreshold={0.5}

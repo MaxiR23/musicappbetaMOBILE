@@ -25,6 +25,7 @@ import HorizontalScrollSection from "@/src/components/shared/HorizontalScrollSec
 
 import FeedSection from "@/src/components/features/home/FeedSection";
 import SimilarToHeader from "@/src/components/shared/SimilarToHeader";
+import { useContentPadding } from "@/src/hooks/use-content-padding";
 import { useHomeFeed } from "@/src/hooks/use-home-feed";
 import { useHomePlaylists } from "@/src/hooks/use-home-playlists";
 import { useHomeRecent } from "@/src/hooks/use-home-recent";
@@ -33,12 +34,13 @@ import { useUserProfile } from "@/src/hooks/use-user-profile";
 export default function HomeScreen() {
   const router = useRouter();
   const { playFromList, currentSong } = useMusic();
+  const contentPadding = useContentPadding();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
 
   const { userName, userEmail, userId, initials, gradient } = useUserProfile();
-  const { playlistsWithCreate, refreshPlaylists } = useHomePlaylists(userId);
+  const { refreshPlaylists } = useHomePlaylists(userId);
   const { recentVisible } = useHomeRecent(userId, currentSong?.id);
   const {
     newReleases,
@@ -149,7 +151,7 @@ export default function HomeScreen() {
       {/* contenido */}
       <ProList
         style={styles.container}
-        contentContainerStyle={{ paddingBottom: 32 }}
+        contentContainerStyle={contentPadding}
         bounces={false}
         overScrollMode="never"
         showsVerticalScrollIndicator={false}

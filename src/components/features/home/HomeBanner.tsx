@@ -21,7 +21,7 @@ export default function HomeBanner() {
       <TouchableOpacity 
         activeOpacity={0.7}
         style={styles.button}
-        onPress={() => router.push("/(tabs)/explore/genres")}
+        onPress={() => router.push("/(tabs)/explore")}
       >
         <Text style={styles.buttonText}>Explorar Ahora</Text>
       </TouchableOpacity>

@@ -4,6 +4,7 @@ import LoadingView from "@/src/components/shared/LoadingView";
 import ReleaseCard from "@/src/components/shared/ReleaseCard";
 import ScreenHeader from "@/src/components/shared/ScreenHeader";
 import TabBar, { Tab } from "@/src/components/shared/TabBar";
+import { useContentPadding } from "@/src/hooks/use-content-padding";
 import { useMounted } from "@/src/hooks/use-mounted";
 import { useMusicApi } from "@/src/hooks/use-music-api";
 import { upgradeThumbUrl } from "@/src/utils/image-helpers";
@@ -18,6 +19,7 @@ export default function GenrePlaylistsScreen() {
   const { getGenrePlaylists, getGenreCategories } = useMusicApi();
   const insets = useSafeAreaInsets();
   const isMounted = useMounted();
+  const contentPadding = useContentPadding();
 
   const [genre, setGenre] = useState<any>(null);
   const [playlists, setPlaylists] = useState<any[]>([]);
@@ -101,7 +103,7 @@ export default function GenrePlaylistsScreen() {
   const renderCard = useCallback(
     ({ item }: { item: any }) => {
       const subtitle = `${item.track_count || 0} canciones`;
-      
+
       const thumbnails = (item.thumbnails || [])
         .map((url: string) => upgradeThumbUrl(url, 512) || url)
         .filter(Boolean);
@@ -165,7 +167,10 @@ export default function GenrePlaylistsScreen() {
             keyExtractor={keyExtractor}
             numColumns={2}
             columnWrapperStyle={{ gap: 12, justifyContent: "space-between" }}
-            contentContainerStyle={{ padding: 12, gap: 12, paddingBottom: 24 }}
+            contentContainerStyle={[
+              { padding: 12, gap: 12 },
+              contentPadding
+            ]}
             renderItem={renderCard}
             removeClippedSubviews={true}
             initialNumToRender={20}

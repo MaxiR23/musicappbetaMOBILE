@@ -15,6 +15,7 @@ import HeroSection from "@/src/components/shared/HeroSection";
 import HorizontalScrollSection from "@/src/components/shared/HorizontalScrollSection";
 import ProList from "@/src/components/shared/ProList";
 import TrackRow from "@/src/components/shared/TrackRow";
+import { useContentPadding } from "@/src/hooks/use-content-padding";
 import { normalizeRelatedArtists } from "@/src/utils/data-helpers";
 import { getUpgradedThumb, upgradeThumbUrl } from "@/src/utils/image-helpers";
 import { formatReleaseSubtitle } from "@/src/utils/subtitle-helpers";
@@ -25,6 +26,7 @@ export default function ArtistScreen() {
   const { currentSong, playFromList } = useMusic();
   const { getArtist } = useMusicApi();
   const router = useRouter();
+  const contentPadding = useContentPadding();
 
   //hook que maneja la carga del artista
   const { data: artist, loading } = useDetailScreen({
@@ -73,10 +75,10 @@ export default function ArtistScreen() {
       <StatusBar barStyle="light-content" backgroundColor="#0e0e0e" />
       <ProList
         style={styles.container}
-        contentContainerStyle={{
-          paddingTop: 0,
-          paddingBottom: currentSong ? 150 : 80,
-        }}
+        contentContainerStyle={[
+          { paddingTop: 0 },
+          contentPadding
+        ]}
         showsVerticalScrollIndicator={false}
         blockSize={2}
         initialBlocks={2}
