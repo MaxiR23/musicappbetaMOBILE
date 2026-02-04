@@ -71,9 +71,10 @@ export function MiniPlayer({
 
 const styles = StyleSheet.create({
   wrapper: {
-    position: "relative",
-    marginHorizontal: 10,
-    marginBottom: 8,
+    position: "absolute",
+    bottom: 62,        
+    left: 10,        
+    right: 10,
     borderRadius: 16,
     overflow: "hidden",
     shadowColor: "#000",

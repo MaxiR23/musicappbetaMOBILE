@@ -29,7 +29,7 @@ export default function RecentSection({ items }: Props) {
       keyExtractor={(it, idx) => `${it.type}:${it.id}:${it.occurred_at}:${idx}`}
       imageExtractor={() => ""}
       titleExtractor={() => ""}
-      onItemPress={() => {}}
+      onItemPress={() => { }}
       cardWidth={120}
       imageHeight={120}
       renderItem={(it) => {
@@ -43,8 +43,8 @@ export default function RecentSection({ items }: Props) {
             onPress={() =>
               router.push(
                 isArtist
-                  ? `/artist/${encodeURIComponent(it.id)}`
-                  : `/album/${encodeURIComponent(it.id)}`
+                  ? `/(tabs)/home/artist/${encodeURIComponent(it.id)}`
+                  : `/(tabs)/home/album/${encodeURIComponent(it.id)}`
               )
             }
             activeOpacity={0.85}

@@ -112,7 +112,7 @@ export default function GenrePlaylistsScreen() {
           cover={null}
           title={item.title}
           subtitle={subtitle}
-          onPress={() => router.push(`/genre-playlist/${item.id}`)}
+          onPress={() => router.push(`/(tabs)/explore/genre-playlist/${item.id}`)}
         />
       );
     },

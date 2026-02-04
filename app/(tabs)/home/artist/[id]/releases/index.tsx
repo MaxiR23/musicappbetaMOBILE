@@ -86,7 +86,7 @@ export default function ArtistReleasesScreen() {
           cover={cover}
           title={item.title}
           subtitle={subtitle}
-          onPress={() => router.push(`/album/${item.id}`)}
+          onPress={() => router.push(`/(tabs)/home/album/${item.id}`)}
         />
       );
     },

@@ -1,5 +1,9 @@
 // app/album/[id].tsx
+import { AlbumSkeletonLayout } from "@/src/components/shared/skeletons/Skeleton";
 import TrackActionsSheet from "@/src/components/shared/TrackActionsSheet";
+import { useDetailScreen } from "@/src/hooks/use-detail-screen";
+import { useMusic } from "@/src/hooks/use-music";
+import { useMusicApi } from "@/src/hooks/use-music-api";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
@@ -9,10 +13,6 @@ import {
   Text,
   View
 } from "react-native";
-import { AlbumSkeletonLayout } from "../../src/components/shared/skeletons/Skeleton";
-import { useDetailScreen } from "../../src/hooks/use-detail-screen";
-import { useMusic } from "../../src/hooks/use-music";
-import { useMusicApi } from "../../src/hooks/use-music-api";
 
 import { mapAlbumTracks } from "@/src/utils/song-mapper";
 
@@ -20,13 +20,13 @@ import ProList from "@/src/components/shared/ProList";
 
 import PlaybackButtons from "@/src/components/features/player/PlaybackButtons";
 import AlbumInfo from "@/src/components/shared/AlbumInfo";
+import EventCard from "@/src/components/shared/EventCard";
 import HeroSection from "@/src/components/shared/HeroSection";
 import HorizontalScrollSection from "@/src/components/shared/HorizontalScrollSection";
 import TrackRow from "@/src/components/shared/TrackRow";
 import { extractIncludedArtists } from "@/src/utils/data-helpers";
 import { getUpgradedThumb } from "@/src/utils/image-helpers";
 import { formatAlbumMeta, formatReleaseSubtitle } from "@/src/utils/subtitle-helpers";
-import EventCard from "../../src/components/shared/EventCard";
 
 export default function AlbumScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -86,7 +86,7 @@ export default function AlbumScreen() {
     <>
       <ProList
         style={styles.container}
-        contentContainerStyle={{ paddingBottom: currentSong ? 18 : 32 }}
+        contentContainerStyle={{ paddingBottom: currentSong ? 150 : 80 }}
         blockSize={2}
         initialBlocks={3}
         onEndReachedThreshold={0.5}
@@ -200,7 +200,7 @@ export default function AlbumScreen() {
               imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
               titleExtractor={(it) => it.title}
               subtitleExtractor={(it) => formatReleaseSubtitle(it)}
-              onItemPress={(it) => router.push(`/album/${it.browseId}`)}
+              onItemPress={(it) => router.push(`/(tabs)/home/album/${it.browseId}`)}
             />
           )
         }
@@ -215,7 +215,7 @@ export default function AlbumScreen() {
               imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
               titleExtractor={(it) => it.title}
               subtitleExtractor={(it) => formatReleaseSubtitle({ ...it, type: it.type || "Album" })}
-              onItemPress={(it) => router.push(`/album/${it.id}`)}
+              onItemPress={(it) => router.push(`/(tabs)/home/album/${it.id}`)}
             />
           )
         }
@@ -233,8 +233,8 @@ export default function AlbumScreen() {
               onItemPress={(it) => {
                 const route =
                   (it.type || "").toLowerCase() === "playlist"
-                    ? `/playlist/${it.browseId}`
-                    : `/album/${it.browseId}`;
+                    ? `/(tabs)/library/playlist/${it.browseId}`
+                    : `/(tabs)/home/album/${it.browseId}`;
                 router.push(route);
               }}
             />

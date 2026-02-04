@@ -38,7 +38,7 @@ export default function FeedSection({ title, items, type, onTrackPress }: Props)
         if (isTrack && onTrackPress) {
           onTrackPress(index, title);
         } else {
-          router.push(`/album/${encodeURIComponent(item.id)}`);
+          router.push(`/(tabs)/home/album/${encodeURIComponent(item.id)}`);
         }
       }}
       cardWidth={120}

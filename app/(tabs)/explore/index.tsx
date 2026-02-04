@@ -45,7 +45,7 @@ export default function GenresScreen() {
     ({ item }: { item: Genre }) => (
       <GenreCard
         name={item.name}
-        onPress={() => router.push(`/genres/${encodeURIComponent(item.slug)}`)}
+        onPress={() => router.push(`/(tabs)/explore/genres/${encodeURIComponent(item.slug)}`)}
       />
     ),
     [router]

@@ -1,8 +1,8 @@
+import SearchPanel, { ResultItem } from "@/src/components/features/search/SearchPanel";
+import { useMusic } from "@/src/hooks/use-music";
+import { useMusicApi } from "@/src/hooks/use-music-api";
 import { Stack, useRouter } from "expo-router";
 import React from "react";
-import SearchPanel, { ResultItem } from "../../src/components/features/search/SearchPanel";
-import { useMusic } from "../../src/hooks/use-music";
-import { useMusicApi } from "../../src/hooks/use-music-api";
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -26,9 +26,9 @@ export default function SearchScreen() {
       };
       playFromList([track] as any, 0, { type: "queue", name: null });
     } else if (item.type === "album") {
-      router.push(`/album/${item.id}`);
+      router.push(`/(tabs)/home/album/${item.id}`);
     } else {
-      router.push(`/artist/${item.id}`);
+      router.push(`/(tabs)/home/artist/${item.id}`);
     }
   };
 

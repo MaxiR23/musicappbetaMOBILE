@@ -1,11 +1,11 @@
 // app/artist/[id]/index.tsx
+import { ArtistSkeletonLayout } from "@/src/components/shared/skeletons/Skeleton";
+import { useDetailScreen } from "@/src/hooks/use-detail-screen";
+import { useMusic } from "@/src/hooks/use-music";
+import { useMusicApi } from "@/src/hooks/use-music-api";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import { StatusBar, StyleSheet, Text, View } from "react-native";
-import { ArtistSkeletonLayout } from "../../../src/components/shared/skeletons/Skeleton";
-import { useDetailScreen } from "../../../src/hooks/use-detail-screen";
-import { useMusic } from "../../../src/hooks/use-music";
-import { useMusicApi } from "../../../src/hooks/use-music-api";
 
 import { mapArtistTopSongs } from "@/src/utils/song-mapper";
 
@@ -75,7 +75,7 @@ export default function ArtistScreen() {
         style={styles.container}
         contentContainerStyle={{
           paddingTop: 0,
-          paddingBottom: currentSong ? 18 : 18,
+          paddingBottom: currentSong ? 150 : 80,
         }}
         showsVerticalScrollIndicator={false}
         blockSize={2}
@@ -121,7 +121,7 @@ export default function ArtistScreen() {
         {newRelease && (
           <NewReleaseCard
             release={newRelease}
-            onPress={() => router.push(`/album/${newRelease.id}`)}
+            onPress={() => router.push(`/(tabs)/home/album/${newRelease.id}`)}
           />
         )}
 
@@ -157,12 +157,12 @@ export default function ArtistScreen() {
           imageExtractor={(album) => getUpgradedThumb(album, 512)}
           titleExtractor={(album) => album.title}
           subtitleExtractor={(album) => album.year}
-          onItemPress={(album) => router.push(`/album/${album.id}`)}
+          onItemPress={(album) => router.push(`/(tabs)/home/album/${album.id}`)}
           onPressMore={
             artist.has_more?.albums
               ? () =>
                 router.push(
-                  `/artist/${id}/releases?tab=albums&name=${encodeURIComponent(
+                  `/(tabs)/home/artist/${id}/releases?tab=albums&name=${encodeURIComponent(
                     artist.header?.name || ""
                   )}`
                 )
@@ -180,12 +180,12 @@ export default function ArtistScreen() {
             imageExtractor={(single) => getUpgradedThumb(single, 512)}
             titleExtractor={(single) => single.title}
             subtitleExtractor={(single) => formatReleaseSubtitle(single)}
-            onItemPress={(single) => router.push(`/album/${single.id}`)}
+            onItemPress={(single) => router.push(`/(tabs)/home/album/${single.id}`)}
             onPressMore={
               artist.has_more?.singles
                 ? () =>
                   router.push(
-                    `/artist/${id}/releases?tab=singles&name=${encodeURIComponent(
+                    `/(tabs)/home/artist/${id}/releases?tab=singles&name=${encodeURIComponent(
                       artist.header?.name || ""
                     )}`
                   )
@@ -214,7 +214,7 @@ export default function ArtistScreen() {
             subtitleExtractor={(rel) => rel.subtitle}
             onItemPress={(rel) => {
               if (String(rel.id) === String(id)) return;
-              router.push(`/artist/${rel.id}`);
+              router.push(`/(tabs)/home/artist/${rel.id}`);
             }}
             cardWidth={100}
             imageHeight={100}

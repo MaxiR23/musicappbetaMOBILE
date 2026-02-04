@@ -175,9 +175,9 @@ export default function MusicPlayer({
     navigatingRef.current = true;
 
     if (pathname && pathname.includes("/artist/")) {
-      router.replace(`/artist/${aid}`);
+      router.replace(`/(tabs)/home/artist/${aid}`);
     } else {
-      router.push(`/artist/${aid}`);
+      router.push(`/(tabs)/home/artist/${aid}`);
     }
 
     if (isExpanded) {
@@ -191,7 +191,7 @@ export default function MusicPlayer({
     }, 250);
   };
 
-  // 🆕 Navegar a álbum desde Related
+  // Navegar a álbum desde Related
   const goToAlbum = (albumId?: string | null) => {
     if (!albumId || navigatingRef.current) return;
     console.log('📀 Navegando a álbum:', albumId);
@@ -199,9 +199,9 @@ export default function MusicPlayer({
     navigatingRef.current = true;
 
     if (pathname && pathname.includes("/album/")) {
-      router.replace(`/album/${albumId}`);
+      router.replace(`/(tabs)/home/album/${albumId}`);
     } else {
-      router.push(`/album/${albumId}`);
+      router.push(`/(tabs)/home/album/${albumId}`);
     }
 
     if (isExpanded) {
@@ -215,7 +215,7 @@ export default function MusicPlayer({
     }, 250);
   };
 
-  // 🆕 PASO 1: Cargar upNext UNA VEZ por contexto
+  // PASO 1: Cargar upNext UNA VEZ por contexto
   useEffect(() => {
     let contextId: string | null = null;
 
@@ -228,45 +228,45 @@ export default function MusicPlayer({
     }
 
     if (contextId && contextId !== currentPlaySourceIdRef.current) {
-      console.log('🔄 Contexto cambió, cargando nuevo autoplay:', contextId);
+      console.log('Contexto cambió, cargando nuevo autoplay:', contextId);
       currentPlaySourceIdRef.current = contextId;
       upNextByContextRef.current = null;
       autoplayIndexRef.current = 0;
       manuallyPlayedAutoplayIds.current.clear();
       if (currentSong?.id) { fetchUpNext(); }
     }
-    // ⚠️ no dependas de "name", evita resets fantasma
+    // no dependas de "name", evita resets fantasma
   }, [playSource?.type, playSource?.id]);
 
-  // 🔥 Cerrar tab cuando cambia la canción (EXCEPTO si fue por clic en autoplay)
+  // Cerrar tab cuando cambia la canción (EXCEPTO si fue por clic en autoplay)
   useEffect(() => {
     // Si el cambio fue por clic en autoplay, NO cerrar el tab
     if (skipTabCloseOnNextSongChange.current) {
-      console.log('🎵 Canción cambió por autoplay, manteniendo tab abierto');
+      console.log('Canción cambió por autoplay, manteniendo tab abierto');
       skipTabCloseOnNextSongChange.current = false; // Reset flag
       return;
     }
 
     // En cualquier otro caso, cerrar el tab
     if (activePlayerTab !== null) {
-      console.log('🎵 Canción cambió, cerrando tab');
+      console.log('Canción cambió, cerrando tab');
       setActivePlayerTab(null);
     }
   }, [currentSong?.id]);
 
-  // 🔥 INTERCEPTAR BACK BUTTON/GESTURE DE ANDROID
+  // INTERCEPTAR BACK BUTTON/GESTURE DE ANDROID
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       // Si el player está expandido
       if (isExpanded) {
         // Si hay un tab activo, solo cerrar el tab
         if (activePlayerTab !== null) {
-          console.log('📱 Android back: Cerrando tab');
+          console.log('Android back: Cerrando tab');
           setActivePlayerTab(null);
           return true; // Prevenir comportamiento por defecto
         } else {
           // Si no hay tab, colapsar el player
-          console.log('📱 Android back: Colapsando player');
+          console.log('Android back: Colapsando player');
           collapse();
           return true; // Prevenir comportamiento por defecto
         }
@@ -282,7 +282,7 @@ export default function MusicPlayer({
   // 🆕 PASO 2: Guardar upNext cuando se carga
   useEffect(() => {
     if (upNextData && !upNextByContextRef.current) {
-      console.log('💾 Guardando upNext para este contexto');
+      console.log('Guardando upNext para este contexto');
       upNextByContextRef.current = upNextData;
     }
   }, [upNextData]);
@@ -290,12 +290,12 @@ export default function MusicPlayer({
   // 🔥 Recargar Related automáticamente cuando cambia la canción
   useEffect(() => {
     if (currentSong?.id && shouldShowRelated) {
-      console.log('🔄 Canción cambió, recargando Related en background');
+      console.log('Canción cambió, recargando Related en background');
       fetchRelated();
     }
   }, [currentSong?.id]);
 
-  // 🔥 Recargar upNext automáticamente cuando cambia canción en contexto Related Y fue reseteado
+  // Recargar upNext automáticamente cuando cambia canción en contexto Related Y fue reseteado
   useEffect(() => {
     // Solo recargar si:
     // 1. Hay una canción actual
@@ -307,7 +307,7 @@ export default function MusicPlayer({
     }
   }, [currentSong?.id, playSource?.type]);
 
-  // 🔥🔥🔥 PASO 3: Configurar autoplay provider con lógica para SALTEAR canciones clickeadas
+  // PASO 3: Configurar autoplay provider con lógica para SALTEAR canciones clickeadas
   useEffect(() => {
     const provider = () => {
       if (!autoplayEnabled) return null;
@@ -320,14 +320,14 @@ export default function MusicPlayer({
 
       const availableTracks = autoplayTracks.slice(1);
 
-      // 🔥 Buscar la SIGUIENTE canción que NO haya sido clickeada manualmente
+      // Buscar la SIGUIENTE canción que NO haya sido clickeada manualmente
       while (autoplayIndexRef.current < availableTracks.length) {
         const track = availableTracks[autoplayIndexRef.current];
         const trackId = track.videoId || track.id;
 
         // Si esta canción YA fue clickeada manualmente, saltearla
         if (manuallyPlayedAutoplayIds.current.has(trackId)) {
-          console.log(`⏭️ Salteando "${track.title}" porque ya fue reproducida manualmente`);
+          console.log(`Salteando "${track.title}" porque ya fue reproducida manualmente`);
           autoplayIndexRef.current += 1;
           continue; // Probar con la siguiente
         }
@@ -360,11 +360,11 @@ export default function MusicPlayer({
     };
   }, [autoplayEnabled, setAutoplayProvider, setIsAutoplayEnabledCallback]); // ← SIN upNextData!
 
-  // 🔥🔥🔥 HANDLER MODIFICADO: Marcar canciones clickeadas del autoplay
+  // HANDLER MODIFICADO: Marcar canciones clickeadas del autoplay
   const handleUpNextTrackPress = async (track: any, isFromAutoplay: boolean) => {
-    console.log('🎵 handleUpNextTrackPress:', track.title, '| isFromAutoplay:', isFromAutoplay);
+    console.log('handleUpNextTrackPress:', track.title, '| isFromAutoplay:', isFromAutoplay);
 
-    // 🔥 SIEMPRE activar flag para NO cerrar el tab (tanto autoplay como playlist)
+    // SIEMPRE activar flag para NO cerrar el tab (tanto autoplay como playlist)
     skipTabCloseOnNextSongChange.current = true;
 
     // Si es del autoplay, crear el objeto Song y agregar a la cola
@@ -382,11 +382,11 @@ export default function MusicPlayer({
         albumId: null,
       } as Song;
 
-      // 🔥🔥🔥 MARCAR esta canción como "ya reproducida manualmente"
+      // MARCAR esta canción como "ya reproducida manualmente"
       manuallyPlayedAutoplayIds.current.add(trackId);
-      console.log(`🗑️ Marcando "${track.title}" como reproducida manualmente (saltear en autoplay)`);
+      console.log(`Marcando "${track.title}" como reproducida manualmente (saltear en autoplay)`);
 
-      console.log('➕ Agregando canción del autoplay a la cola original');
+      console.log('Agregando canción del autoplay a la cola original');
       await addToQueueAndPlay(newSong);
       return;
     }
@@ -396,19 +396,19 @@ export default function MusicPlayer({
     const targetIndex = track.__queueIndex;
 
     if (typeof targetIndex === 'number' && targetIndex >= 0 && targetIndex < queue.length) {
-      console.log('⏭️  Saltando a canción en posición:', targetIndex);
+      console.log('Saltando a canción en posición:', targetIndex);
       await skipToIndex(targetIndex);
     } else {
-      console.error('❌ Índice inválido:', targetIndex);
+      console.error('Índice inválido:', targetIndex);
     }
   };
 
-  // 🆕 Handler para reproducir canción desde Related
+  // Handler para reproducir canción desde Related
   const handleRelatedTrackPress = async (track: any) => {
-    console.log('🎵 handleRelatedTrackPress:', track.title);
-    console.log('🗑️ Borrando queue anterior y creando nueva desde Related');
+    console.log('handleRelatedTrackPress:', track.title);
+    console.log('Borrando queue anterior y creando nueva desde Related');
 
-    // 🔥 Activar flag para NO cerrar el tab
+    // Activar flag para NO cerrar el tab
     skipTabCloseOnNextSongChange.current = true;
 
     // Crear el objeto Song desde el track de Related
@@ -425,20 +425,20 @@ export default function MusicPlayer({
       albumId: null,
     } as Song;
 
-    // 🔥🔥🔥 RESETEAR AUTOPLAY para la nueva canción
-    console.log('🔄 Reseteando autoplay para la nueva canción');
+    // RESETEAR AUTOPLAY para la nueva canción
+    console.log('Reseteando autoplay para la nueva canción');
     upNextByContextRef.current = null;
     autoplayIndexRef.current = 0;
     manuallyPlayedAutoplayIds.current.clear();
 
-    // 🔥 Llamar a playFromRelated para borrar queue y crear nueva
+    // Llamar a playFromRelated para borrar queue y crear nueva
     await playFromRelated(newSong);
 
-    // ✅ El useEffect se encargará de cargar el nuevo autoplay cuando detecte el cambio de currentSong
+    // El useEffect se encargará de cargar el nuevo autoplay cuando detecte el cambio de currentSong
     console.log('✅ Nueva queue desde Related creada (autoplay se recargará automáticamente)');
   };
 
-  // 🆕 Handler para cambio de tab
+  // Handler para cambio de tab
   const handleTabChange = (tab: "upnext" | "lyrics" | "related" | null) => {
     setActivePlayerTab(tab);
   };
@@ -464,7 +464,7 @@ export default function MusicPlayer({
         slideAnim={slideAnim}
         panHandlers={panResponder.panHandlers}
         onUpNextTrackPress={handleUpNextTrackPress}
-        onRelatedTrackPress={handleRelatedTrackPress} // 🆕 Reproducir desde Related
+        onRelatedTrackPress={handleRelatedTrackPress}
         bgUrl={bgUrl}
         coverUrl={coverUrl}
         gradient={gradient}
@@ -473,7 +473,7 @@ export default function MusicPlayer({
         artistName={artistName}
         artistId={artistId}
         playSource={playSource}
-        currentSong={currentSong} // 🆕 Para detectar cambios
+        currentSong={currentSong} //Para detectar cambios
         queue={queue}
         queueIndex={queueIndex}
         originalQueueSize={originalQueueSize}
@@ -510,7 +510,7 @@ export default function MusicPlayer({
         onFetchLyrics={fetchLyrics}
         onFetchUpNext={fetchUpNext}
         onFetchRelated={fetchRelated}
-        onCollapse={handleCollapse} // ← 🔥 Pasar handleCollapse en lugar de collapse
+        onCollapse={handleCollapse}
         onToggleLike={toggleLike}
         onOpenActions={() => {
           setSelectedTrack(currentSong);
@@ -529,8 +529,8 @@ export default function MusicPlayer({
         onToggleLyrics={toggleLyrics}
         onToggleUpNext={toggleUpNext}
         onToggleRelated={toggleRelated}
-        onRelatedArtistPress={goToArtist} // 🆕 Navegar a artista desde Related
-        onRelatedAlbumPress={goToAlbum}   // 🆕 Navegar a álbum desde Related
+        onRelatedArtistPress={goToArtist} 
+        onRelatedAlbumPress={goToAlbum}
         setPanLocked={setPanLocked}
         formatTime={formatDuration}
         accentColor={ACCENT}
