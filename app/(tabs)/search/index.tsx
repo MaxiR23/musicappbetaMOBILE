@@ -28,9 +28,9 @@ export default function SearchScreen() {
       };
       playFromList([track] as any, 0, { type: "queue", name: null });
     } else if (item.type === "album") {
-      router.push(`/(tabs)/home/album/${item.id}`);
+      router.push(`/(tabs)/search/album/${item.id}`);
     } else {
-      router.push(`/(tabs)/home/artist/${item.id}`);
+      router.push(`/(tabs)/search/artist/${item.id}`);
     }
   };
 
