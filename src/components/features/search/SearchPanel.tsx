@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export type ResultItem = {
   id: string;
@@ -185,11 +186,11 @@ export default function SearchPanel({
   const showResults = !!results && results.length > 0;
 
   return (
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: BG }}>
     <Animated.View
       style={{
         flex: 1,
         backgroundColor: BG,
-        paddingTop: 40,
         opacity: fade,
         transform: [{ translateY: ty }],
       }}
@@ -287,6 +288,7 @@ export default function SearchPanel({
         />
       )}
     </Animated.View>
+    </SafeAreaView>
   );
 }
 

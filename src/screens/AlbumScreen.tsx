@@ -28,6 +28,7 @@ import { useContentPadding } from "@/src/hooks/use-content-padding";
 import { extractIncludedArtists } from "@/src/utils/data-helpers";
 import { getUpgradedThumb } from "@/src/utils/image-helpers";
 import { formatAlbumMeta, formatReleaseSubtitle } from "@/src/utils/subtitle-helpers";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AlbumScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -89,6 +90,7 @@ export default function AlbumScreen() {
 
     return (
         <>
+        <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#0e0e0e" }}>
             <ProList
                 style={styles.container}
                 contentContainerStyle={contentPadding}
@@ -248,6 +250,7 @@ export default function AlbumScreen() {
 
             </ProList >
 
+            </SafeAreaView>
             <TrackActionsSheet
                 open={actionsOpen}
                 onOpenChange={setActionsOpen}
