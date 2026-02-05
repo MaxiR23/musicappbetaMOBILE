@@ -3,6 +3,7 @@ import ReleaseCard from "@/src/components/shared/ReleaseCard";
 import ScreenHeader from "@/src/components/shared/ScreenHeader";
 import { ReleaseGridSkeletonLayout } from "@/src/components/shared/skeletons/Skeleton";
 import TabBar, { Tab } from "@/src/components/shared/TabBar";
+import { useContentPadding } from "@/src/hooks/use-content-padding";
 import { useMounted } from "@/src/hooks/use-mounted";
 import { useMusicApi } from "@/src/hooks/use-music-api";
 import { usePaginatedData } from "@/src/hooks/use-paginated-data";
@@ -28,6 +29,9 @@ export default function ArtistReleasesScreen() {
     tab?: TabKey;
     name?: string;
   }>();
+
+  const contentPadding = useContentPadding();
+
   const initialTab: TabKey = tab === "singles" ? "singles" : "albums";
   const artistId = String(id);
   const artistName = typeof name === "string" ? name : undefined;
@@ -86,7 +90,7 @@ export default function ArtistReleasesScreen() {
           cover={cover}
           title={item.title}
           subtitle={subtitle}
-          onPress={() => router.push(`/album/${item.id}`)}
+          onPress={() => router.push(`/(tabs)/home/album/${item.id}`)}
         />
       );
     },
@@ -119,7 +123,10 @@ export default function ArtistReleasesScreen() {
             keyExtractor={keyExtractor}
             numColumns={2}
             columnWrapperStyle={{ gap: 12, justifyContent: "space-between" }}
-            contentContainerStyle={{ padding: 12, gap: 12, paddingBottom: 24 }}
+            contentContainerStyle={[
+              { padding: 12, gap: 12 }, 
+              contentPadding
+            ]}
             renderItem={renderCard}
             onEndReached={loadMore}
             onEndReachedThreshold={0.5}

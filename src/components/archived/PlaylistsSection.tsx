@@ -3,8 +3,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import HorizontalScrollSection from '../../shared/HorizontalScrollSection';
-import PlaylistCover from './PlaylistCover';
+import PlaylistCover from '../features/playlist/PlaylistCover';
+import HorizontalScrollSection from '../shared/HorizontalScrollSection';
 
 interface Props {
   playlists: any[];
@@ -56,7 +56,7 @@ export default function PlaylistsSection({ playlists, onCreatePress }: Props) {
         return (
           <TouchableOpacity
             style={{ width: SIZE }}
-            onPress={() => router.push(`/playlist/${encodeURIComponent(pl.id)}`)}
+            onPress={() => router.push(`/(tabs)/home/playlist/${encodeURIComponent(pl.id)}`)}
             activeOpacity={0.8}
           >
             <View

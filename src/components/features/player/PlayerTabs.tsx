@@ -155,13 +155,13 @@ export function PlayerTabs({
 
     // Si cambió la canción (y no es la primera carga)
     if (prevSongIdRef.current && currentSongId && prevSongIdRef.current !== currentSongId) {
-      console.log('🔄 Canción cambió, refrescando datos...');
+      console.log('Canción cambió, refrescando datos...');
 
       // Refrescar según el tab activo
       if (activeTab === "lyrics") {
         onFetchLyrics();
       }
-      // 🔥 NO refrescar upnext aquí - useTrackUpNext ya lo maneja por contexto
+      // NO refrescar upnext aquí - useTrackUpNext ya lo maneja por contexto
       // if (activeTab === "upnext") {
       //   onFetchUpNext();
       // }

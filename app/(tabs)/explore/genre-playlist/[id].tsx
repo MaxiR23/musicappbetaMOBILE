@@ -5,6 +5,7 @@ import BackButton from "@/src/components/shared/BackButton";
 import TrackActionsSheet from "@/src/components/shared/TrackActionsSheet";
 import TrackRow from "@/src/components/shared/TrackRow";
 import { PlaylistSkeletonLayout } from "@/src/components/shared/skeletons/Skeleton";
+import { useContentPadding } from "@/src/hooks/use-content-padding";
 import { useMusic } from "@/src/hooks/use-music";
 import { useMusicApi } from "@/src/hooks/use-music-api";
 import { formatDurationCustom } from "@/src/utils/durations";
@@ -31,6 +32,7 @@ export default function GenrePlaylistScreen() {
   const insets = useSafeAreaInsets();
   const { getGenrePlaylistTracks, prefetchSongs } = useMusicApi();
   const { playFromList } = useMusic();
+  const contentPadding = useContentPadding();
 
   const [playlist, setPlaylist] = useState<any | null>(null);
   const [tracks, setTracks] = useState<any[]>([]);
@@ -234,7 +236,7 @@ export default function GenrePlaylistScreen() {
               />
             </View>
           )}
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={contentPadding}
         />
       </View>
 

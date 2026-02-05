@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export type ResultItem = {
   id: string;
@@ -30,16 +31,17 @@ type Props = {
   ) => Promise<
     | ResultItem[]
     | {
-        artist?: any;
-        artists?: any[];
-        songs?: any[];
-        artistSongs?: any[];
-        artistAlbums?: any[];
-        search?: { songs?: any[]; albums?: any[] };
-      }
+      artist?: any;
+      artists?: any[];
+      songs?: any[];
+      artistSongs?: any[];
+      artistAlbums?: any[];
+      search?: { songs?: any[]; albums?: any[] };
+    }
   >;
   onSelect: (item: ResultItem) => void;
   onClose: () => void;
+  contentPadding?: { paddingBottom: number };
   placeholder?: string;
   titleRecents?: string;
 };
@@ -51,6 +53,7 @@ export default function SearchPanel({
   searchFn,
   onSelect,
   onClose,
+  contentPadding,
   placeholder = "Buscar canción o artista...",
   titleRecents = "Búsquedas recientes",
 }: Props) {
@@ -73,7 +76,7 @@ export default function SearchPanel({
       try {
         const raw = await AsyncStorage.getItem(RECENTS_KEY);
         setRecents(raw ? JSON.parse(raw) : []);
-      } catch {}
+      } catch { }
     })();
   }, []);
 
@@ -143,7 +146,7 @@ export default function SearchPanel({
       setRecents(next);
       try {
         await AsyncStorage.setItem(RECENTS_KEY, JSON.stringify(next));
-      } catch {}
+      } catch { }
     },
     [recents]
   );
@@ -152,7 +155,7 @@ export default function SearchPanel({
     setRecents([]);
     try {
       await AsyncStorage.removeItem(RECENTS_KEY);
-    } catch {}
+    } catch { }
   }, []);
 
   const doSearch = useCallback(
@@ -183,11 +186,11 @@ export default function SearchPanel({
   const showResults = !!results && results.length > 0;
 
   return (
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: BG }}>
     <Animated.View
       style={{
         flex: 1,
         backgroundColor: BG,
-        paddingTop: 40,
         opacity: fade,
         transform: [{ translateY: ty }],
       }}
@@ -205,7 +208,7 @@ export default function SearchPanel({
         }}
         placeholder={placeholder}
         loading={loading}
-        autoFocus
+        /* autoFocus */ /* No necesito que se autofoquee */
       />
 
       {showRecents && recents.length > 0 && (
@@ -232,6 +235,7 @@ export default function SearchPanel({
               data={recents}
               keyExtractor={(s) => s}
               keyboardShouldPersistTaps="handled"
+              contentContainerStyle={contentPadding}
               renderItem={({ item }) => (
                 <TouchableOpacity style={styles.recentRow} onPress={() => doSearch(item)}>
                   <Ionicons name="time" size={16} color="#9aa0a6" />
@@ -247,7 +251,7 @@ export default function SearchPanel({
         <FlatList
           data={results!}
           keyExtractor={(it) => `${it.type}:${it.id}`}
-          contentContainerStyle={{ paddingTop: 8 }}
+          contentContainerStyle={[{ paddingTop: 8 }, contentPadding]}
           keyboardShouldPersistTaps="handled"
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.resultRow} onPress={() => onSelect(item)} activeOpacity={0.8}>
@@ -264,8 +268,8 @@ export default function SearchPanel({
                   {item.type === "artist"
                     ? `${typeLabel(item.type)} • ${item.artistName}`
                     : item.type === "song"
-                    ? `${typeLabel(item.type)} • ${item.artistName}`
-                    : `${typeLabel(item.type)} • ${item.artistName}`}
+                      ? `${typeLabel(item.type)} • ${item.artistName}`
+                      : `${typeLabel(item.type)} • ${item.artistName}`}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#9aa0a6" />
@@ -284,6 +288,7 @@ export default function SearchPanel({
         />
       )}
     </Animated.View>
+    </SafeAreaView>
   );
 }
 

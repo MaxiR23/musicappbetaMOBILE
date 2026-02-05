@@ -2,6 +2,7 @@
 import GenreCard from "@/src/components/shared/GenreCard";
 import LoadingView from "@/src/components/shared/LoadingView";
 import ScreenHeader from "@/src/components/shared/ScreenHeader";
+import { useContentPadding } from "@/src/hooks/use-content-padding";
 import { useMounted } from "@/src/hooks/use-mounted";
 import { useMusicApi } from "@/src/hooks/use-music-api";
 import { useRouter } from "expo-router";
@@ -22,6 +23,7 @@ export default function GenresScreen() {
   const { getGenres } = useMusicApi();
   const insets = useSafeAreaInsets();
   const isMounted = useMounted();
+  const contentPadding = useContentPadding();
 
   const [genres, setGenres] = useState<Genre[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +47,7 @@ export default function GenresScreen() {
     ({ item }: { item: Genre }) => (
       <GenreCard
         name={item.name}
-        onPress={() => router.push(`/genres/${encodeURIComponent(item.slug)}`)}
+        onPress={() => router.push(`/(tabs)/explore/genres/${encodeURIComponent(item.slug)}`)}
       />
     ),
     [router]
@@ -66,7 +68,7 @@ export default function GenresScreen() {
             data={genres}
             keyExtractor={keyExtractor}
             renderItem={renderGenre}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[styles.listContent, contentPadding]} 
             showsVerticalScrollIndicator={false}
           />
         )}

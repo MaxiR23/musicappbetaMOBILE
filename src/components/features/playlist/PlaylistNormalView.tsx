@@ -16,6 +16,7 @@ interface PlaylistNormalViewProps {
   };
   mosaicImages: string[];
   mappedSongs: any[];
+  contentPadding?: { paddingBottom: number };
   onPlayAll: () => void;
   onShuffleAll: () => void;
   onTrackPress: (index: number) => void;
@@ -27,6 +28,7 @@ export default function PlaylistNormalView({
   playlist,
   mosaicImages,
   mappedSongs,
+  contentPadding,
   onPlayAll,
   onShuffleAll,
   onTrackPress,
@@ -36,7 +38,7 @@ export default function PlaylistNormalView({
   return (
     <FlatList
       style={styles.container}
-      contentContainerStyle={{ paddingBottom: 40 }}
+      contentContainerStyle={contentPadding}
       data={playlist.songs || []}
       keyExtractor={(song: any, index: number) => `${song.id}-${index}`}
       renderItem={({ item: song, index }) => (

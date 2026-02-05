@@ -1,11 +1,11 @@
 // app/artist/[id]/index.tsx
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { ArtistSkeletonLayout } from "@/src/components/shared/skeletons/Skeleton";
+import { useDetailScreen } from "@/src/hooks/use-detail-screen";
+import { useMusic } from "@/src/hooks/use-music";
+import { useMusicApi } from "@/src/hooks/use-music-api";
+import { useLocalSearchParams, useRouter, useSegments } from "expo-router";
 import React, { useMemo } from "react";
 import { StatusBar, StyleSheet, Text, View } from "react-native";
-import { ArtistSkeletonLayout } from "../../../src/components/shared/skeletons/Skeleton";
-import { useDetailScreen } from "../../../src/hooks/use-detail-screen";
-import { useMusic } from "../../../src/hooks/use-music";
-import { useMusicApi } from "../../../src/hooks/use-music-api";
 
 import { mapArtistTopSongs } from "@/src/utils/song-mapper";
 
@@ -15,9 +15,11 @@ import HeroSection from "@/src/components/shared/HeroSection";
 import HorizontalScrollSection from "@/src/components/shared/HorizontalScrollSection";
 import ProList from "@/src/components/shared/ProList";
 import TrackRow from "@/src/components/shared/TrackRow";
+import { useContentPadding } from "@/src/hooks/use-content-padding";
 import { normalizeRelatedArtists } from "@/src/utils/data-helpers";
 import { getUpgradedThumb, upgradeThumbUrl } from "@/src/utils/image-helpers";
 import { formatReleaseSubtitle } from "@/src/utils/subtitle-helpers";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ArtistScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,6 +27,10 @@ export default function ArtistScreen() {
   const { currentSong, playFromList } = useMusic();
   const { getArtist } = useMusicApi();
   const router = useRouter();
+  const segments = useSegments();
+  const contentPadding = useContentPadding();
+
+  const currentTab = segments[1] as 'home' | 'search';
 
   //hook que maneja la carga del artista
   const { data: artist, loading } = useDetailScreen({
@@ -71,12 +77,14 @@ export default function ArtistScreen() {
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0e0e0e" />
+
+      <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#0e0e0e" }}>
       <ProList
         style={styles.container}
-        contentContainerStyle={{
-          paddingTop: 0,
-          paddingBottom: currentSong ? 18 : 18,
-        }}
+        contentContainerStyle={[
+          { paddingTop: 0 },
+          contentPadding
+        ]}
         showsVerticalScrollIndicator={false}
         blockSize={2}
         initialBlocks={2}
@@ -121,7 +129,7 @@ export default function ArtistScreen() {
         {newRelease && (
           <NewReleaseCard
             release={newRelease}
-            onPress={() => router.push(`/album/${newRelease.id}`)}
+            onPress={() => router.push(`/(tabs)/${currentTab}/album/${newRelease.id}`)}
           />
         )}
 
@@ -157,12 +165,12 @@ export default function ArtistScreen() {
           imageExtractor={(album) => getUpgradedThumb(album, 512)}
           titleExtractor={(album) => album.title}
           subtitleExtractor={(album) => album.year}
-          onItemPress={(album) => router.push(`/album/${album.id}`)}
+          onItemPress={(album) => router.push(`/(tabs)/${currentTab}/album/${album.id}`)}
           onPressMore={
             artist.has_more?.albums
               ? () =>
                 router.push(
-                  `/artist/${id}/releases?tab=albums&name=${encodeURIComponent(
+                  `/(tabs)/${currentTab}/artist/${id}/releases?tab=albums&name=${encodeURIComponent(
                     artist.header?.name || ""
                   )}`
                 )
@@ -180,12 +188,12 @@ export default function ArtistScreen() {
             imageExtractor={(single) => getUpgradedThumb(single, 512)}
             titleExtractor={(single) => single.title}
             subtitleExtractor={(single) => formatReleaseSubtitle(single)}
-            onItemPress={(single) => router.push(`/album/${single.id}`)}
+            onItemPress={(single) => router.push(`/(tabs)/${currentTab}/album/${single.id}`)}
             onPressMore={
               artist.has_more?.singles
                 ? () =>
                   router.push(
-                    `/artist/${id}/releases?tab=singles&name=${encodeURIComponent(
+                    `/(tabs)/${currentTab}/artist/${id}/releases?tab=singles&name=${encodeURIComponent(
                       artist.header?.name || ""
                     )}`
                   )
@@ -214,7 +222,7 @@ export default function ArtistScreen() {
             subtitleExtractor={(rel) => rel.subtitle}
             onItemPress={(rel) => {
               if (String(rel.id) === String(id)) return;
-              router.push(`/artist/${rel.id}`);
+              router.push(`/(tabs)/${currentTab}/artist/${rel.id}`);
             }}
             cardWidth={100}
             imageHeight={100}
@@ -222,6 +230,7 @@ export default function ArtistScreen() {
           />
         )}
       </ProList>
+      </SafeAreaView>
     </>
   );
 }

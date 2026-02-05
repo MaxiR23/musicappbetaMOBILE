@@ -5,6 +5,7 @@ import PlaylistOptionsSheet from "@/src/components/features/playlist/PlaylistOpt
 import TrackActionsSheet from "@/src/components/shared/TrackActionsSheet";
 import { PlaylistSkeletonLayout } from "@/src/components/shared/skeletons/Skeleton";
 import { useCacheInvalidation } from "@/src/hooks/use-cache-invalidation";
+import { useContentPadding } from "@/src/hooks/use-content-padding";
 import { useDetailScreen } from "@/src/hooks/use-detail-screen";
 import { useMusic } from "@/src/hooks/use-music";
 import { useMusicApi } from "@/src/hooks/use-music-api";
@@ -24,6 +25,7 @@ const HERO_HEIGHT = 320;
 export default function PlaylistScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const contentPadding = useContentPadding();
   const { getPlaylistById, prefetchSongs, deletePlaylist, removeTrackFromPlaylist } = useMusicApi();
   const { playFromList } = useMusic();
   const { userId } = useUserProfile();
@@ -238,6 +240,7 @@ export default function PlaylistScreen() {
           playlist={playlist}
           mosaicImages={mosaicImages}
           editSongs={editSongs}
+          contentPadding={contentPadding}
           onSave={handleSaveEdit}
           onCancel={cancelEdit}
           onReorder={handleReorderTracks}
@@ -249,6 +252,7 @@ export default function PlaylistScreen() {
           playlist={playlist}
           mosaicImages={mosaicImages}
           mappedSongs={mappedSongs}
+          contentPadding={contentPadding}
           onPlayAll={handlePlayAll}
           onShuffleAll={handleShuffleAll}
           onTrackPress={(index) =>

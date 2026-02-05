@@ -19,6 +19,7 @@ interface PlaylistEditViewProps {
   };
   mosaicImages: string[];
   editSongs: any[];
+  contentPadding?: { paddingBottom: number };
   onSave: () => void;
   onCancel: () => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
@@ -30,6 +31,7 @@ export default function PlaylistEditView({
   playlist,
   mosaicImages,
   editSongs,
+  contentPadding,
   onSave,
   onCancel,
   onReorder,
@@ -72,7 +74,10 @@ export default function PlaylistEditView({
       </View>
 
       {/* Draggable List */}
-      <View style={{ flex: 1, paddingHorizontal: 16, paddingBottom: 40 }}>
+      <View style={[
+        { flex: 1, paddingHorizontal: 16 },
+        contentPadding
+      ]}>
         <DragList
           data={editSongs}
           keyExtractor={keyExtractor}

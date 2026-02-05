@@ -107,7 +107,7 @@ function InnerLayout() {
         setDuration(dMs);
         setCurrentTime(pMs);
         setProgress(dMs > 0 ? pMs / dMs : 0);
-      } catch {}
+      } catch { }
     }, 500);
     return () => {
       mounted = false;
@@ -124,10 +124,10 @@ function InnerLayout() {
 
     const s = await TrackPlayer.getState().catch(() => null);
     if (s === TPState.Playing) {
-      await TrackPlayer.pause().catch(() => {});
+      await TrackPlayer.pause().catch(() => { });
       setIsPlaying(false);
     } else {
-      await TrackPlayer.play().catch(() => {});
+      await TrackPlayer.play().catch(() => { });
       setIsPlaying(true);
     }
   };
@@ -135,7 +135,7 @@ function InnerLayout() {
   const seekTo = async (val01: number) => {
     if (!duration) return;
     const seconds = (val01 * duration) / 1000;
-    await TrackPlayer.seekTo(seconds).catch(() => {});
+    await TrackPlayer.seekTo(seconds).catch(() => { });
   };
 
   return (
@@ -150,7 +150,9 @@ function InnerLayout() {
           contentStyle: { backgroundColor: "#0e0e0e" },
           animation: "fade",
         }}
-      />
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      </Stack>
       {currentSong && (
         <MusicPlayer
           isPlaying={isPlaying}

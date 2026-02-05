@@ -9,7 +9,7 @@ export default function HomeBanner() {
 
   return (
     <LinearGradient
-      colors={["#00f2fe", "#4facfe"]}
+      colors={["#1e293b", "#0f172a"]} 
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.banner}
@@ -19,8 +19,9 @@ export default function HomeBanner() {
         Explora los últimos lanzamientos y artistas destacados
       </Text>
       <TouchableOpacity 
+        activeOpacity={0.7}
         style={styles.button}
-        onPress={() => router.push('/genres')}
+        onPress={() => router.push("/(tabs)/explore")}
       >
         <Text style={styles.buttonText}>Explorar Ahora</Text>
       </TouchableOpacity>
@@ -29,15 +30,36 @@ export default function HomeBanner() {
 }
 
 const styles = StyleSheet.create({
-  banner: { borderRadius: 20, padding: 20, marginBottom: 24 },
-  title: { fontSize: 20, fontWeight: "bold", color: "#fff", marginBottom: 8 },
-  subtitle: { fontSize: 14, color: "#eee", marginBottom: 16 },
+  banner: { 
+    borderRadius: 24, 
+    padding: 24, 
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  title: { 
+    fontSize: 24, 
+    fontWeight: "700", 
+    color: "#fff", 
+    marginBottom: 8,
+    letterSpacing: -0.5,
+  },
+  subtitle: { 
+    fontSize: 15, 
+    color: "#94a3b8",
+    marginBottom: 18,
+    lineHeight: 22,
+  },
   button: {
-    backgroundColor: "#000",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 10,
+    backgroundColor: "#334155", 
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     alignSelf: "flex-start",
   },
-  buttonText: { color: "#fff", fontWeight: "600" },
+  buttonText: { 
+    color: "#f8fafc", 
+    fontWeight: "600",
+    fontSize: 14,
+  },
 });

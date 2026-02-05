@@ -1,13 +1,15 @@
+import SearchPanel, { ResultItem } from "@/src/components/features/search/SearchPanel";
+import { useContentPadding } from "@/src/hooks/use-content-padding";
+import { useMusic } from "@/src/hooks/use-music";
+import { useMusicApi } from "@/src/hooks/use-music-api";
 import { Stack, useRouter } from "expo-router";
 import React from "react";
-import SearchPanel, { ResultItem } from "../../src/components/features/search/SearchPanel";
-import { useMusic } from "../../src/hooks/use-music";
-import { useMusicApi } from "../../src/hooks/use-music-api";
 
 export default function SearchScreen() {
   const router = useRouter();
   const { searchSongs } = useMusicApi();
   const { playFromList } = useMusic();
+  const contentPadding = useContentPadding();
 
   const searchFn = async (q: string) => await searchSongs(q);
 
@@ -26,9 +28,9 @@ export default function SearchScreen() {
       };
       playFromList([track] as any, 0, { type: "queue", name: null });
     } else if (item.type === "album") {
-      router.push(`/album/${item.id}`);
+      router.push(`/(tabs)/search/album/${item.id}`);
     } else {
-      router.push(`/artist/${item.id}`);
+      router.push(`/(tabs)/search/artist/${item.id}`);
     }
   };
 
@@ -42,7 +44,7 @@ export default function SearchScreen() {
           contentStyle: { backgroundColor: "#0f0f0f" },
         }}
       />
-      <SearchPanel searchFn={searchFn} onSelect={onSelect} onClose={() => router.back()} />
+      <SearchPanel searchFn={searchFn} onSelect={onSelect} onClose={() => router.back()} contentPadding={contentPadding}  />
     </>
   );
 }

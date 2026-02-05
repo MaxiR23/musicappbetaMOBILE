@@ -1,6 +1,15 @@
 // src/components/shared/PlayingIndicator.tsx
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 interface PlayingIndicatorProps {
   color?: string;
@@ -13,152 +22,84 @@ export default function PlayingIndicator({
   size = 14,
   isPlaying
 }: PlayingIndicatorProps) {
-  const bar1 = useRef(new Animated.Value(0.05)).current;
-  const bar2 = useRef(new Animated.Value(0.05)).current;
-  const bar3 = useRef(new Animated.Value(0.05)).current;
-  
-  const loop1 = useRef<Animated.CompositeAnimation | null>(null);
-  const loop2 = useRef<Animated.CompositeAnimation | null>(null);
-  const loop3 = useRef<Animated.CompositeAnimation | null>(null);
+  const scale1 = useSharedValue(0.3);
+  const scale2 = useSharedValue(0.3);
+  const scale3 = useSharedValue(0.3);
 
   useEffect(() => {
     if (isPlaying) {
-      // LOOP 1 - empieza DIRECTO desde 0.05
-      loop1.current = Animated.loop(
-        Animated.sequence([
-          Animated.timing(bar1, {
-            toValue: 0.9,
-            duration: 830,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: false,
-          }),
-          Animated.timing(bar1, {
-            toValue: 0.5,
-            duration: 840,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: false,
-          }),
-        ])
+      scale1.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 830, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0.5, { duration: 840, easing: Easing.inOut(Easing.sin) })
+        ),
+        -1
       );
-      loop1.current.start();
 
-      // LOOP 2 - con delay para desincronizar
-      setTimeout(() => {
-        loop2.current = Animated.loop(
-          Animated.sequence([
-            Animated.timing(bar2, {
-              toValue: 0.75,
-              duration: 730,
-              easing: Easing.inOut(Easing.sin),
-              useNativeDriver: false,
-            }),
-            Animated.timing(bar2, {
-              toValue: 0.35,
-              duration: 760,
-              easing: Easing.inOut(Easing.sin),
-              useNativeDriver: false,
-            }),
-          ])
-        );
-        loop2.current.start();
-      }, 100);
+      scale2.value = withDelay(
+        100,
+        withRepeat(
+          withSequence(
+            withTiming(0.85, { duration: 730, easing: Easing.inOut(Easing.sin) }),
+            withTiming(0.4, { duration: 760, easing: Easing.inOut(Easing.sin) })
+          ),
+          -1
+        )
+      );
 
-      // LOOP 3 - con otro delay
-      setTimeout(() => {
-        loop3.current = Animated.loop(
-          Animated.sequence([
-            Animated.timing(bar3, {
-              toValue: 0.95,
-              duration: 650,
-              easing: Easing.inOut(Easing.sin),
-              useNativeDriver: false,
-            }),
-            Animated.timing(bar3, {
-              toValue: 0.6,
-              duration: 660,
-              easing: Easing.inOut(Easing.sin),
-              useNativeDriver: false,
-            }),
-          ])
-        );
-        loop3.current.start();
-      }, 200);
-      
+      scale3.value = withDelay(
+        200,
+        withRepeat(
+          withSequence(
+            withTiming(1, { duration: 650, easing: Easing.inOut(Easing.sin) }),
+            withTiming(0.6, { duration: 660, easing: Easing.inOut(Easing.sin) })
+          ),
+          -1
+        )
+      );
     } else {
-      // Pausado
-      if (loop1.current) loop1.current.stop();
-      if (loop2.current) loop2.current.stop();
-      if (loop3.current) loop3.current.stop();
-      
-      Animated.parallel([
-        Animated.timing(bar1, {
-          toValue: 0.05,
-          duration: 400,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: false,
-        }),
-        Animated.timing(bar2, {
-          toValue: 0.05,
-          duration: 450,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: false,
-        }),
-        Animated.timing(bar3, {
-          toValue: 0.05,
-          duration: 500,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: false,
-        }),
-      ]).start();
+      scale1.value = withTiming(0.3, { duration: 300 });
+      scale2.value = withTiming(0.3, { duration: 350 });
+      scale3.value = withTiming(0.3, { duration: 400 });
     }
-
-    return () => {
-      if (loop1.current) loop1.current.stop();
-      if (loop2.current) loop2.current.stop();
-      if (loop3.current) loop3.current.stop();
-    };
   }, [isPlaying]);
+
+  const bar1Style = useAnimatedStyle(() => ({
+    transform: [{ scaleY: scale1.value }],
+  }));
+
+  const bar2Style = useAnimatedStyle(() => ({
+    transform: [{ scaleY: scale2.value }],
+  }));
+
+  const bar3Style = useAnimatedStyle(() => ({
+    transform: [{ scaleY: scale3.value }],
+  }));
+
+  const barWidth = size / 4.5;
 
   return (
     <View style={[styles.container, { height: size }]}>
-      <Animated.View
+      <Animated.View 
         style={[
-          styles.bar,
-          {
-            backgroundColor: color,
-            width: size / 4.5,
-            height: bar1.interpolate({
-              inputRange: [0, 1],
-              outputRange: ['30%', '100%'],
-            }),
-          },
-        ]}
+          styles.bar, 
+          { backgroundColor: color, width: barWidth, height: size },
+          bar1Style
+        ]} 
       />
-      <Animated.View
+      <Animated.View 
         style={[
-          styles.bar,
-          {
-            backgroundColor: color,
-            width: size / 4.5,
-            height: bar2.interpolate({
-              inputRange: [0, 1],
-              outputRange: ['30%', '100%'],
-            }),
-          },
-        ]}
+          styles.bar, 
+          { backgroundColor: color, width: barWidth, height: size },
+          bar2Style
+        ]} 
       />
-      <Animated.View
+      <Animated.View 
         style={[
-          styles.bar,
-          {
-            backgroundColor: color,
-            width: size / 4.5,
-            height: bar3.interpolate({
-              inputRange: [0, 1],
-              outputRange: ['30%', '100%'],
-            }),
-          },
-        ]}
+          styles.bar, 
+          { backgroundColor: color, width: barWidth, height: size },
+          bar3Style
+        ]} 
       />
     </View>
   );
