@@ -10,21 +10,19 @@ import { StatusBar, StyleSheet, Text, View } from "react-native";
 import { mapArtistTopSongs } from "@/src/utils/song-mapper";
 
 import NewReleaseCard from "@/src/components/features/home/NewReleaseCard";
+import AnimatedHeader from "@/src/components/shared/AnimatedHeader";
 import EventsList from "@/src/components/shared/EventList";
-import HeroSection from "@/src/components/shared/HeroSection";
 import HorizontalScrollSection from "@/src/components/shared/HorizontalScrollSection";
-import ProList from "@/src/components/shared/ProList";
 import TrackRow from "@/src/components/shared/TrackRow";
 import { useContentPadding } from "@/src/hooks/use-content-padding";
 import { normalizeRelatedArtists } from "@/src/utils/data-helpers";
 import { getUpgradedThumb, upgradeThumbUrl } from "@/src/utils/image-helpers";
 import { formatReleaseSubtitle } from "@/src/utils/subtitle-helpers";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ArtistScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const { currentSong, playFromList } = useMusic();
+  const { playFromList } = useMusic();
   const { getArtist } = useMusicApi();
   const router = useRouter();
   const segments = useSegments();
@@ -32,19 +30,10 @@ export default function ArtistScreen() {
 
   const currentTab = segments[1] as 'home' | 'search';
 
-  //hook que maneja la carga del artista
   const { data: artist, loading } = useDetailScreen({
     id,
     fetcher: getArtist,
   });
-
-  //DBG: {
-  /* React.useEffect(() => {
-    if (artist) {
-      console.log((id));
-    }
-  }, [artist]); */
-  //DBG: }
 
   const newRelease = artist?.newReleases?.[0];
   const upcomingReleases = artist?.upcoming_album ? [artist.upcoming_album] : [];
@@ -78,33 +67,18 @@ export default function ArtistScreen() {
     <>
       <StatusBar barStyle="light-content" backgroundColor="#0e0e0e" />
 
-      <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#0e0e0e" }}>
-      <ProList
-        style={styles.container}
+      <AnimatedHeader
+        backgroundImage={heroUrl}
+        title={artist?.header?.name || ""}
+        subtitle={artist?.header?.monthlyListeners}
+        onBackPress={() => router.back()}
+        headerHeight={400}
+        collapsedHeight={100}
         contentContainerStyle={[
-          { paddingTop: 0 },
+          { paddingHorizontal: 16 },
           contentPadding
         ]}
-        showsVerticalScrollIndicator={false}
-        blockSize={2}
-        initialBlocks={2}
-        onEndReachedThreshold={0.5}
       >
-        {/* Hero */}
-        <View style={{ marginBottom: 20 }}>
-          <HeroSection
-            backgroundImage={heroUrl}
-            height={400}
-            useDirectImage={true}
-            paddingBottom={0}
-          >
-            <View style={styles.heroInfo}>
-              <Text style={styles.artistName}>{artist?.header?.name}</Text>
-              <Text style={styles.listeners}>{artist?.header?.monthlyListeners}</Text>
-            </View>
-          </HeroSection>
-        </View>
-
         {/* Upcoming Releases */}
         {upcomingReleases.length > 0 && (
           <View style={styles.upcomingSection}>
@@ -229,17 +203,13 @@ export default function ArtistScreen() {
             circularImage={true}
           />
         )}
-      </ProList>
-      </SafeAreaView>
+      </AnimatedHeader>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0e0e0e" },
-
   section: {
-    paddingHorizontal: 16,
     marginBottom: 20,
   },
   sectionTitle: {
@@ -248,14 +218,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 12,
   },
-
   upcomingSection: {
     marginBottom: 20,
-    paddingHorizontal: 0,
   },
-
-  // Hero
-  heroInfo: { position: "absolute", bottom: 4, left: 20 },
-  artistName: { fontSize: 26, fontWeight: "bold", color: "#fff", marginTop: 4 },
-  listeners: { fontSize: 14, color: "#ccc" },
 });

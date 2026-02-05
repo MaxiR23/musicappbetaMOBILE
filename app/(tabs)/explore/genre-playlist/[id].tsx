@@ -1,307 +1,288 @@
-// app/genre-playlist/[id].tsx
-import PlaybackButtons from "@/src/components/features/player/PlaybackButtons";
-import PlaylistHeader from "@/src/components/features/playlist/PlaylistHeader";
-import BackButton from "@/src/components/shared/BackButton";
-import TrackActionsSheet from "@/src/components/shared/TrackActionsSheet";
-import TrackRow from "@/src/components/shared/TrackRow";
-import { PlaylistSkeletonLayout } from "@/src/components/shared/skeletons/Skeleton";
-import { useContentPadding } from "@/src/hooks/use-content-padding";
-import { useMusic } from "@/src/hooks/use-music";
-import { useMusicApi } from "@/src/hooks/use-music-api";
-import { formatDurationCustom } from "@/src/utils/durations";
-import { upgradeThumbUrl } from "@/src/utils/image-helpers";
+// components/playlist/PlaylistEditView.tsx
+import { reorderLog } from "@/src/utils/reorder-logger";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  FlatList,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import DragList, { DragListRenderItemInfo } from "react-native-draglist";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-const HERO_HEIGHT = 280;
+interface PlaylistEditViewProps {
+  playlist: {
+    id: string;
+    name: string;
+    description?: string;
+    isPublic: boolean;
+    songCount: number;
+    duration: string;
+    songs: any[];
+  };
+  mosaicImages: string[];
+  editSongs: any[];
+  contentPadding?: { paddingBottom: number };
+  onSave: () => void;
+  onCancel: () => void;
+  onReorder: (fromIndex: number, toIndex: number) => void;
+  onRemove: (internalId: string | number) => void;
+  onMenuPress: () => void;
+}
 
-export default function GenrePlaylistScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+export default function PlaylistEditView({
+  playlist,
+  mosaicImages,
+  editSongs,
+  contentPadding,
+  onSave,
+  onCancel,
+  onReorder,
+  onRemove,
+  onMenuPress,
+}: PlaylistEditViewProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { getGenrePlaylistTracks, prefetchSongs } = useMusicApi();
-  const { playFromList } = useMusic();
-  const contentPadding = useContentPadding();
+  const [hasChanges, setHasChanges] = useState(false);
+  const [initialSongsCount, setInitialSongsCount] = useState(editSongs.length);
 
-  const [playlist, setPlaylist] = useState<any | null>(null);
-  const [tracks, setTracks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [selectedTrack, setSelectedTrack] = useState<any | null>(null);
+  // Calcular altura exacta del top bar
+  const topBarHeight = insets.top + 28;
 
-  // Cargar playlist y tracks
+  // Detectar cambios (reorden o eliminación)
   useEffect(() => {
-    let mounted = true;
+    // Si cambió la cantidad de canciones -> hay cambios
+    if (editSongs.length !== initialSongsCount) {
+      setHasChanges(true);
+    }
+  }, [editSongs.length, initialSongsCount]);
 
-    (async () => {
-      if (!id) return;
+  const handleReorder = React.useCallback((fromIndex: number, toIndex: number) => {
+    setHasChanges(true);
+    onReorder(fromIndex, toIndex);
+  }, [onReorder]);
 
-      setLoading(true);
-      setError(null);
+  const handleRemove = React.useCallback((internalId: string | number) => {
+    setHasChanges(true);
+    onRemove(internalId);
+  }, [onRemove]);
 
-      try {
-        const result = await getGenrePlaylistTracks(id);
+  const handleSave = () => {
+    if (!hasChanges) return;
+    onSave();
+    setHasChanges(false);
+  };
 
-        if (mounted) {
-          if (result?.ok) {
-            setPlaylist(result.playlist);
-            setTracks(result.tracks || []);
-          } else {
-            setError(result?.error || "Error al cargar playlist");
-          }
-        }
-      } catch (err) {
-        console.error("[genre-playlist] Error:", err);
-        if (mounted) {
-          setError("Error al cargar playlist");
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    })();
+  const handleCancel = () => {
+    router.back();
+  };
 
-    return () => {
-      mounted = false;
+  const keyExtractor = (item: any, i: number) =>
+    String(item?.internalId ?? item?.id ?? i);
+
+  // Componente memoizado para evitar re-renders innecesarios
+  const renderTrackRow = React.useCallback((info: DragListRenderItemInfo<any>) => {
+    const { item, onDragStart, onDragEnd, isActive, index } = info;
+
+    const handlePressIn = () => {
+      reorderLog("pressIn", {
+        index,
+        pos1: index + 1,
+        internalId: item?.internalId,
+        id: item?.id,
+        title: item?.title,
+      });
+      onDragStart();
     };
-  }, [id, getGenrePlaylistTracks]);
 
-  // Prefetch tracks
-  useEffect(() => {
-    if (!tracks?.length) return;
-    const ids = tracks.map((t: any) => t.track_id).filter(Boolean);
-    prefetchSongs(ids.slice(0, 30)).catch(() => { });
-  }, [tracks, prefetchSongs]);
+    const handlePressOut = () => {
+      reorderLog("pressOut", {
+        index,
+        pos1: index + 1,
+        internalId: item?.internalId,
+        id: item?.id,
+        title: item?.title,
+      });
+      onDragEnd();
+    };
 
-  // Mapear tracks a formato de Song
-  const mappedSongs = useMemo(() => {
-    return tracks.map((t: any, idx: number) => ({
-      id: t.track_id,
-      title: t.title,
-      artist: t.artist,
-      artistId: t.artist_id ?? null,
-      albumId: t.album ?? null,
-      duration: t.duration_ms
-        ? `${Math.floor(t.duration_ms / 60000)}:${String(
-          Math.floor((t.duration_ms % 60000) / 1000)
-        ).padStart(2, "0")}`
-        : "--:--",
-      thumbnail: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
-      _i: idx + 1,
-    }));
-  }, [tracks]);
-
-  // Calcular duración total
-  const totalDuration = useMemo(() => {
-    const totalMs = tracks.reduce((acc, t) => acc + (t.duration_ms || 0), 0);
-    return formatDurationCustom(totalMs, { format: 'compact', round: true });
-  }, [tracks]);
-
-  // Extraer los primeros 4 thumbnails para el mosaico
-  const mosaicImages = useMemo(() => {
-    return tracks
-      .slice(0, 4)
-      .map((t: any) => upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url)
-      .filter(Boolean);
-  }, [tracks]);
-
-  // Handlers
-  const handlePlayAll = () => {
-    if (!mappedSongs.length) return;
-    playFromList(mappedSongs, 0, { type: "playlist", name: playlist?.title || "Playlist" });
-  };
-
-  const handleShuffleAll = () => {
-    if (!mappedSongs.length) return;
-    const shuffled = [...mappedSongs].sort(() => Math.random() - 0.5);
-    playFromList(shuffled, 0, { type: "playlist", name: playlist?.title || "Playlist" });
-  };
-
-  const handleTrackPress = (index: number) => {
-    playFromList(mappedSongs, index, { type: "playlist", name: playlist?.title || "Playlist" });
-  };
-
-  const handleTrackMorePress = (track: any) => {
-    setSelectedTrack(track);
-    setSheetOpen(true);
-  };
-
-  // Loading
-  if (loading) {
     return (
-      <ScrollView style={styles.page} contentContainerStyle={{ paddingBottom: 32 }}>
-        <PlaylistSkeletonLayout
-          theme={{ baseColor: "#2a2a2a", highlightColor: "#3b3b3b", duration: 1200 }}
-          tracks={8}
-          heroHeight={HERO_HEIGHT}
-        />
-      </ScrollView>
-    );
-  }
+      <View
+        style={[
+          styles.row,
+          {
+            backgroundColor: isActive ? "#1a1a1a" : "transparent",
+            opacity: isActive ? 0.95 : 1,
+          },
+        ]}
+      >
+        {/* Remove Button */}
+        <Pressable
+          onPress={() => handleRemove(item.internalId)}
+          style={styles.removeBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="remove-circle" size={22} color="#ff6b6b" />
+        </Pressable>
 
-  // Error
-  if (error || !playlist) {
-    return (
-      <>
-        <StatusBar barStyle="light-content" />
-        <View style={[styles.page, { paddingTop: insets.top + 8 }]}>
-          <View style={styles.headerRow}>
-            <BackButton
-              absolute={false}
-              withBackground={false}
-              icon="chevron-back"
-              iconSize={22}
-              width={36}
-              height={36}
-            />
-            <View style={{ flex: 1 }} />
-            <View style={styles.backBtn} />
-          </View>
-
-          <View style={styles.errorContainer}>
-            <Ionicons name="alert-circle-outline" size={64} color="#888" />
-            <Text style={styles.errorText}>{error || "No se encontró la playlist"}</Text>
-            <TouchableOpacity onPress={() => router.back()} style={styles.retryBtn}>
-              <Text style={styles.retryText}>Volver</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Thumbnail */}
+        <View style={styles.thumbBox}>
+          {item.albumCover ? (
+            <Image source={{ uri: item.albumCover }} style={styles.thumb} />
+          ) : (
+            <View style={[styles.thumb, { backgroundColor: "#2a2a2a" }]} />
+          )}
         </View>
-      </>
+
+        {/* Track Info */}
+        <View style={styles.trackInfo}>
+          <Text style={styles.songTitle} numberOfLines={1}>
+            {item.title}
+          </Text>
+          <Text style={styles.songArtist} numberOfLines={1}>
+            {item.artist}
+          </Text>
+        </View>
+
+        {/* Drag Handle */}
+        <Pressable
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={styles.dragHandle}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        >
+          <Ionicons name="reorder-three-outline" size={24} color="#888" />
+        </Pressable>
+      </View>
     );
-  }
+  }, [handleRemove]);
 
   return (
-    <>
-      <StatusBar barStyle="light-content" />
-      <View style={[styles.page, { paddingTop: insets.top }]}>
-        {/* Header flotante */}
-        <View style={[styles.headerRow, { paddingTop: insets.top + 8 }]}>
-          <BackButton
-            absolute={false}
-            withBackground={false}
-            icon="chevron-back"
-            iconSize={22}
-            width={36}
-            height={36}
-          />
-          <View style={{ flex: 1 }} />
-          <View style={styles.backBtn} />
-        </View>
+    <SafeAreaView edges={["top"]} style={styles.container}>
+      {/* Top Bar Simple */}
+      <View style={styles.topBarContainer}>
+        <BlurView intensity={80} style={StyleSheet.absoluteFillObject} tint="dark" />
+        <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
+          <View style={styles.topBarContent}>
+            {/* Back button */}
+            <Pressable onPress={handleCancel} style={styles.topBarButton}>
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </Pressable>
 
-        <FlatList
-          data={mappedSongs}
-          keyExtractor={(item, idx) => item.id || idx.toString()}
-          ListHeaderComponent={
-            <>
-              {/* Header simple */}
-              <PlaylistHeader
-                variant="simple"
-                playlist={{
-                  name: playlist.title,
-                  songCount: playlist.track_count,
-                  duration: totalDuration,
-                }}
-                mosaicImages={mosaicImages}
-                showBackButton={false}
-              />
+            {/* Título */}
+            <Text style={styles.topBarTitle} numberOfLines={1}>
+              Editar Playlist
+            </Text>
 
-              {/* Botones */}
-              <PlaybackButtons onPlay={handlePlayAll} onShuffle={handleShuffleAll} />
-            </>
-          }
-          renderItem={({ item, index }) => (
-            <View style={{ paddingHorizontal: 16 }}>
-              <TrackRow
-                index={index + 1}
-                title={item.title}
-                artist={item.artist}
-                thumbnail={item.thumbnail}
-                trackId={item.id}
-                showIndex={false}
-                onPress={() => handleTrackPress(index)}
-                onMorePress={() => handleTrackMorePress(item)}
-              />
-            </View>
-          )}
-          contentContainerStyle={contentPadding}
-        />
+            {/* Check button (solo si hay cambios) */}
+            {hasChanges ? (
+              <Pressable onPress={handleSave} style={styles.topBarButton}>
+                <Ionicons name="checkmark" size={28} color="#1ed760" />
+              </Pressable>
+            ) : (
+              <View style={styles.topBarButton} />
+            )}
+          </View>
+        </SafeAreaView>
       </View>
 
-      {/* Sheet de acciones */}
-      <TrackActionsSheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-        track={selectedTrack}
-        hideRemoveOption={true}
-      />
-    </>
+      {/* Draggable List */}
+      <View style={[styles.listContainer, { paddingTop: topBarHeight }, contentPadding]}>
+        <DragList
+          data={editSongs}
+          keyExtractor={keyExtractor}
+          onReordered={handleReorder}
+          renderItem={renderTrackRow}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  page: {
+  container: {
     flex: 1,
     backgroundColor: "#0e0e0e",
   },
 
-  headerRow: {
+  // Top Bar
+  topBarContainer: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
+    zIndex: 10,
+    overflow: "hidden",
+  },
+  topBarContent: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    zIndex: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
-
-  backBtn: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
+  topBarButton: {
+    width: 40,
+    height: 40,
     justifyContent: "center",
+    alignItems: "center",
   },
-
-  errorContainer: {
+  topBarTitle: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 32,
-    gap: 12,
-  },
-
-  errorText: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: "700",
     color: "#fff",
-    fontWeight: "600",
     textAlign: "center",
-    marginTop: 16,
+    marginHorizontal: 8,
   },
 
-  retryBtn: {
-    marginTop: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    backgroundColor: "#1e1e1e",
-    borderRadius: 8,
+  // Lista
+  listContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
   },
 
-  retryText: {
+  // Track Row
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#222",
+  },
+  removeBtn: {
+    width: 32,
+    height: 32,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+  },
+  thumbBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 6,
+    overflow: "hidden",
+  },
+  thumb: {
+    width: "100%",
+    height: "100%",
+  },
+  trackInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  songTitle: {
     color: "#fff",
+    fontSize: 15,
     fontWeight: "600",
+  },
+  songArtist: {
+    color: "#aaa",
+    fontSize: 13,
+    marginTop: 2,
+  },
+  dragHandle: {
+    width: 32,
+    height: 32,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
   },
 });
