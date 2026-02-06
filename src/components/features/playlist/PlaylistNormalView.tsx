@@ -57,15 +57,11 @@ export default function PlaylistNormalView({
       )}
       ListHeaderComponent={
         <>
-          {/* Hero Header */}
           <PlaylistHeader
-            variant="default"
             playlist={playlist}
             mosaicImages={mosaicImages}
             onMenuPress={onMenuPress}
           />
-
-          {/* Playback Buttons */}
           <PlaybackButtons onPlay={onPlayAll} onShuffle={onShuffleAll} />
         </>
       }
