@@ -1,8 +1,8 @@
 // src/screens/PlaylistScreen.tsx
 import PlaybackButtons from "@/src/components/features/player/PlaybackButtons";
 import PlaylistEditView from "@/src/components/features/playlist/PlaylistEditView";
-import PlaylistHeader from "@/src/components/features/playlist/PlaylistHeader";
 import PlaylistOptionsSheet from "@/src/components/features/playlist/PlaylistOptionsSheet";
+import AnimatedDetailHeader from "@/src/components/shared/AnimatedDetailHeader";
 import TrackActionsSheet from "@/src/components/shared/TrackActionsSheet";
 import TrackRow from "@/src/components/shared/TrackRow";
 import { PlaylistSkeletonLayout } from "@/src/components/shared/skeletons/Skeleton";
@@ -22,7 +22,6 @@ import { useLocalSearchParams, useRouter, useSegments } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  FlatList,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -34,15 +33,15 @@ import {
 export default function PlaylistScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const segments = useSegments();
+  const segments = useSegments() as string[];
   const contentPadding = useContentPadding();
-  
-  const { 
-    getPlaylistById, 
-    getGenrePlaylistTracks, 
-    prefetchSongs, 
-    deletePlaylist, 
-    removeTrackFromPlaylist 
+
+  const {
+    getPlaylistById,
+    getGenrePlaylistTracks,
+    prefetchSongs,
+    deletePlaylist,
+    removeTrackFromPlaylist
   } = useMusicApi();
   const { playFromList } = useMusic();
   const { userId } = useUserProfile();
@@ -51,7 +50,6 @@ export default function PlaylistScreen() {
   const isGenrePlaylist = segments.includes('genre-playlist');
 
   const [playlist, setPlaylist] = useState<any | null>(null);
-  const [tracks, setTracks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -109,7 +107,6 @@ export default function PlaylistScreen() {
                 duration: formatDurationCustom(totalMs, { format: 'compact', round: true }),
                 songs,
               });
-              setTracks(result.tracks || []);
             } else {
               setError(result?.error || "Error al cargar playlist");
             }
@@ -173,6 +170,26 @@ export default function PlaylistScreen() {
 
   const mosaicImages = useMemo(() => {
     return (playlist?.songs || []).map((s: any) => s.albumCover).filter(Boolean);
+  }, [playlist]);
+
+  const sections = useMemo(() => {
+    if (!playlist) return [];
+
+    return [
+      {
+        type: 'info',
+        data: playlist,
+      },
+      {
+        type: 'buttons',
+        data: null,
+      },
+      ...(playlist.songs || []).map((song: any, index: number) => ({
+        type: 'track',
+        data: song,
+        index,
+      })),
+    ];
   }, [playlist]);
 
   const handlePlayAll = () => {
@@ -312,7 +329,6 @@ export default function PlaylistScreen() {
     );
   }
 
-  // Modo edición (solo playlists personales)
   if (editMode && !isGenrePlaylist) {
     return (
       <>
@@ -339,40 +355,65 @@ export default function PlaylistScreen() {
     );
   }
 
-  // Vista normal
+  const renderSection = (section: any) => {
+    switch (section.type) {
+      case 'info':
+        return (
+          <View style={styles.infoSection}>
+            <Text style={styles.playlistTitle} numberOfLines={2}>
+              {section.data.name}
+            </Text>
+
+            {section.data.isPublic !== undefined && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {section.data.isPublic ? "PÚBLICA" : "PRIVADA"}
+                </Text>
+              </View>
+            )}
+
+            <Text style={styles.meta}>
+              {section.data.songCount} canciones • {section.data.duration}
+            </Text>
+          </View>
+        );
+
+      case 'buttons':
+        return <PlaybackButtons onPlay={handlePlayAll} onShuffle={handleShuffleAll} />;
+
+      case 'track':
+        return (
+          <View style={{ paddingHorizontal: 16 }}>
+            <TrackRow
+              index={section.index + 1}
+              title={section.data.title}
+              artist={section.data.artist}
+              thumbnail={section.data.albumCover}
+              trackId={section.data.id}
+              showIndex={false}
+              onPress={() => handleTrackPress(section.index)}
+              onMorePress={() => handleTrackMorePress(section.data)}
+            />
+          </View>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <>
       <StatusBar barStyle="light-content" />
-      <FlatList
-        style={styles.page}
+
+      <AnimatedDetailHeader
+        mosaicImages={mosaicImages}
+        title={playlist.name}
+        sections={sections}
+        renderSection={renderSection}
+        onBackPress={() => router.back()}
+        onMenuPress={isGenrePlaylist ? undefined : () => setMenuOpen(true)}
         contentContainerStyle={contentPadding}
-        data={playlist.songs || []}
-        keyExtractor={(song: any, index: number) => `${song.id}-${index}`}
-        renderItem={({ item: song, index }) => (
-          <View style={{ paddingHorizontal: 16 }}>
-            <TrackRow
-              index={index + 1}
-              title={song.title}
-              artist={song.artist}
-              thumbnail={song.albumCover}
-              trackId={song.id}
-              showIndex={false}
-              onPress={() => handleTrackPress(index)}
-              onMorePress={() => handleTrackMorePress(song)}
-            />
-          </View>
-        )}
-        ListHeaderComponent={
-          <>
-            <PlaylistHeader
-              playlist={playlist}
-              mosaicImages={mosaicImages}
-              onMenuPress={isGenrePlaylist ? undefined : () => setMenuOpen(true)}
-              showBackButton={true}
-            />
-            <PlaybackButtons onPlay={handlePlayAll} onShuffle={handleShuffleAll} />
-          </>
-        }
       />
 
       {!isGenrePlaylist && (
@@ -380,7 +421,7 @@ export default function PlaylistScreen() {
           open={menuOpen}
           onOpenChange={setMenuOpen}
           onDelete={confirmDelete}
-          onEdit={editMode ? undefined : handleStartEdit}
+          onEdit={editMode || playlist.songs.length === 1 ? undefined : handleStartEdit}
           editMode={editMode}
         />
       )}
@@ -392,7 +433,7 @@ export default function PlaylistScreen() {
         track={selectedTrack}
         onRemove={!isGenrePlaylist ? (_, trackId) => handleRemoveFromSheet(playlist.id, trackId) : undefined}
         showAddTo={!isGenrePlaylist}
-        hideRemoveOption={isGenrePlaylist}
+        showRemove={!isGenrePlaylist}
       />
     </>
   );
@@ -428,5 +469,36 @@ const styles = StyleSheet.create({
   retryText: {
     color: "#fff",
     fontWeight: "600",
+  },
+
+  infoSection: {
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  playlistTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#fff",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  badge: {
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    borderRadius: 12,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#fff",
+    letterSpacing: 0.5,
+  },
+  meta: {
+    fontSize: 13,
+    color: "#888",
   },
 });

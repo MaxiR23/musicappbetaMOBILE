@@ -5,11 +5,11 @@ import { ChevronLeft } from "lucide-react-native";
 import React from "react";
 import { Dimensions, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
-    Extrapolation,
-    interpolate,
-    useAnimatedScrollHandler,
-    useAnimatedStyle,
-    useSharedValue,
+  Extrapolation,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -18,7 +18,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 // Componente para renderizar mosaico de playlist
 function MosaicCover({ images }: { images: string[] }) {
   const displayImages = images.slice(0, 4);
-  
+
   while (displayImages.length < 4) {
     displayImages.push(displayImages[0] || "");
   }
@@ -161,8 +161,8 @@ export default function AnimatedDetailHeader({
         {isMosaic && mosaicImages ? (
           <MosaicCover images={mosaicImages} />
         ) : (
-          <Image 
-            source={{ uri: coverImage }} 
+          <Image
+            source={{ uri: coverImage }}
             style={styles.coverImage}
             resizeMode="cover"
           />
@@ -197,7 +197,14 @@ export default function AnimatedDetailHeader({
       <Animated.FlatList
         data={sections}
         renderItem={({ item, index }) => renderSection(item, index)}
-        keyExtractor={(item, index) => `section-${item.type || index}`}
+        keyExtractor={(item, index) => {
+          // Si es track, usar su ID único
+          if (item.type === 'track' && item.data?.id) {
+            return `track-${item.data.id}`;
+          }
+          // Para otros tipos usar type + index
+          return `section-${item.type}-${index}`;
+        }}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
