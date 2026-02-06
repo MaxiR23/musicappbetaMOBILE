@@ -33,4 +33,3 @@ FlatList principal solo renderiza los tracks visibles = scroll fluido.
 
 ## Resultado
 Playlist de 500 canciones carga instantáneamente y scrollea fluido porque solo renderiza lo visible.
-```
