@@ -1,11 +1,12 @@
 // components/playlist/PlaylistEditView.tsx
 import { reorderLog } from "@/src/utils/reorder-logger";
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
-import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import DragList, { DragListRenderItemInfo } from "react-native-draglist";
-import PlaylistHeader from "./PlaylistHeader";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface PlaylistEditViewProps {
   playlist: {
@@ -39,127 +40,172 @@ export default function PlaylistEditView({
   onMenuPress,
 }: PlaylistEditViewProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const [hasChanges, setHasChanges] = useState(false);
 
-  const keyExtractor = (item: any, i: number) =>
-    String(item?.internalId ?? item?.id ?? i);
+  // Guardar orden inicial para detectar cambios de reorden
+  const initialOrderRef = useRef<string>(
+    editSongs.map(s => s.internalId).join(',')
+  );
+
+  const topBarHeight = insets.top + 28;
+
+  // Detectar cambios (reorden O eliminación)
+  useEffect(() => {
+    const currentOrder = editSongs.map(s => s.internalId).join(',');
+    const changed = currentOrder !== initialOrderRef.current;
+    setHasChanges(changed);
+  }, [editSongs]);
+
+  const handleReorder = useCallback((fromIndex: number, toIndex: number) => {
+    onReorder(fromIndex, toIndex);
+  }, [onReorder]);
+
+  const handleRemove = useCallback((internalId: string | number) => {
+    onRemove(internalId);
+  }, [onRemove]);
+
+  const handleSave = useCallback(() => {
+    if (!hasChanges) return;
+    onSave();
+    setHasChanges(false);
+    // Actualizar orden inicial después de guardar
+    initialOrderRef.current = editSongs.map(s => s.internalId).join(',');
+  }, [hasChanges, onSave, editSongs]);
+
+  const handleCancel = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  const keyExtractor = useCallback(
+    (item: any, i: number) => String(item?.internalId ?? item?.id ?? i),
+    []
+  );
+
+  // Renderizar track row optimizado
+  const renderTrackRow = useCallback((info: DragListRenderItemInfo<any>) => {
+    const { item, onDragStart, onDragEnd, isActive, index } = info;
+
+    const handlePressIn = () => {
+      reorderLog("pressIn", {
+        index,
+        pos1: index + 1,
+        internalId: item?.internalId,
+        id: item?.id,
+        title: item?.title,
+      });
+      onDragStart();
+    };
+
+    const handlePressOut = () => {
+      reorderLog("pressOut", {
+        index,
+        pos1: index + 1,
+        internalId: item?.internalId,
+        id: item?.id,
+        title: item?.title,
+      });
+      onDragEnd();
+    };
+
+    return (
+      <View
+        style={[
+          styles.row,
+          {
+            backgroundColor: isActive ? "#1a1a1a" : "transparent",
+            opacity: isActive ? 0.95 : 1,
+          },
+        ]}
+      >
+        {/* Remove Button */}
+        <Pressable
+          onPress={() => handleRemove(item.internalId)}
+          style={styles.removeBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="remove-circle" size={22} color="#ff6b6b" />
+        </Pressable>
+
+        {/* Thumbnail */}
+        <View style={styles.thumbBox}>
+          {item.albumCover ? (
+            <Image source={{ uri: item.albumCover }} style={styles.thumb} />
+          ) : (
+            <View style={[styles.thumb, { backgroundColor: "#2a2a2a" }]} />
+          )}
+        </View>
+
+        {/* Track Info */}
+        <View style={styles.trackInfo}>
+          <Text style={styles.songTitle} numberOfLines={1}>
+            {item.title}
+          </Text>
+          <Text style={styles.songArtist} numberOfLines={1}>
+            {item.artist}
+          </Text>
+        </View>
+
+        {/* Drag Handle */}
+        <Pressable
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={styles.dragHandle}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        >
+          <Ionicons name="reorder-three-outline" size={24} color="#888" />
+        </Pressable>
+      </View>
+    );
+  }, [handleRemove]);
 
   return (
-    <View style={styles.container}>
-      {/* Hero Header */}
-      <View style={{ height: 320 }}>
-        <PlaylistHeader
-          variant="default"
-          playlist={{ ...playlist, songCount: editSongs.length }}
-          mosaicImages={mosaicImages}
-          onMenuPress={onMenuPress}
-          showBackButton={false}
-        />
-      </View>
+    <SafeAreaView edges={["top"]} style={styles.container}>
+      {/* Top Bar Simple */}
+      <View style={styles.topBarContainer}>
+        <BlurView intensity={80} style={StyleSheet.absoluteFillObject} tint="dark" />
+        <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
+          <View style={styles.topBarContent}>
+            {/* Back button */}
+            <Pressable onPress={handleCancel} style={styles.topBarButton}>
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </Pressable>
 
-      {/* Back button (custom para modo edición) */}
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <Ionicons name="arrow-back" size={24} color="#fff" />
-      </TouchableOpacity>
+            {/* Título */}
+            <Text style={styles.topBarTitle} numberOfLines={1}>
+              Editar Playlist
+            </Text>
 
-      {/* Edit Bar */}
-      <View style={styles.editBar}>
-        <TouchableOpacity style={styles.editBtn} onPress={onSave} activeOpacity={0.9}>
-          <Ionicons name="save-outline" size={18} color="#fff" />
-          <Text style={styles.editBtnText}>Guardar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.editBtnAlt} onPress={onCancel} activeOpacity={0.9}>
-          <Ionicons name="close" size={18} color="#fff" />
-          <Text style={styles.editBtnText}>Cancelar</Text>
-        </TouchableOpacity>
+            {/* Check button (solo si hay cambios) */}
+            {hasChanges ? (
+              <Pressable onPress={handleSave} style={styles.topBarButton}>
+                <Ionicons name="checkmark" size={28} color="#1ed760" />
+              </Pressable>
+            ) : (
+              <View style={styles.topBarButton} />
+            )}
+          </View>
+        </SafeAreaView>
       </View>
 
       {/* Draggable List */}
-      <View style={[
-        { flex: 1, paddingHorizontal: 16 },
-        contentPadding
-      ]}>
+      <View style={[styles.listContainer, { paddingTop: topBarHeight }]}>
         <DragList
           data={editSongs}
           keyExtractor={keyExtractor}
-          onReordered={onReorder}
-          renderItem={(info: DragListRenderItemInfo<any>) => {
-            const { item, onDragStart, onDragEnd, isActive, index } = info;
-
-            const handlePressIn = () => {
-              reorderLog("pressIn", {
-                index,
-                pos1: index + 1,
-                internalId: item?.internalId,
-                id: item?.id,
-                title: item?.title,
-              });
-              onDragStart();
-            };
-
-            const handlePressOut = () => {
-              reorderLog("pressOut", {
-                index,
-                pos1: index + 1,
-                internalId: item?.internalId,
-                id: item?.id,
-                title: item?.title,
-              });
-              onDragEnd();
-            };
-
-            return (
-              <View
-                style={[
-                  styles.row,
-                  {
-                    backgroundColor: isActive ? "#151515" : "transparent",
-                    opacity: isActive ? 0.95 : 1,
-                  },
-                ]}
-              >
-                {/* Remove Button (izquierda) */}
-                <TouchableOpacity
-                  onPress={() => onRemove(item.internalId)}
-                  style={styles.removeBtn}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons name="remove-circle" size={20} color="#ff6b6b" />
-                </TouchableOpacity>
-
-                {/* Thumbnail */}
-                <View style={styles.thumbBox}>
-                  {item.albumCover ? (
-                    <Image source={{ uri: item.albumCover }} style={styles.thumb} />
-                  ) : (
-                    <View style={[styles.thumb, { backgroundColor: "#333" }]} />
-                  )}
-                </View>
-
-                {/* Track Info */}
-                <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text style={styles.songTitle} numberOfLines={1}>
-                    {item.title}
-                  </Text>
-                  <Text style={styles.songArtist} numberOfLines={1}>
-                    {item.artist}
-                  </Text>
-                </View>
-
-                {/* Drag Handle (derecha) */}
-                <TouchableOpacity
-                  onPressIn={handlePressIn}
-                  onPressOut={handlePressOut}
-                  style={styles.dragHandle}
-                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                >
-                  <Ionicons name="reorder-three-outline" size={22} color="#888" />
-                </TouchableOpacity>
-              </View>
-            );
-          }}
+          onReordered={handleReorder}
+          renderItem={renderTrackRow}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={11}
+          initialNumToRender={15}
+          // Agregar footer con el padding
+          ListFooterComponent={
+            contentPadding ? <View style={contentPadding} /> : null
+          }
         />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -168,51 +214,44 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0e0e0e",
   },
-  backButton: {
+
+  // Top Bar
+  topBarContainer: {
     position: "absolute",
-    top: 40,
-    left: 16,
-    backgroundColor: "#0008",
-    padding: 10,
-    borderRadius: 20,
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    overflow: "hidden",
   },
-  editBar: {
+  topBarContent: {
     flexDirection: "row",
-    gap: 12,
+    alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 12,
+  },
+  topBarButton: {
+    width: 40,
+    height: 40,
     justifyContent: "center",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: "#222",
-    backgroundColor: "#0f0f0f",
-  },
-  editBtn: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
   },
-  editBtnAlt: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
-  },
-  editBtnText: {
-    color: "#fff",
+  topBarTitle: {
+    flex: 1,
+    fontSize: 18,
     fontWeight: "700",
+    color: "#fff",
+    textAlign: "center",
+    marginHorizontal: 8,
   },
+
+  // Lista
+  listContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+
+  // Track Row
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -220,21 +259,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#222",
   },
-  dragHandle: {
-    width: 28,
-    alignItems: "center",
-    marginRight: 6,
-    justifyContent: "center",
-  },
   removeBtn: {
-    width: 28,
-    alignItems: "center",
-    marginRight: 6,
+    width: 32,
+    height: 32,
     justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
   },
   thumbBox: {
-    width: 40,
-    height: 40,
+    width: 48,
+    height: 48,
     borderRadius: 6,
     overflow: "hidden",
   },
@@ -242,14 +276,25 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
+  trackInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
   songTitle: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
   },
   songArtist: {
-    color: "#bbb",
-    fontSize: 12,
+    color: "#aaa",
+    fontSize: 13,
     marginTop: 2,
+  },
+  dragHandle: {
+    width: 32,
+    height: 32,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
   },
 });

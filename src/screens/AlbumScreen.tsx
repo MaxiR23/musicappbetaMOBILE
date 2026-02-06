@@ -6,29 +6,20 @@ import { useMusic } from "@/src/hooks/use-music";
 import { useMusicApi } from "@/src/hooks/use-music-api";
 import { useLocalSearchParams, useRouter, useSegments } from "expo-router";
 import React, { useMemo, useState } from "react";
-import {
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    View
-} from "react-native";
+import { FlatList, StyleSheet, Text, View } from "react-native";
 
 import { mapAlbumTracks } from "@/src/utils/song-mapper";
 
-import ProList from "@/src/components/shared/ProList";
-
 import PlaybackButtons from "@/src/components/features/player/PlaybackButtons";
 import AlbumInfo from "@/src/components/shared/AlbumInfo";
+import AnimatedDetailHeader from "@/src/components/shared/AnimatedDetailHeader";
 import EventCard from "@/src/components/shared/EventCard";
-import HeroSection from "@/src/components/shared/HeroSection";
 import HorizontalScrollSection from "@/src/components/shared/HorizontalScrollSection";
 import TrackRow from "@/src/components/shared/TrackRow";
 import { useContentPadding } from "@/src/hooks/use-content-padding";
 import { extractIncludedArtists } from "@/src/utils/data-helpers";
 import { getUpgradedThumb } from "@/src/utils/image-helpers";
 import { formatAlbumMeta, formatReleaseSubtitle } from "@/src/utils/subtitle-helpers";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AlbumScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -44,7 +35,6 @@ export default function AlbumScreen() {
     const [actionsOpen, setActionsOpen] = useState(false);
     const [selectedTrack, setSelectedTrack] = useState<any | null>(null);
 
-    //hook que maneja la carga del álbum
     const { data: album, loading } = useDetailScreen({
         id,
         fetcher: getAlbum,
@@ -76,72 +66,103 @@ export default function AlbumScreen() {
 
     const hasTracks = !!(album?.tracks && album.tracks.length > 0);
 
+    // Array de sections
+    const sections = useMemo(() => {
+        if (!album) return [];
+
+        return [
+            {
+                type: 'info',
+                data: {
+                    title: album.info?.title,
+                    artistName: artistNames,
+                    artistThumb: artistThumbUrl,
+                    meta: albumMeta,
+                    subtitle: album.info?.subtitle,
+                    secondSubtitle: album.info?.secondSubtitle,
+                },
+            },
+            hasTracks && {
+                type: 'playbackButtons',
+                data: null,
+            },
+            hasTracks && {
+                type: 'tracks',
+                data: album.tracks,
+            },
+            album.upcomingEvents?.length > 0 && {
+                type: 'upcomingEvent',
+                data: album.upcomingEvents[0],
+            },
+            album.otherVersions?.length > 0 && {
+                type: 'otherVersions',
+                data: album.otherVersions,
+            },
+            album.moreFromArtist?.length > 0 && {
+                type: 'moreFromArtist',
+                data: album.moreFromArtist,
+            },
+            album.releasesForYou?.length > 0 && {
+                type: 'releasesForYou',
+                data: album.releasesForYou,
+            },
+        ].filter(Boolean);
+    }, [album, albumMeta, artistNames, artistThumbUrl, hasTracks]);
+
+    const needsExtraPadding = (album?.tracks?.length || 0) <= 3;
+
     if (loading || !album) {
         return (
-            <ProList style={styles.container} contentContainerStyle={{ paddingBottom: 32 }} blockSize={2} initialBlocks={4}>
+            <View style={styles.container}>
                 <AlbumSkeletonLayout
                     theme={{ baseColor: "#2a2a2a", highlightColor: "#3b3b3b", duration: 1200 }}
                     tracks={6}
                     heroHeight={360}
                 />
-            </ProList>
+            </View>
         );
     }
 
-    return (
-        <>
-        <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#0e0e0e" }}>
-            <ProList
-                style={styles.container}
-                contentContainerStyle={contentPadding}
-                blockSize={2}
-                initialBlocks={3}
-                onEndReachedThreshold={0.5}
-            >
-                <HeroSection backgroundImage={coverUrl} height={320} blurRadius={50}>
-                    <View style={styles.heroCoverWrap}>
-                        <Image source={{ uri: coverUrl }} style={styles.heroCover} />
-                    </View>
-                </HeroSection>
+    const renderSection = (section: any) => {
+        switch (section.type) {
+            case 'info':
+                return (
+                    <AlbumInfo
+                        title={section.data.title || ""}
+                        artistName={section.data.artistName}
+                        artistThumb={section.data.artistThumb}
+                        meta={section.data.meta}
+                        subtitle={section.data.subtitle}
+                        secondSubtitle={section.data.secondSubtitle}
+                    />
+                );
 
-                {/* Info debajo del hero */}
-                <AlbumInfo
-                    title={album.info?.title || ""}
-                    artistName={artistNames}
-                    artistThumb={artistThumbUrl}
-                    meta={albumMeta}
-                    subtitle={album.info?.subtitle}
-                    secondSubtitle={album.info?.secondSubtitle}
-                />
+            case 'playbackButtons':
+                return (
+                    <PlaybackButtons
+                        onPlay={() =>
+                            playFromList(mappedSongs, 0, {
+                                type: "album",
+                                name: album.info?.title,
+                                thumb: coverUrl,
+                            })
+                        }
+                        onShuffle={() => {
+                            const randomIndex = Math.floor(Math.random() * mappedSongs.length);
+                            playFromList(mappedSongs, randomIndex, {
+                                type: "album",
+                                name: album.info?.title,
+                                thumb: coverUrl,
+                            });
+                        }}
+                    />
+                );
 
-                {/* Botones */}
-                {
-                    hasTracks && (
-                        <PlaybackButtons
-                            onPlay={() =>
-                                playFromList(mappedSongs, 0, {
-                                    type: "album",
-                                    name: album.info?.title,
-                                    thumb: coverUrl,
-                                })
-                            }
-                            onShuffle={() => {
-                                const randomIndex = Math.floor(Math.random() * mappedSongs.length);
-                                playFromList(mappedSongs, randomIndex, {
-                                    type: "album",
-                                    name: album.info?.title,
-                                    thumb: coverUrl,
-                                });
-                            }}
-                        />
-                    )
-                }
-
-                {/* Songs */}
-                <View style={styles.section}>
-                    {hasTracks ? (
+            case 'tracks':
+                return (
+                    <View style={styles.section}>
                         <FlatList
-                            data={album.tracks}
+                            data={section.data}
                             keyExtractor={(song: any, index: number) =>
                                 `${song.id || song.videoId || "track"}-${index}`
                             }
@@ -169,88 +190,90 @@ export default function AlbumScreen() {
                             initialNumToRender={8}
                             maxToRenderPerBatch={8}
                             windowSize={6}
-                            updateCellsBatchingPeriod={80}
                             removeClippedSubviews
-                            onEndReachedThreshold={0.2}
                         />
-                    ) : (
-                        <Text style={[styles.songArtists, { marginTop: 8 }]}>
-                            Songs unavailable for this release.
+                    </View>
+                );
+
+            case 'upcomingEvent':
+                return (
+                    <View style={{ paddingHorizontal: 16, marginTop: 8, gap: 10 }}>
+                        <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 6 }}>
+                            Upcoming event
                         </Text>
-                    )}
-                </View>
-
-                {/* Upcoming event */}
-                {
-                    !!album.upcomingEvents?.length && (
-                        <View style={{ paddingHorizontal: 16, marginTop: 8, gap: 10 }}>
-                            <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 6 }}>
-                                Upcoming event
-                            </Text>
-                            <EventCard
-                                event={album.upcomingEvents[0]}
-                                artistName={album?.info?.artistName || album?.info?.artists?.[0]?.name}
-                                defaultPoster={coverUrl}
-                                variant="featured"
-                            />
-                        </View>
-                    )
-                }
-
-                {/* Other versions */}
-                {
-                    !!album.otherVersions?.length && (
-                        <HorizontalScrollSection
-                            title="Other versions"
-                            items={album.otherVersions}
-                            keyExtractor={(it, i) => `ov-${i}-${it.browseId || it.title}`}
-                            imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
-                            titleExtractor={(it) => it.title}
-                            subtitleExtractor={(it) => formatReleaseSubtitle(it)}
-                            onItemPress={(it) => router.push(`/(tabs)/${currentTab}/album/${it.browseId}`)}
+                        <EventCard
+                            event={section.data}
+                            artistName={album?.info?.artistName || album?.info?.artists?.[0]?.name}
+                            defaultPoster={coverUrl}
+                            variant="featured"
                         />
-                    )
-                }
+                    </View>
+                );
 
-                {/* More from artist */}
-                {
-                    !!album.moreFromArtist?.length && (
-                        <HorizontalScrollSection
-                            title="More from artist"
-                            items={album.moreFromArtist}
-                            keyExtractor={(it, i) => `mfa-${i}-${it.id || it.title}`}
-                            imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
-                            titleExtractor={(it) => it.title}
-                            subtitleExtractor={(it) => formatReleaseSubtitle({ ...it, type: it.type || "Album" })}
-                            onItemPress={(it) => router.push(`/(tabs)/${currentTab}/album/${it.id}`)}
-                        />
-                    )
-                }
+            case 'otherVersions':
+                return (
+                    <HorizontalScrollSection
+                        title="Other versions"
+                        items={section.data}
+                        keyExtractor={(it, i) => `ov-${i}-${it.browseId || it.title}`}
+                        imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
+                        titleExtractor={(it) => it.title}
+                        subtitleExtractor={(it) => formatReleaseSubtitle(it)}
+                        onItemPress={(it) => router.push(`/(tabs)/${currentTab}/album/${it.browseId}`)}
+                    />
+                );
 
-                {/* Releases for you */}
-                {
-                    !!album.releasesForYou?.length && (
-                        <HorizontalScrollSection
-                            title="Releases for you"
-                            items={album.releasesForYou}
-                            keyExtractor={(it, i) => `rfy-${i}-${it.browseId || it.title}`}
-                            imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
-                            titleExtractor={(it) => it.title}
-                            subtitleExtractor={(it) => formatReleaseSubtitle({ ...it, type: it.type || "Release" })}
-                            onItemPress={(it) => {
-                                const route =
-                                    (it.type || "").toLowerCase() === "playlist"
-                                        ? `/(tabs)/library/playlist/${it.browseId}`
-                                        : `/(tabs)/${currentTab}/album/${it.browseId}`;
-                                router.push(route);
-                            }}
-                        />
-                    )
-                }
+            case 'moreFromArtist':
+                return (
+                    <HorizontalScrollSection
+                        title="More from artist"
+                        items={section.data}
+                        keyExtractor={(it, i) => `mfa-${i}-${it.id || it.title}`}
+                        imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
+                        titleExtractor={(it) => it.title}
+                        subtitleExtractor={(it) => formatReleaseSubtitle({ ...it, type: it.type || "Album" })}
+                        onItemPress={(it) => router.push(`/(tabs)/${currentTab}/album/${it.id}`)}
+                    />
+                );
 
-            </ProList >
+            case 'releasesForYou':
+                return (
+                    <HorizontalScrollSection
+                        title="Releases for you"
+                        items={section.data}
+                        keyExtractor={(it, i) => `rfy-${i}-${it.browseId || it.title}`}
+                        imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
+                        titleExtractor={(it) => it.title}
+                        subtitleExtractor={(it) => formatReleaseSubtitle({ ...it, type: it.type || "Release" })}
+                        onItemPress={(it) => {
+                            const route =
+                                (it.type || "").toLowerCase() === "playlist"
+                                    ? `/(tabs)/library/playlist/${it.browseId}`
+                                    : `/(tabs)/${currentTab}/album/${it.browseId}`;
+                            router.push(route);
+                        }}
+                    />
+                );
 
-            </SafeAreaView>
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <>
+            <AnimatedDetailHeader
+                coverImage={coverUrl}
+                title={album.info?.title || ""}
+                sections={sections}
+                renderSection={renderSection}
+                onBackPress={() => router.back()}
+                contentContainerStyle={[
+                    contentPadding,
+                    needsExtraPadding && { paddingBottom: 100 }
+                ]}
+            />
+
             <TrackActionsSheet
                 open={actionsOpen}
                 onOpenChange={setActionsOpen}
@@ -262,18 +285,5 @@ export default function AlbumScreen() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: "#0e0e0e" },
-    heroCoverWrap: {
-        alignSelf: "center",
-        marginBottom: 18,
-        borderRadius: 14,
-        overflow: "hidden",
-        shadowColor: "#000",
-        shadowOpacity: 0.35,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 10 },
-        elevation: 10,
-    },
-
-    heroCover: { width: 240, height: 240, borderRadius: 14, resizeMode: "cover" },
     section: { paddingHorizontal: 16, marginTop: 8 },
 });

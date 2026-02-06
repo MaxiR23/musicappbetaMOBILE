@@ -10,16 +10,14 @@ import { StatusBar, StyleSheet, Text, View } from "react-native";
 import { mapArtistTopSongs } from "@/src/utils/song-mapper";
 
 import NewReleaseCard from "@/src/components/features/home/NewReleaseCard";
+import AnimatedHeader from "@/src/components/shared/AnimatedHeader";
 import EventsList from "@/src/components/shared/EventList";
-import HeroSection from "@/src/components/shared/HeroSection";
 import HorizontalScrollSection from "@/src/components/shared/HorizontalScrollSection";
-import ProList from "@/src/components/shared/ProList";
 import TrackRow from "@/src/components/shared/TrackRow";
 import { useContentPadding } from "@/src/hooks/use-content-padding";
 import { normalizeRelatedArtists } from "@/src/utils/data-helpers";
 import { getUpgradedThumb, upgradeThumbUrl } from "@/src/utils/image-helpers";
 import { formatReleaseSubtitle } from "@/src/utils/subtitle-helpers";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ArtistScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,19 +30,10 @@ export default function ArtistScreen() {
 
   const currentTab = segments[1] as 'home' | 'search';
 
-  //hook que maneja la carga del artista
   const { data: artist, loading } = useDetailScreen({
     id,
     fetcher: getArtist,
   });
-
-  //DBG: {
-  /* React.useEffect(() => {
-    if (artist) {
-      console.log((id));
-    }
-  }, [artist]); */
-  //DBG: }
 
   const newRelease = artist?.newReleases?.[0];
   const upcomingReleases = artist?.upcoming_album ? [artist.upcoming_album] : [];
@@ -58,6 +47,42 @@ export default function ArtistScreen() {
   }, [artist, id]);
 
   const related = useMemo(() => normalizeRelatedArtists(artist?.related), [artist]);
+
+  // Array de sections
+  const sections = useMemo(() => {
+    if (!artist) return [];
+
+    return [
+      upcomingReleases.length > 0 && {
+        type: 'upcoming',
+        data: upcomingReleases,
+      },
+      newRelease && {
+        type: 'newRelease',
+        data: newRelease,
+      },
+      {
+        type: 'topSongs',
+        data: artist.topSongs,
+      },
+      artist.albums?.length > 0 && {
+        type: 'albums',
+        data: artist.albums,
+      },
+      Array.isArray(artist.singles_eps) && artist.singles_eps.length > 0 && {
+        type: 'singles',
+        data: artist.singles_eps,
+      },
+      artist.upcomingEvents?.length > 0 && {
+        type: 'events',
+        data: artist.upcomingEvents,
+      },
+      related.length > 0 && {
+        type: 'related',
+        data: related,
+      },
+    ].filter(Boolean);
+  }, [artist, upcomingReleases, newRelease, related]);
 
   if (loading || !artist) {
     return (
@@ -74,41 +99,12 @@ export default function ArtistScreen() {
 
   const heroUrl = getUpgradedThumb(artist?.header, 1200);
 
-  return (
-    <>
-      <StatusBar barStyle="light-content" backgroundColor="#0e0e0e" />
-
-      <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#0e0e0e" }}>
-      <ProList
-        style={styles.container}
-        contentContainerStyle={[
-          { paddingTop: 0 },
-          contentPadding
-        ]}
-        showsVerticalScrollIndicator={false}
-        blockSize={2}
-        initialBlocks={2}
-        onEndReachedThreshold={0.5}
-      >
-        {/* Hero */}
-        <View style={{ marginBottom: 20 }}>
-          <HeroSection
-            backgroundImage={heroUrl}
-            height={400}
-            useDirectImage={true}
-            paddingBottom={0}
-          >
-            <View style={styles.heroInfo}>
-              <Text style={styles.artistName}>{artist?.header?.name}</Text>
-              <Text style={styles.listeners}>{artist?.header?.monthlyListeners}</Text>
-            </View>
-          </HeroSection>
-        </View>
-
-        {/* Upcoming Releases */}
-        {upcomingReleases.length > 0 && (
+  const renderSection = (section: any) => {
+    switch (section.type) {
+      case 'upcoming':
+        return (
           <View style={styles.upcomingSection}>
-            {upcomingReleases.map((release: any, index: number) => (
+            {section.data.map((release: any, index: number) => (
               <NewReleaseCard
                 key={`upcoming-${release.id || index}`}
                 release={{
@@ -123,121 +119,155 @@ export default function ArtistScreen() {
               />
             ))}
           </View>
-        )}
+        );
 
-        {/* Nuevo lanzamiento */}
-        {newRelease && (
-          <NewReleaseCard
-            release={newRelease}
-            onPress={() => router.push(`/(tabs)/${currentTab}/album/${newRelease.id}`)}
-          />
-        )}
+      case 'newRelease':
+        return (
+          <View style={{ marginBottom: 20 }}>
+            <NewReleaseCard
+              release={section.data}
+              onPress={() => router.push(`/(tabs)/${currentTab}/album/${section.data.id}`)}
+            />
+          </View>
+        );
 
-        {/* Top Songs */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Canciones Populares</Text>
-          {artist.topSongs.map((song: any, index: number) => (
-            <TrackRow
-              key={`topsong-${song.id || song.videoId}-${index}`}
-              index={index + 1}
-              title={song.title}
-              thumbnail={getUpgradedThumb(song, 256)}
-              showDuration={false}
-              showMoreButton={false}
-              trackId={song.id}
-              onPress={() =>
-                playFromList(mappedTop, index, {
-                  type: "artist",
-                  name: artist.header?.name,
-                  thumb: heroUrl,
-                })
+      case 'topSongs':
+        return (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Canciones Populares</Text>
+            {section.data.map((song: any, index: number) => (
+              <TrackRow
+                key={`topsong-${song.id || song.videoId}-${index}`}
+                index={index + 1}
+                title={song.title}
+                thumbnail={getUpgradedThumb(song, 256)}
+                showDuration={false}
+                showMoreButton={false}
+                trackId={song.id}
+                onPress={() =>
+                  playFromList(mappedTop, index, {
+                    type: "artist",
+                    name: artist.header?.name,
+                    thumb: heroUrl,
+                  })
+                }
+              />
+            ))}
+          </View>
+        );
+
+      case 'albums':
+        return (
+          <View style={{ marginBottom: 20 }}>
+            <HorizontalScrollSection
+              title="Álbumes"
+              has_more={!!artist.has_more?.albums}
+              items={section.data}
+              keyExtractor={(album, idx) => `album-${album.id}-${idx}`}
+              imageExtractor={(album) => getUpgradedThumb(album, 512)}
+              titleExtractor={(album) => album.title}
+              subtitleExtractor={(album) => album.year}
+              onItemPress={(album) => router.push(`/(tabs)/${currentTab}/album/${album.id}`)}
+              onPressMore={
+                artist.has_more?.albums
+                  ? () =>
+                      router.push(
+                        `/(tabs)/${currentTab}/artist/${id}/releases?tab=albums&name=${encodeURIComponent(
+                          artist.header?.name || ""
+                        )}`
+                      )
+                  : undefined
               }
             />
-          ))}
-        </View>
+          </View>
+        );
 
-        {/* Albums */}
-        <HorizontalScrollSection
-          title="Álbumes"
-          has_more={!!artist.has_more?.albums}
-          items={artist.albums}
-          keyExtractor={(album, idx) => `album-${album.id}-${idx}`}
-          imageExtractor={(album) => getUpgradedThumb(album, 512)}
-          titleExtractor={(album) => album.title}
-          subtitleExtractor={(album) => album.year}
-          onItemPress={(album) => router.push(`/(tabs)/${currentTab}/album/${album.id}`)}
-          onPressMore={
-            artist.has_more?.albums
-              ? () =>
-                router.push(
-                  `/(tabs)/${currentTab}/artist/${id}/releases?tab=albums&name=${encodeURIComponent(
-                    artist.header?.name || ""
-                  )}`
-                )
-              : undefined
-          }
-        />
+      case 'singles':
+        return (
+          <View style={{ marginBottom: 20 }}>
+            <HorizontalScrollSection
+              title="Singles / EPs"
+              has_more={!!artist.has_more?.singles}
+              items={section.data}
+              keyExtractor={(single, idx) => `single-${single.id}-${idx}`}
+              imageExtractor={(single) => getUpgradedThumb(single, 512)}
+              titleExtractor={(single) => single.title}
+              subtitleExtractor={(single) => formatReleaseSubtitle(single)}
+              onItemPress={(single) => router.push(`/(tabs)/${currentTab}/album/${single.id}`)}
+              onPressMore={
+                artist.has_more?.singles
+                  ? () =>
+                      router.push(
+                        `/(tabs)/${currentTab}/artist/${id}/releases?tab=singles&name=${encodeURIComponent(
+                          artist.header?.name || ""
+                        )}`
+                      )
+                  : undefined
+              }
+            />
+          </View>
+        );
 
-        {/* Singles / EPs */}
-        {Array.isArray(artist.singles_eps) && artist.singles_eps.length > 0 && (
-          <HorizontalScrollSection
-            title="Singles / EPs"
-            has_more={!!artist.has_more?.singles}
-            items={artist.singles_eps}
-            keyExtractor={(single, idx) => `single-${single.id}-${idx}`}
-            imageExtractor={(single) => getUpgradedThumb(single, 512)}
-            titleExtractor={(single) => single.title}
-            subtitleExtractor={(single) => formatReleaseSubtitle(single)}
-            onItemPress={(single) => router.push(`/(tabs)/${currentTab}/album/${single.id}`)}
-            onPressMore={
-              artist.has_more?.singles
-                ? () =>
-                  router.push(
-                    `/(tabs)/${currentTab}/artist/${id}/releases?tab=singles&name=${encodeURIComponent(
-                      artist.header?.name || ""
-                    )}`
-                  )
-                : undefined
-            }
-          />
-        )}
+      case 'events':
+        return (
+          <View style={{ marginBottom: 20 }}>
+            <EventsList
+              events={section.data}
+              artistName={artist?.header?.name}
+              title="Upcoming events"
+              initialCount={3}
+              maxCount={10}
+            />
+          </View>
+        );
 
-        {/* Upcoming events */}
-        <EventsList
-          events={artist?.upcomingEvents || []}
-          artistName={artist?.header?.name}
-          title="Upcoming events"
-          initialCount={3}
-          maxCount={10}
-        />
+      case 'related':
+        return (
+          <View style={{ marginBottom: 20 }}>
+            <HorizontalScrollSection
+              title="Artistas Relacionados"
+              items={section.data}
+              keyExtractor={(rel, idx) => `related-${rel.id}-${idx}`}
+              imageExtractor={(rel) => upgradeThumbUrl(rel.img, 256)}
+              titleExtractor={(rel) => rel.name}
+              subtitleExtractor={(rel) => rel.subtitle}
+              onItemPress={(rel) => {
+                if (String(rel.id) === String(id)) return;
+                router.push(`/(tabs)/${currentTab}/artist/${rel.id}`);
+              }}
+              cardWidth={100}
+              imageHeight={100}
+              circularImage={true}
+            />
+          </View>
+        );
 
-        {/* Related */}
-        {related.length > 0 && (
-          <HorizontalScrollSection
-            title="Artistas Relacionados"
-            items={related}
-            keyExtractor={(rel, idx) => `related-${rel.id}-${idx}`}
-            imageExtractor={(rel) => upgradeThumbUrl(rel.img, 256)}
-            titleExtractor={(rel) => rel.name}
-            subtitleExtractor={(rel) => rel.subtitle}
-            onItemPress={(rel) => {
-              if (String(rel.id) === String(id)) return;
-              router.push(`/(tabs)/${currentTab}/artist/${rel.id}`);
-            }}
-            cardWidth={100}
-            imageHeight={100}
-            circularImage={true}
-          />
-        )}
-      </ProList>
-      </SafeAreaView>
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <>
+      <StatusBar barStyle="light-content" backgroundColor="#0e0e0e" />
+
+      <AnimatedHeader
+        backgroundImage={heroUrl}
+        title={artist?.header?.name || ""}
+        subtitle={artist?.header?.monthlyListeners}
+        sections={sections}
+        renderSection={renderSection}
+        onBackPress={() => router.back()}
+        headerHeight={400}
+        collapsedHeight={100}
+        contentPaddingHorizontal={0}
+        contentContainerStyle={contentPadding}
+      />
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0e0e0e" },
-
   section: {
     paddingHorizontal: 16,
     marginBottom: 20,
@@ -248,14 +278,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 12,
   },
-
   upcomingSection: {
     marginBottom: 20,
     paddingHorizontal: 0,
   },
-
-  // Hero
-  heroInfo: { position: "absolute", bottom: 4, left: 20 },
-  artistName: { fontSize: 26, fontWeight: "bold", color: "#fff", marginTop: 4 },
-  listeners: { fontSize: 14, color: "#ccc" },
 });
