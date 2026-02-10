@@ -267,36 +267,6 @@ export default function HomeScreen() {
           }}
         />
 
-        {/* recomendados · Artistas */}
-        {recoBySeed.slice(2).map(([seedId, items], seedIdx) => {
-          const seed = (items?.[0]?.similarTo) || null as any;
-          const seedName = seed?.name || "Artistas recomendados";
-          const seedThumb = seed?.thumbnail || null;
-
-          return (
-            <View key={`seed-${seedId}-${seedIdx}`} style={styles.section}>
-              <SimilarToHeader name={seedName} thumb={seedThumb} style={{ paddingHorizontal: 10, paddingTop: 4 }} />
-              <HorizontalScrollSection
-                title={""}
-                items={items}
-                keyExtractor={(a, idx) => `${a.id}-${idx}`}
-                imageExtractor={(a) =>
-                  Array.isArray(a.thumbnails) && a.thumbnails.length
-                    ? a.thumbnails[a.thumbnails.length - 1]?.url
-                    : undefined
-                }
-                titleExtractor={(a) => a.name}
-                subtitleExtractor={() => "Artista"}
-                onItemPress={(a) => router.push(`/(tabs)/home/artist/${encodeURIComponent(a.id)}`)}
-                cardWidth={120}
-                imageHeight={120}
-                circularImage
-                sectionStyle={{ marginTop: 2 }}
-              />
-            </View>
-          );
-        })}
-
         {/* albumes recomendados */}
         <FeedSection
           title="Álbumes recomendados"
