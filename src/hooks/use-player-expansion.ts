@@ -5,16 +5,20 @@ import { Animated, BackHandler, Dimensions } from "react-native";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
+interface UsePlayerExpansionParams {
+  activePlayerTab?: string | null;
+  onCloseTab?: () => void;
+}
+
 /**
  * Hook para manejar el estado expandido/colapsado del music player
  * Incluye animación, back handlers y navegación
  */
-export function usePlayerExpansion() {
+export function usePlayerExpansion(params?: UsePlayerExpansionParams) {
+  const { activePlayerTab, onCloseTab } = params || {};
   const navigation = useNavigation();
   const [isExpanded, setIsExpanded] = useState(false);
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
-  
-  // Ref para acceder al estado en callbacks
   const isExpandedRef = useRef(isExpanded);
   
   useEffect(() => {
@@ -34,14 +38,19 @@ export function usePlayerExpansion() {
   useEffect(() => {
     if (!isExpanded) return;
 
-    // Listener de navegación
     const unsubNav = navigation.addListener?.("beforeRemove", (e: any) => {
       e.preventDefault();
       setIsExpanded(false);
     });
 
-    // Back button de Android
     const hw = BackHandler.addEventListener("hardwareBackPress", () => {
+      // Si hay tab activo, cerrarlo primero
+      if (activePlayerTab !== null && onCloseTab) {
+        onCloseTab();
+        return true;
+      }
+      
+      // Si no hay tab, colapsar player
       setIsExpanded(false);
       return true;
     });
@@ -50,7 +59,7 @@ export function usePlayerExpansion() {
       unsubNav && unsubNav();
       hw.remove();
     };
-  }, [isExpanded, navigation]);
+  }, [isExpanded, navigation, activePlayerTab, onCloseTab]);
 
   const expand = () => setIsExpanded(true);
   const collapse = () => setIsExpanded(false);

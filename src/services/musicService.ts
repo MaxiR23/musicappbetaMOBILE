@@ -50,9 +50,9 @@ type SourcePayload = {
 };
 
 export type RecentItem = {
-  type: "album" | "artist";
+  type: "album" | "artist" | "playlist";
   id: string;
-  occurred_at: string;
+  played_at: string;
   name?: string | null;
   thumbnail_url?: string | null;
 };
@@ -249,80 +249,31 @@ export const musicService = {
     );
   },
 
-  logPlayTrack: async (trackId: string, source?: SourcePayload) => {
+  logPlayTrack: async (trackId: string, context?: { 
+    album_id?: string;
+    album_name?: string;
+    artist_id?: string;
+    track_name?: string;
+    artist_name?: string;
+    thumbnail_url?: string;
+  }) => {
+    return authFetch(
+      `${BASE_URL}/music/plays/tracks/${encodeURIComponent(trackId)}`,
+      { method: "POST", body: JSON.stringify(context ?? {}) }
+    );
+  },
+
+  logPlayPlaylist: async (playlistId: string, source?: SourcePayload) => {
     const body: any = {};
     if (source?.name) body.display_name = source.name;
     if (source?.thumb) body.thumbnail_url = source.thumb;
     return authFetch(
-      `${BASE_URL}/music/plays/tracks/${encodeURIComponent(trackId)}`,
+      `${BASE_URL}/music/plays/playlists/${encodeURIComponent(playlistId)}`,
       { method: "POST", body: JSON.stringify(body) }
     );
   },
 
-  // ==================== LIKES ====================
-
-  likeTrack: async (trackId: string) => {
-    return authFetch(
-      `${BASE_URL}/music/likes/tracks/${encodeURIComponent(trackId)}`,
-      { method: "POST" }
-    );
-  },
-
-  unlikeTrack: async (trackId: string) => {
-    return authFetch(
-      `${BASE_URL}/music/unlikes/tracks/${encodeURIComponent(trackId)}`,
-      { method: "POST" }
-    );
-  },
-
-  likeAlbum: async (albumId: string) => {
-    return authFetch(
-      `${BASE_URL}/music/likes/albums/${encodeURIComponent(albumId)}`,
-      { method: "POST" }
-    );
-  },
-
-  unlikeAlbum: async (albumId: string) => {
-    return authFetch(
-      `${BASE_URL}/music/unlikes/albums/${encodeURIComponent(albumId)}`,
-      { method: "POST" }
-    );
-  },
-
-  likeArtist: async (artistId: string) => {
-    return authFetch(
-      `${BASE_URL}/music/likes/artists/${encodeURIComponent(artistId)}`,
-      { method: "POST" }
-    );
-  },
-
-  unlikeArtist: async (artistId: string) => {
-    return authFetch(
-      `${BASE_URL}/music/unlikes/artists/${encodeURIComponent(artistId)}`,
-      { method: "POST" }
-    );
-  },
-
-  likePlaylist: async (playlistId: string) => {
-    return authFetch(
-      `${BASE_URL}/music/likes/playlists/${encodeURIComponent(playlistId)}`,
-      { method: "POST" }
-    );
-  },
-
-  unlikePlaylist: async (playlistId: string) => {
-    return authFetch(
-      `${BASE_URL}/music/unlikes/playlists/${encodeURIComponent(playlistId)}`,
-      { method: "POST" }
-    );
-  },
-
-  isTrackLiked: async (trackId: string): Promise<{ track_id: string; liked: boolean }> => {
-    return authFetch(
-      `${BASE_URL}/music/likes/tracks/${encodeURIComponent(trackId)}`,
-      { method: "GET" }
-    );
-  },
+  // ==================== LIKES ==================== (coming soon)
 
   // ==================== OTHER ====================
 

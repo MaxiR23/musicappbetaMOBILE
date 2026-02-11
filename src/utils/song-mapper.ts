@@ -10,6 +10,7 @@ export interface MappedSong {
   artistName: string;
   artistId: string | null;
   artists?: any[];
+  albumName?: string | null;
   albumId?: string | null;
   thumbnail?: string;
   duration?: string | null;
@@ -36,6 +37,11 @@ interface MapSongsOptions {
    * ID del artista (para canciones de artista)
    */
   artistId?: string | null;
+
+  /**
+   * Nombre del álbum por defecto
+   */
+  albumName?: string | null;
   
   /**
    * Nombre del artista por defecto
@@ -54,7 +60,7 @@ export function mapAlbumTracks(
   tracks: any[],
   options: MapSongsOptions = {}
 ): MappedSong[] {
-  const { defaultThumbnail, albumId } = options;
+  const { defaultThumbnail, albumId, albumName } = options;
   
   return tracks.map((track: any) => {
     const artists = Array.isArray(track.artists) ? track.artists : [];
@@ -77,6 +83,7 @@ export function mapAlbumTracks(
       artistId,
       artists,
       albumId: albumId ?? null,
+      albumName: albumName ?? null,
       duration: track.duration || null,
       durationSeconds: track.durationSeconds || null,
       thumbnail: defaultThumbnail || "",

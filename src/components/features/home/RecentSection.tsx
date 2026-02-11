@@ -6,13 +6,12 @@ import { Image, Text, TouchableOpacity, View } from 'react-native';
 import HorizontalScrollSection from './../../shared/HorizontalScrollSection';
 
 type RecentItem = {
-  type: "album" | "artist";
+  type: "album" | "artist" | "playlist";
   id: string;
-  occurred_at: string;
+  played_at: string;
   name?: string | null;
   thumbnail_url?: string | null;
 };
-
 interface Props {
   items: RecentItem[];
 }
@@ -26,7 +25,7 @@ export default function RecentSection({ items }: Props) {
     <HorizontalScrollSection
       title="Escuchados recientemente"
       items={items}
-      keyExtractor={(it, idx) => `${it.type}:${it.id}:${it.occurred_at}:${idx}`}
+      keyExtractor={(it, idx) => `${it.type}:${it.id}:${it.played_at}:${idx}`}
       imageExtractor={() => ""}
       titleExtractor={() => ""}
       onItemPress={() => { }}

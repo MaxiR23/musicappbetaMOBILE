@@ -5,9 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMusicApi } from './use-music-api';
 
 type RecentItem = {
-  type: "album" | "artist";
+  type: "album" | "artist" | "playlist";
   id: string;
-  occurred_at: string;
+  played_at: string;
   name?: string | null;
   thumbnail_url?: string | null;
 };

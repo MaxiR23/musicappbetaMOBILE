@@ -119,22 +119,24 @@ export function useMusicApi() {
   );
 
   const logPlayTrack = useCallback(
-    (trackId: string, source?: { name?: string | null; thumb?: string | null }) =>
-      musicService.logPlayTrack(trackId, source),
+    (trackId: string, context?: {
+      album_id?: string;
+      album_name?: string;
+      artist_id?: string;
+      track_name?: string;
+      artist_name?: string;
+      thumbnail_url?: string;
+    }) => musicService.logPlayTrack(trackId, context),
     []
   );
 
-  // ==================== LIKES ====================
+  const logPlayPlaylist = useCallback(
+    (playlistId: string, source?: { name?: string | null; thumb?: string | null }) =>
+      musicService.logPlayPlaylist(playlistId, source),
+    []
+  );
 
-  const likeTrack = useCallback((trackId: string) => musicService.likeTrack(trackId), []);
-  const unlikeTrack = useCallback((trackId: string) => musicService.unlikeTrack(trackId), []);
-  const likeAlbum = useCallback((albumId: string) => musicService.likeAlbum(albumId), []);
-  const unlikeAlbum = useCallback((albumId: string) => musicService.unlikeAlbum(albumId), []);
-  const likeArtist = useCallback((artistId: string) => musicService.likeArtist(artistId), []);
-  const unlikeArtist = useCallback((artistId: string) => musicService.unlikeArtist(artistId), []);
-  const likePlaylist = useCallback((playlistId: string) => musicService.likePlaylist(playlistId), []);
-  const unlikePlaylist = useCallback((playlistId: string) => musicService.unlikePlaylist(playlistId), []);
-  const isTrackLiked = useCallback((trackId: string) => musicService.isTrackLiked(trackId), []);
+  // ==================== LIKES ==================== (coming soon)
 
   // ==================== OTHER ====================
 
@@ -186,15 +188,7 @@ export function useMusicApi() {
     logPlayAlbum,
     logPlayArtist,
     logPlayTrack,
-    likeTrack,
-    unlikeTrack,
-    likeAlbum,
-    unlikeAlbum,
-    likeArtist,
-    unlikeArtist,
-    likePlaylist,
-    unlikePlaylist,
-    isTrackLiked,
+    logPlayPlaylist,
     getRecentPlays,
     moveTrackInPlaylist,
     getTrackLyrics,

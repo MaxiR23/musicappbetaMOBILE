@@ -24,7 +24,7 @@ import { formatAlbumMeta, formatReleaseSubtitle } from "@/src/utils/subtitle-hel
 export default function AlbumScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
 
-    const { playFromList, currentSong } = useMusic();
+    const { playFromList } = useMusic();
     const { getAlbum } = useMusicApi();
     const router = useRouter();
     const segments = useSegments();
@@ -46,6 +46,7 @@ export default function AlbumScreen() {
         if (!album) return [];
         return mapAlbumTracks(album.tracks, {
             albumId: id ?? null,
+            albumName: album.info?.title ?? null,
             defaultThumbnail: coverUrl,
         });
     }, [album, id, coverUrl]);

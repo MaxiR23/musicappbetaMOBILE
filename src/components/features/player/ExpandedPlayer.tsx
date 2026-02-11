@@ -37,7 +37,7 @@ interface ExpandedPlayerProps {
   // Metadata
   title: string;
   artistName: string;
-  artistId: string | null;
+  artistId: string | null; //TODO: need it?
   playSource: any;
   currentSong?: any;
 
@@ -85,7 +85,7 @@ interface ExpandedPlayerProps {
   activePlayerTab: "upnext" | "lyrics" | "related" | null;
 
   // Callbacks
-  onCollapse: () => void; // 🔥 Esta función ahora es "inteligente" y maneja tanto cerrar tab como colapsar
+  onCollapse: () => void; // Esta función ahora es "inteligente" y maneja tanto cerrar tab como colapsar
   onToggleLike: () => void;
   onOpenActions: () => void;
   onArtistPress: () => void;
@@ -123,7 +123,7 @@ export function ExpandedPlayer({
   coverScale,
   title,
   artistName,
-  artistId,
+  artistId, //TODO: need it?
   playSource,
   currentSong,
   isPlaying,
@@ -156,7 +156,7 @@ export function ExpandedPlayer({
   queueIndex,
   originalQueueSize,
   onTabChange,
-  onCollapse, // 🔥 Esta es la función inteligente que cierra tab primero, luego colapsa
+  onCollapse, // Esta es la función inteligente que cierra tab primero, luego colapsa
   onToggleLike,
   onOpenActions,
   onArtistPress,
@@ -435,15 +435,15 @@ export function ExpandedPlayer({
             relatedLoading={relatedLoading}
             relatedError={relatedError}
             onTogglePlay={onTogglePlay}
-            onCoverPress={() => onTabChange(null)} // 🔥 Cerrar tab cuando se presiona el cover
+            onCoverPress={() => onTabChange(null)} // Cerrar tab cuando se presiona el cover
             onTabChange={(tab) => onTabChange(tab)}
             onFetchLyrics={onFetchLyrics}
             onFetchUpNext={onFetchUpNext}
             onFetchRelated={onFetchRelated}
             onUpNextTrackPress={onUpNextTrackPress}
-            onRelatedTrackPress={onRelatedTrackPress} // 🆕
-            onRelatedArtistPress={onRelatedArtistPress} // 🆕
-            onRelatedAlbumPress={onRelatedAlbumPress} // 🆕
+            onRelatedTrackPress={onRelatedTrackPress} 
+            onRelatedArtistPress={onRelatedArtistPress}
+            onRelatedAlbumPress={onRelatedAlbumPress} 
           />
         </View>
       </Animated.View>
@@ -535,14 +535,13 @@ const styles = StyleSheet.create({
   },
   artist: { color: "#ccc", fontSize: 16 },
 
-  // TABS ESTILO YOUTUBE MUSIC
   tabsContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 8,
     paddingHorizontal: 0,
-    gap: 30, // Espaciado entre tabs
+    gap: 30,
   },
   tab: {
     alignItems: "center",

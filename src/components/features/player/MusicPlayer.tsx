@@ -13,7 +13,6 @@ import { useTrackUpNext } from "@/src/hooks/use-track-upnext";
 import { getUpgradedThumb } from "@/src/utils/image-helpers";
 import { router, useLocalSearchParams, usePathname } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { BackHandler } from "react-native";
 import { useMusic } from "../../../hooks/use-music";
 import { useMusicApi } from "../../../hooks/use-music-api";
 import { formatDuration } from "../../../utils/durations";
@@ -59,7 +58,10 @@ export default function MusicPlayer({
   const [autoplayEnabled, setAutoplayEnabled] = useState(true);
 
   // hooks
-  const { isExpanded, isExpandedRef, slideAnim, expand, collapse } = usePlayerExpansion();
+  const { isExpanded, isExpandedRef, slideAnim, expand, collapse } = usePlayerExpansion({
+    activePlayerTab,
+    onCloseTab: () => setActivePlayerTab(null),
+  });
 
   // 🔥 NUEVA LÓGICA: Collapse inteligente con useCallback
   const handleCollapse = React.useCallback(() => {
@@ -254,31 +256,6 @@ export default function MusicPlayer({
     }
   }, [currentSong?.id]);
 
-  // INTERCEPTAR BACK BUTTON/GESTURE DE ANDROID
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      // Si el player está expandido
-      if (isExpanded) {
-        // Si hay un tab activo, solo cerrar el tab
-        if (activePlayerTab !== null) {
-          console.log('Android back: Cerrando tab');
-          setActivePlayerTab(null);
-          return true; // Prevenir comportamiento por defecto
-        } else {
-          // Si no hay tab, colapsar el player
-          console.log('Android back: Colapsando player');
-          collapse();
-          return true; // Prevenir comportamiento por defecto
-        }
-      }
-
-      // Si el player no está expandido, dejar que Android maneje el back
-      return false;
-    });
-
-    return () => backHandler.remove();
-  }, [isExpanded, activePlayerTab, collapse]);
-
   // 🆕 PASO 2: Guardar upNext cuando se carga
   useEffect(() => {
     if (upNextData && !upNextByContextRef.current) {
@@ -374,12 +351,15 @@ export default function MusicPlayer({
       const newSong: Song = {
         id: trackId,
         title: track.title,
-        artistName: track.artists?.map((a: any) => a.name).join(", ") || "Unknown",
-        artistId: track.artists?.[0]?.id || null,
-        thumbnail: getUpgradedThumb(track, 256) || null,
-        duration: track.duration || "--:--",
-        durationSeconds: null,
-        albumId: null,
+        artistName: track.artistName,
+        artistId: track.artistId,
+        artistIds: track.artistIds,
+        artists: track.artists,
+        albumId: track.albumId,
+        albumName: track.albumName,
+        thumbnail: track.thumbnail,
+        duration: track.duration,
+        durationSeconds: track.durationSeconds,
       } as Song;
 
       // MARCAR esta canción como "ya reproducida manualmente"
@@ -411,18 +391,16 @@ export default function MusicPlayer({
     // Activar flag para NO cerrar el tab
     skipTabCloseOnNextSongChange.current = true;
 
-    // Crear el objeto Song desde el track de Related
-    const trackId = track.videoId || track.id;
-
     const newSong: Song = {
-      id: trackId,
+      id: track.videoId,
       title: track.title,
       artistName: track.artists?.map((a: any) => a.name).join(", ") || "Unknown",
       artistId: track.artists?.[0]?.id || null,
-      thumbnail: getUpgradedThumb(track, 256) || null,
-      duration: track.duration || "--:--",
+      albumId: track.album?.id || null,
+      albumName: track.album?.name || null,
+      duration: track.duration || null,
       durationSeconds: null,
-      albumId: null,
+      thumbnail: getUpgradedThumb(track, 256) || null,
     } as Song;
 
     // RESETEAR AUTOPLAY para la nueva canción
@@ -529,7 +507,7 @@ export default function MusicPlayer({
         onToggleLyrics={toggleLyrics}
         onToggleUpNext={toggleUpNext}
         onToggleRelated={toggleRelated}
-        onRelatedArtistPress={goToArtist} 
+        onRelatedArtistPress={goToArtist}
         onRelatedAlbumPress={goToAlbum}
         setPanLocked={setPanLocked}
         formatTime={formatDuration}

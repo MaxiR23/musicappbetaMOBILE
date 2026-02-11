@@ -27,7 +27,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const userId = user?.id ?? undefined;
 
-  const { logPlayAlbum, logPlayArtist, logPlayTrack } = useMusicApi();
+  const { logPlayAlbum, logPlayArtist, logPlayTrack, logPlayPlaylist } = useMusicApi();
   const { invalidateRecent } = useCacheInvalidation(userId);
 
   const syncingRef = useRef(false);
@@ -75,7 +75,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   function resolveContextKey(
     list: Song[],
     source?: PlaySource | null
-  ): { key: string; kind: "album" | "artist"; id: string } | null {
+  ): { key: string; kind: "album" | "artist" | "playlist"; id: string } | null {
     if (!source) return null;
     if (source.type === "album") {
       const albumId =
@@ -86,6 +86,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       const artistId =
         majorityId(list, (s: any) => s.artistId ?? s.artist_id ?? null) || null;
       return artistId ? { key: `artist:${artistId}`, kind: "artist", id: artistId } : null;
+    }
+    if (source.type === "playlist") {
+      const pid = (source as any).id;
+      return pid ? { key: `playlist:${pid}`, kind: "playlist", id: pid } : null;
     }
     return null;
   }
@@ -159,15 +163,21 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           : { type: "queue", id: null, name: null, thumb: null }
       );
       if (ctx) {
+        // DBG: {
+        console.log('[tracklog][RAW CONTEXT]', ctx);
+        console.log('[tracklog][RAW SOURCE]', source);
+        console.log('[tracklog][RAW LIST]', list);
+        /// } 
+
         if (lastLoggedContextKeyRef.current !== ctx.key) {
           lastLoggedContextKeyRef.current = ctx.key;
           const srcMeta = { name: source?.name ?? null, thumb: source?.thumb ?? null };
           if (ctx.kind === "album") {
             await logPlayAlbum(ctx.id, srcMeta).catch(() => { });
-            console.log("[tracklog] album logged:", ctx.id, srcMeta);
           } else if (ctx.kind === "artist") {
             await logPlayArtist(ctx.id, srcMeta).catch(() => { });
-            console.log("[tracklog] artist logged:", ctx.id, srcMeta);
+          } else if (ctx.kind === "playlist") {
+            await logPlayPlaylist(ctx.id, srcMeta).catch(() => { });
           }
 
           setTimeout(async () => {
@@ -691,14 +701,19 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         const alreadyLogged = lastLog && lastLog.split(':')[0] === trackId;
 
         if (!alreadyLogged) {
+          console.log("[tracklog] RAW trackToLog:", JSON.stringify(trackToLog, null, 2));
           const now = Date.now();
           lastLoggedTrackIdRef.current = `${trackId}:${now}`;
-          const trackMeta = {
-            name: (trackToLog as any).title ?? null,
-            thumb: (trackToLog as any).thumbnail ?? null
+          const trackContext = {
+            album_id: (trackToLog as any).albumId ?? (trackToLog as any).album_id ?? undefined,
+            album_name: (trackToLog as any).albumName ?? (trackToLog as any).album_name ?? undefined,
+            artist_id: (trackToLog as any).artistId ?? (trackToLog as any).artist_id ?? undefined,
+            artist_name: (trackToLog as any).artistName ?? (trackToLog as any).artist ?? undefined,
+            track_name: (trackToLog as any).title ?? undefined,
+            thumbnail_url: (trackToLog as any).thumbnail ?? (trackToLog as any).thumbnail_url ?? undefined,
           };
-          logPlayTrack(trackId, trackMeta).catch(() => { });
-          console.log("[tracklog] track logged after 30s REAL:", trackId, `position: ${currentPosition}s`, trackMeta);
+          logPlayTrack(trackId, trackContext).catch(() => { });
+          console.log("[tracklog] track logged after 30s:", trackId, trackContext);
         }
       }
     });
