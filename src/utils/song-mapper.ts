@@ -158,3 +158,46 @@ export function mapPlaylistSongs(playlistSongs: any[]): MappedSong[] {
     url: "",
   }));
 }
+
+/**
+ * Mapea tracks genéricos (upNext, related) al formato estándar del reproductor
+ * 
+ * @param track - Track individual
+ * @returns Canción en formato estándar
+ */
+export function mapGenericTrack(track: any): MappedSong {
+  const trackId = track.videoId || track.id;
+  const artistsArr = Array.isArray(track.artists) ? track.artists : [];
+  
+  const artistName = 
+    track.artistName ?? 
+    (artistsArr.length ? artistsArr.map((a: any) => a.name).join(", ") : "Unknown");
+  
+  const artistId = 
+    track.artistId ?? 
+    artistsArr[0]?.id ?? 
+    null;
+  
+  const albumId = 
+    track.albumId ?? 
+    track.album?.id ?? 
+    null;
+  
+  const albumName = 
+    track.albumName ?? 
+    track.album?.name ?? 
+    null;
+  
+  return {
+    id: trackId,
+    title: track.title,
+    artistName,
+    artistId,
+    artists: artistsArr,
+    albumId,
+    albumName,
+    thumbnail: track.thumbnail,
+    duration: track.duration || "--:--",
+    durationSeconds: track.durationSeconds || null,
+  };
+}

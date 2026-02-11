@@ -11,10 +11,12 @@ import { useTrackMetadata } from "@/src/hooks/use-track-metadata";
 import { useTrackRelated } from "@/src/hooks/use-track-related";
 import { useTrackUpNext } from "@/src/hooks/use-track-upnext";
 import { getUpgradedThumb } from "@/src/utils/image-helpers";
+import { mapGenericTrack } from "@/src/utils/song-mapper";
 import { router, useLocalSearchParams, usePathname } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import { useMusic } from "../../../hooks/use-music";
 import { useMusicApi } from "../../../hooks/use-music-api";
+import { Song } from "../../../types/music";
 import { formatDuration } from "../../../utils/durations";
 import { ExpandedPlayer } from "./ExpandedPlayer";
 import { MiniPlayer } from "./MiniPlayer";
@@ -41,7 +43,7 @@ export default function MusicPlayer({
   onNext,
   onPrev,
 }: Props) {
-  const { currentSong, queue, queueIndex, playSource, originalQueueSize, initialQueueSize, playFromList, playFromRelated, skipToIndex, addToQueueAndPlay, setAutoplayProvider, setIsAutoplayEnabledCallback, shuffle, isShuffled } = useMusic();
+  const { currentSong, queue, queueIndex, playSource, originalQueueSize, initialQueueSize, playFromRelated, skipToIndex, addToQueueAndPlay, setAutoplayProvider, setIsAutoplayEnabledCallback, shuffle, isShuffled } = useMusic();
   const {
     likeTrack,
     unlikeTrack,
@@ -143,9 +145,6 @@ export default function MusicPlayer({
   const pathname = usePathname();
   useLocalSearchParams<{ id?: string }>();
   const navigatingRef = useRef(false);
-
-  // Early return después de todos los hooks
-  if (!currentSong) return null;
 
   const isInOriginalQueue = queueIndex < originalQueueSize;
 
@@ -312,15 +311,10 @@ export default function MusicPlayer({
         // Encontramos una canción que NO fue clickeada, devolverla
         autoplayIndexRef.current += 1;
 
+        const mappedTrack = mapGenericTrack(track);
         return {
-          id: trackId,
-          title: track.title,
-          artistName: track.artists?.map((a: any) => a.name).join(", ") || "Unknown",
-          artistId: track.artists?.[0]?.id || null,
-          thumbnail: getUpgradedThumb(track, 256) || null,
-          duration: track.duration || "--:--",
-          durationSeconds: null,
-          albumId: null,
+          ...mappedTrack,
+          thumbnail: getUpgradedThumb(track, 256) || mappedTrack.thumbnail,
         } as Song;
       }
 
@@ -347,22 +341,8 @@ export default function MusicPlayer({
     // Si es del autoplay, crear el objeto Song y agregar a la cola
     if (isFromAutoplay) {
       const trackId = track.videoId || track.id;
+      const newSong = mapGenericTrack(track) as Song;
 
-      const newSong: Song = {
-        id: trackId,
-        title: track.title,
-        artistName: track.artistName,
-        artistId: track.artistId,
-        artistIds: track.artistIds,
-        artists: track.artists,
-        albumId: track.albumId,
-        albumName: track.albumName,
-        thumbnail: track.thumbnail,
-        duration: track.duration,
-        durationSeconds: track.durationSeconds,
-      } as Song;
-
-      // MARCAR esta canción como "ya reproducida manualmente"
       manuallyPlayedAutoplayIds.current.add(trackId);
       console.log(`Marcando "${track.title}" como reproducida manualmente (saltear en autoplay)`);
 
@@ -391,16 +371,10 @@ export default function MusicPlayer({
     // Activar flag para NO cerrar el tab
     skipTabCloseOnNextSongChange.current = true;
 
-    const newSong: Song = {
-      id: track.videoId,
-      title: track.title,
-      artistName: track.artists?.map((a: any) => a.name).join(", ") || "Unknown",
-      artistId: track.artists?.[0]?.id || null,
-      albumId: track.album?.id || null,
-      albumName: track.album?.name || null,
-      duration: track.duration || null,
-      durationSeconds: null,
-      thumbnail: getUpgradedThumb(track, 256) || null,
+    const mappedTrack = mapGenericTrack(track);
+    const newSong = {
+      ...mappedTrack,
+      thumbnail: getUpgradedThumb(track, 256) || mappedTrack.thumbnail,
     } as Song;
 
     // RESETEAR AUTOPLAY para la nueva canción
@@ -420,6 +394,9 @@ export default function MusicPlayer({
   const handleTabChange = (tab: "upnext" | "lyrics" | "related" | null) => {
     setActivePlayerTab(tab);
   };
+
+  // Early return después de todos los hooks
+  if (!currentSong) return null;
 
   return (
     <>
