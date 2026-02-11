@@ -20,6 +20,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const isAutoplayEnabledRef = useRef<(() => boolean) | null>(null);
   const playedAutoplayIdsRef = useRef<Set<string>>(new Set());
 
+  const lastProcessedTrackRef = useRef<string | null>(null);
+
   const [isShuffled, setIsShuffled] = useState(false);
   const [originalQueueBeforeShuffle, setOriginalQueueBeforeShuffle] = useState<Song[]>([]);
   const [originalIndexBeforeShuffle, setOriginalIndexBeforeShuffle] = useState<number>(-1);
@@ -651,6 +653,9 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       const newTrackId = queue[pos] ? String(queue[pos].id) : null;
       const prevTrackId = currentSong ? String(currentSong.id) : null;
 
+      // DEBOUNCE: Si es el mismo track que acabamos de procesar, skip
+      if (newTrackId === lastProcessedTrackRef.current) return;
+
       // Si cambió de track, resetear el log para permitir nuevo conteo
       if (newTrackId && newTrackId !== prevTrackId) {
         lastLoggedTrackIdRef.current = null;
@@ -807,13 +812,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    const subLegacy = TrackPlayer.addEventListener(Event.PlaybackTrackChanged as any, onActiveChanged);
-
     return () => {
       subActive.remove();
       subProgress.remove();
       subEnded.remove();
-      subLegacy.remove();
     };
   }, [queue]);
 

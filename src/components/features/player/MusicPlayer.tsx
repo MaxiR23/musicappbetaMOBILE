@@ -1,4 +1,5 @@
 import TrackActionsSheet from "@/src/components/shared/TrackActionsSheet";
+import { useAutoplayManager } from "@/src/hooks/use-autoplay-manager";
 import { useCoverAnimation } from "@/src/hooks/use-cover-animation";
 import { usePlayerExpansion } from "@/src/hooks/use-player-expansion";
 import { usePlayerPanGesture } from "@/src/hooks/use-player-pan-gesture";
@@ -12,7 +13,7 @@ import { useTrackRelated } from "@/src/hooks/use-track-related";
 import { useTrackUpNext } from "@/src/hooks/use-track-upnext";
 import { getUpgradedThumb } from "@/src/utils/image-helpers";
 import { mapGenericTrack } from "@/src/utils/song-mapper";
-import { router, useLocalSearchParams, usePathname } from "expo-router";
+import { router, usePathname } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import { useMusic } from "../../../hooks/use-music";
 import { useMusicApi } from "../../../hooks/use-music-api";
@@ -132,31 +133,30 @@ export default function MusicPlayer({
   const { gradient } = usePlayerTheme(rawThumb);
   const { coverScale } = useCoverAnimation(isPlaying);
 
-  const autoplayIndexRef = useRef(0);
-  const skipTabCloseOnNextSongChange = useRef(false); // 🆕 Flag para NO cerrar tab
+  const {
+    hasMoreAutoplay,
+    markAsManuallyPlayed,
+    resetAutoplay,
+  } = useAutoplayManager({
+    currentSong,
+    playSource,
+    autoplayEnabled,
+    shouldShowRelated,
+    upNextData,
+    fetchUpNext,
+    fetchRelated,
+    setAutoplayProvider,
+    setIsAutoplayEnabledCallback,
+    originalQueueSize,
+    initialQueueSize,
+  });
 
-  // 🔥🔥🔥 NUEVO: Set para trackear canciones clickeadas manualmente del autoplay
-  const manuallyPlayedAutoplayIds = useRef<Set<string>>(new Set());
-
-  // Refs para autoplay persistente por contexto
-  const upNextByContextRef = useRef<any>(null);
-  const currentPlaySourceIdRef = useRef<string | null>(null);
+  const skipTabCloseOnNextSongChange = useRef(false); // Flag para NO cerrar tab
 
   const pathname = usePathname();
-  useLocalSearchParams<{ id?: string }>();
   const navigatingRef = useRef(false);
 
   const isInOriginalQueue = queueIndex < originalQueueSize;
-
-  // 🆕 Calcular cuántas canciones del autoplay hemos usado
-  const contextUpNext = upNextByContextRef.current;
-  const autoplayTracksAvailable = contextUpNext?.upNext && contextUpNext.upNext.length > 1
-    ? contextUpNext.upNext.length - 1
-    : 0;
-
-  // Canciones agregadas del autoplay = originalQueueSize - initialQueueSize
-  const autoplayTracksUsed = originalQueueSize - initialQueueSize;
-  const hasMoreAutoplay = autoplayTracksUsed < autoplayTracksAvailable;
 
   const hasNext =
     (queueIndex >= 0 && queueIndex < queue.length - 1) ||
@@ -216,29 +216,6 @@ export default function MusicPlayer({
     }, 250);
   };
 
-  // PASO 1: Cargar upNext UNA VEZ por contexto
-  useEffect(() => {
-    let contextId: string | null = null;
-
-    if (playSource?.type === 'related') {
-      // clave 100% estable: el seedId del related
-      contextId = playSource.id ? `related:${playSource.id}` : null;
-    } else if (playSource?.type) {
-      // otros contextos: priorizar id; name sólo si no hay id
-      contextId = `${playSource.type}:${playSource.id ?? playSource.name ?? ''}`;
-    }
-
-    if (contextId && contextId !== currentPlaySourceIdRef.current) {
-      console.log('Contexto cambió, cargando nuevo autoplay:', contextId);
-      currentPlaySourceIdRef.current = contextId;
-      upNextByContextRef.current = null;
-      autoplayIndexRef.current = 0;
-      manuallyPlayedAutoplayIds.current.clear();
-      if (currentSong?.id) { fetchUpNext(); }
-    }
-    // no dependas de "name", evita resets fantasma
-  }, [playSource?.type, playSource?.id]);
-
   // Cerrar tab cuando cambia la canción (EXCEPTO si fue por clic en autoplay)
   useEffect(() => {
     // Si el cambio fue por clic en autoplay, NO cerrar el tab
@@ -255,82 +232,6 @@ export default function MusicPlayer({
     }
   }, [currentSong?.id]);
 
-  // 🆕 PASO 2: Guardar upNext cuando se carga
-  useEffect(() => {
-    if (upNextData && !upNextByContextRef.current) {
-      console.log('Guardando upNext para este contexto');
-      upNextByContextRef.current = upNextData;
-    }
-  }, [upNextData]);
-
-  // 🔥 Recargar Related automáticamente cuando cambia la canción
-  useEffect(() => {
-    if (currentSong?.id && shouldShowRelated) {
-      console.log('Canción cambió, recargando Related en background');
-      fetchRelated();
-    }
-  }, [currentSong?.id]);
-
-  // Recargar upNext automáticamente cuando cambia canción en contexto Related Y fue reseteado
-  useEffect(() => {
-    // Solo recargar si:
-    // 1. Hay una canción actual
-    // 2. El contexto es "related"
-    // 3. El upNext fue reseteado (upNextByContextRef es null)
-    if (currentSong?.id && playSource?.type === 'related' && !upNextByContextRef.current) {
-      console.log('🔄 Nueva canción en Related detectada, cargando autoplay fresco');
-      fetchUpNext();
-    }
-  }, [currentSong?.id, playSource?.type]);
-
-  // PASO 3: Configurar autoplay provider con lógica para SALTEAR canciones clickeadas
-  useEffect(() => {
-    const provider = () => {
-      if (!autoplayEnabled) return null;
-
-      // Usar datos guardados del contexto (NO upNextData que puede cambiar)
-      const contextUpNext = upNextByContextRef.current;
-      const autoplayTracks = contextUpNext?.upNext;
-
-      if (!autoplayTracks || autoplayTracks.length <= 1) return null;
-
-      const availableTracks = autoplayTracks.slice(1);
-
-      // Buscar la SIGUIENTE canción que NO haya sido clickeada manualmente
-      while (autoplayIndexRef.current < availableTracks.length) {
-        const track = availableTracks[autoplayIndexRef.current];
-        const trackId = track.videoId || track.id;
-
-        // Si esta canción YA fue clickeada manualmente, saltearla
-        if (manuallyPlayedAutoplayIds.current.has(trackId)) {
-          console.log(`Salteando "${track.title}" porque ya fue reproducida manualmente`);
-          autoplayIndexRef.current += 1;
-          continue; // Probar con la siguiente
-        }
-
-        // Encontramos una canción que NO fue clickeada, devolverla
-        autoplayIndexRef.current += 1;
-
-        const mappedTrack = mapGenericTrack(track);
-        return {
-          ...mappedTrack,
-          thumbnail: getUpgradedThumb(track, 256) || mappedTrack.thumbnail,
-        } as Song;
-      }
-
-      // Si llegamos aquí, se acabó el autoplay
-      return null;
-    };
-
-    setAutoplayProvider(provider);
-    setIsAutoplayEnabledCallback(() => autoplayEnabled);
-
-    return () => {
-      setAutoplayProvider(null);
-      setIsAutoplayEnabledCallback(null);
-    };
-  }, [autoplayEnabled, setAutoplayProvider, setIsAutoplayEnabledCallback]); // ← SIN upNextData!
-
   // HANDLER MODIFICADO: Marcar canciones clickeadas del autoplay
   const handleUpNextTrackPress = async (track: any, isFromAutoplay: boolean) => {
     console.log('handleUpNextTrackPress:', track.title, '| isFromAutoplay:', isFromAutoplay);
@@ -343,7 +244,7 @@ export default function MusicPlayer({
       const trackId = track.videoId || track.id;
       const newSong = mapGenericTrack(track) as Song;
 
-      manuallyPlayedAutoplayIds.current.add(trackId);
+      markAsManuallyPlayed(trackId);
       console.log(`Marcando "${track.title}" como reproducida manualmente (saltear en autoplay)`);
 
       console.log('Agregando canción del autoplay a la cola original');
@@ -379,9 +280,7 @@ export default function MusicPlayer({
 
     // RESETEAR AUTOPLAY para la nueva canción
     console.log('Reseteando autoplay para la nueva canción');
-    upNextByContextRef.current = null;
-    autoplayIndexRef.current = 0;
-    manuallyPlayedAutoplayIds.current.clear();
+    resetAutoplay();
 
     // Llamar a playFromRelated para borrar queue y crear nueva
     await playFromRelated(newSong);
@@ -397,12 +296,13 @@ export default function MusicPlayer({
 
   // Early return después de todos los hooks
   if (!currentSong) return null;
+  const songTitle = (currentSong as any)?.title ?? "";
 
   return (
     <>
       <MiniPlayer
         thumbUrl={thumbUrl}
-        title={(currentSong as any)?.title ?? ""}
+        title={songTitle}
         artistName={artistName}
         gradient={gradient}
         isPlaying={isPlaying}
@@ -424,7 +324,7 @@ export default function MusicPlayer({
         coverUrl={coverUrl}
         gradient={gradient}
         coverScale={coverScale}
-        title={(currentSong as any)?.title ?? ""}
+        title={songTitle}
         artistName={artistName}
         artistId={artistId}
         playSource={playSource}

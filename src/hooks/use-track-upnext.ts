@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseTrackUpNextParams {
   currentSong: any;
@@ -6,10 +6,6 @@ interface UseTrackUpNextParams {
   getTrackUpNext: (id: string) => Promise<any>;
 }
 
-/**
- * Hook para manejar la cola/queue de autoplay
- * 🔑 CLAVE: Se carga UNA VEZ por contexto (playlist/album) y se mantiene
- */
 export function useTrackUpNext({
   currentSong,
   playSource,
@@ -20,13 +16,11 @@ export function useTrackUpNext({
   const [upNextLoading, setUpNextLoading] = useState(false);
   const [upNextError, setUpNextError] = useState<string | null>(null);
 
-  // 🆕 Ref para trackear el contexto actual
   const currentContextRef = useRef<string | null>(null);
 
-  // Siempre mostramos Up Next
   const shouldShowUpNext = true;
 
-  const fetchUpNext = async () => {
+  const fetchUpNext = useCallback(async () => {
     if (!currentSong?.id) return;
 
     setUpNextLoading(true);
@@ -48,7 +42,7 @@ export function useTrackUpNext({
     } finally {
       setUpNextLoading(false);
     }
-  };
+  }, [currentSong?.id, getTrackUpNext]);
 
   const toggleUpNext = async () => {
     const next = !upNextOpen;
@@ -59,21 +53,17 @@ export function useTrackUpNext({
     }
   };
 
-  // 🔑 CLAVE: Solo resetear cuando CAMBIA EL CONTEXTO (no la canción)
   useEffect(() => {
-    // Crear un ID único del contexto basado en playSource
     const contextId = playSource?.type 
       ? `${playSource.type}-${playSource.name || 'unknown'}` 
       : null;
 
-    // Si cambió el contexto, resetear todo
     if (contextId && contextId !== currentContextRef.current) {
       console.log('🔄 Contexto cambió:', currentContextRef.current, '→', contextId);
       console.log('🔄 Reseteando Up Next...');
       
       currentContextRef.current = contextId;
       
-      // Reset todo
       setUpNextOpen(false);
       setUpNextData(null);
       setUpNextError(null);
@@ -82,9 +72,6 @@ export function useTrackUpNext({
       console.log('✅ Mismo contexto, manteniendo Up Next:', contextId);
     }
   }, [playSource?.type, playSource?.name]);
-
-  // 🆕 NO resetear cuando cambia la canción (solo cuando cambia el contexto)
-  // Por eso NO tenemos useEffect con currentSong?.id como dependencia
 
   return {
     upNextOpen,

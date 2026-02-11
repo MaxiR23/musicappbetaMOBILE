@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface UseTrackRelatedParams {
   currentSong: any;
@@ -6,10 +6,6 @@ interface UseTrackRelatedParams {
   getTrackRelated: (id: string) => Promise<any>;
 }
 
-/**
- * Hook para manejar canciones relacionadas
- * Solo se carga cuando playSource es null (búsqueda sin contexto)
- */
 export function useTrackRelated({
   currentSong,
   playSource,
@@ -20,11 +16,9 @@ export function useTrackRelated({
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [relatedError, setRelatedError] = useState<string | null>(null);
 
-  // Solo fetcheamos si NO hay contexto (búsqueda directa)
-  /* const shouldFetch = !playSource?.type || playSource?.type === "queue"; */
-  const shouldFetch = true; //mostramos siempre.
+  const shouldFetch = true;
 
-  const fetchRelated = async () => {
+  const fetchRelated = useCallback(async () => {
     if (!currentSong?.id || !shouldFetch) return;
 
     setRelatedLoading(true);
@@ -45,7 +39,7 @@ export function useTrackRelated({
     } finally {
       setRelatedLoading(false);
     }
-  };
+  }, [currentSong?.id, getTrackRelated, shouldFetch]);
 
   const toggleRelated = async () => {
     const next = !relatedOpen;
@@ -56,7 +50,6 @@ export function useTrackRelated({
     }
   };
 
-  // Reset cuando cambia la canción
   useEffect(() => {
     setRelatedOpen(false);
     setRelatedData(null);
