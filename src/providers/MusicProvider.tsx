@@ -36,7 +36,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const switchingRef = useRef(false);
   const lastLoggedContextKeyRef = useRef<string | null>(null);
   const lastLoggedTrackIdRef = useRef<string | null>(null);
-  const trackPlayTimeRef = useRef<{ trackId: string; seconds: number } | null>(null);
+  // *** CAMBIO: reemplazamos trackPlayTimeRef por listenTimeRef para acumular tiempo real escuchado ***
+  const listenTimeRef = useRef<{ trackId: string; accumulated: number; lastPosition: number } | null>(null);
   const endingRef = useRef(false);
 
   // Refs para mantener valores actualizados en callbacks
@@ -679,7 +680,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
     const subActive = TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, onActiveChanged);
 
-    // Listener para tracking de tiempo de reproducción (30 segundos)
+    // Listener para tracking de tiempo de reproducción REAL (30 segundos acumulados)
     const subProgress = TrackPlayer.addEventListener(Event.PlaybackProgressUpdated, async (progress) => {
       const pos = await findActiveIndex();
       if (pos == null) return;
@@ -690,25 +691,37 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       const trackId = String(trackToLog.id);
       const currentPosition = progress.position;
 
-      // Si la posición vuelve a < 5 seg Y ya se había logueado → resetear para permitir nuevo log
-      if (currentPosition < 5) {
-        const lastLog = lastLoggedTrackIdRef.current;
-        if (lastLog && lastLog.split(':')[0] === trackId) {
-          lastLoggedTrackIdRef.current = null;
-          console.log('[tracklog] Posición volvió a 0, reseteando log para permitir nuevo conteo');
-        }
+      // Si cambió de canción, reiniciar acumulador
+      if (!listenTimeRef.current || listenTimeRef.current.trackId !== trackId) {
+        listenTimeRef.current = { trackId, accumulated: 0, lastPosition: currentPosition };
         return;
       }
 
-      // Verificar si YA pasaron 30 segundos REALES
-      if (currentPosition >= 30) {
+      const delta = currentPosition - listenTimeRef.current.lastPosition;
+
+      // Solo acumular si el delta es de reproducción normal (entre 0 y ~3s)
+      // Deltas grandes = seek adelante, negativos = seek atrás o reinicio
+      const isNormalPlayback = delta > 0 && delta < 3;
+
+      if (isNormalPlayback) {
+        listenTimeRef.current.accumulated += delta;
+      } else {
+        // Seek detectado: solo actualizar posición, NO acumular
+        console.log(`[tracklog] Seek detectado (delta: ${delta.toFixed(2)}s), no se acumula`);
+      }
+
+      listenTimeRef.current.lastPosition = currentPosition;
+
+      // Verificar si acumuló 30 segundos REALES
+      if (listenTimeRef.current.accumulated >= 30) {
         const lastLog = lastLoggedTrackIdRef.current;
         const alreadyLogged = lastLog && lastLog.split(':')[0] === trackId;
 
         if (!alreadyLogged) {
-          console.log("[tracklog] RAW trackToLog:", JSON.stringify(trackToLog, null, 2));
+          console.log(`[tracklog] 30s reales acumulados para: ${trackId}`);
           const now = Date.now();
           lastLoggedTrackIdRef.current = `${trackId}:${now}`;
+
           const trackContext = {
             album_id: (trackToLog as any).albumId ?? (trackToLog as any).album_id ?? undefined,
             album_name: (trackToLog as any).albumName ?? (trackToLog as any).album_name ?? undefined,
@@ -717,8 +730,9 @@ export function MusicProvider({ children }: { children: ReactNode }) {
             track_name: (trackToLog as any).title ?? undefined,
             thumbnail_url: (trackToLog as any).thumbnail ?? (trackToLog as any).thumbnail_url ?? undefined,
           };
+
           logPlayTrack(trackId, trackContext).catch(() => { });
-          console.log("[tracklog] track logged after 30s:", trackId, trackContext);
+          console.log("[tracklog] track logged after 30s real:", trackId, trackContext);
         }
       }
     });
