@@ -17,12 +17,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export type ResultItem = {
   id: string;
+  type: "artist" | "song" | "album";
   title: string;
   artistName: string;
   artistId?: string | null;
+  albumId?: string | null;
+  albumName?: string | null;
   duration?: string;
   thumbnail?: string;
-  type: "artist" | "song" | "album";
 };
 
 type Props = {
@@ -112,6 +114,8 @@ export default function SearchPanel({
       title: s.title,
       artistName: (s.artists || []).map((ar: any) => ar.name).join(", ") || "",
       artistId: s.artists?.[0]?.browseId ?? s.artists?.[0]?.id ?? null,
+      albumId: s.goTo?.albumId ?? null,
+      albumName: s.albumName ?? null,
       duration: s.duration || "",
       thumbnail: getUpgradedThumb(s, 512),
       type: "song",
@@ -187,107 +191,107 @@ export default function SearchPanel({
 
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: BG }}>
-    <Animated.View
-      style={{
-        flex: 1,
-        backgroundColor: BG,
-        opacity: fade,
-        transform: [{ translateY: ty }],
-      }}
-    >
-      <SearchBar
-        value={query}
-        onChangeText={(t) => {
-          setQuery(t);
-          if (t === "") setResults(null);
+      <Animated.View
+        style={{
+          flex: 1,
+          backgroundColor: BG,
+          opacity: fade,
+          transform: [{ translateY: ty }],
         }}
-        onSubmit={() => doSearch()}
-        onClear={() => {
-          setResults(null);
-          onClose();
-        }}
-        placeholder={placeholder}
-        loading={loading}
+      >
+        <SearchBar
+          value={query}
+          onChangeText={(t) => {
+            setQuery(t);
+            if (t === "") setResults(null);
+          }}
+          onSubmit={() => doSearch()}
+          onClear={() => {
+            setResults(null);
+            onClose();
+          }}
+          placeholder={placeholder}
+          loading={loading}
         /* autoFocus */ /* No necesito que se autofoquee */
-      />
+        />
 
-      {showRecents && recents.length > 0 && (
-        <View style={styles.recentsHeader}>
-          <Text style={styles.sectionTitle}>{titleRecents}</Text>
-          <TouchableOpacity onPress={clearRecents} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-            <Text style={styles.clearText}>Limpiar</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {showRecents && (
-        <View style={{ flex: 1 }}>
-          {recents.length === 0 ? (
-            <EmptyState
-              icon="search"
-              iconSize={72}
-              iconColor="#3a3a3a"
-              message="Sin búsquedas recientes"
-              submessage="Tus busquedas recientes van a aparecer aqui"
-            />
-          ) : (
-            <FlatList
-              data={recents}
-              keyExtractor={(s) => s}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={contentPadding}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={styles.recentRow} onPress={() => doSearch(item)}>
-                  <Ionicons name="time" size={16} color="#9aa0a6" />
-                  <Text style={styles.recentText} numberOfLines={1}>{item}</Text>
-                </TouchableOpacity>
-              )}
-            />
-          )}
-        </View>
-      )}
-
-      {showResults && (
-        <FlatList
-          data={results!}
-          keyExtractor={(it) => `${it.type}:${it.id}`}
-          contentContainerStyle={[{ paddingTop: 8 }, contentPadding]}
-          keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.resultRow} onPress={() => onSelect(item)} activeOpacity={0.8}>
-              {item.thumbnail ? (
-                <Image source={{ uri: item.thumbnail }} style={styles.thumb} />
-              ) : (
-                <View style={styles.thumbFallback}>
-                  <Ionicons name="musical-notes" size={18} color="#9aa0a6" />
-                </View>
-              )}
-              <View style={{ flex: 1 }}>
-                <Text style={styles.resultTitle} numberOfLines={1}>{item.title}</Text>
-                <Text style={styles.resultSubtitle} numberOfLines={1}>
-                  {item.type === "artist"
-                    ? `${typeLabel(item.type)} • ${item.artistName}`
-                    : item.type === "song"
-                      ? `${typeLabel(item.type)} • ${item.artistName}`
-                      : `${typeLabel(item.type)} • ${item.artistName}`}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#9aa0a6" />
+        {showRecents && recents.length > 0 && (
+          <View style={styles.recentsHeader}>
+            <Text style={styles.sectionTitle}>{titleRecents}</Text>
+            <TouchableOpacity onPress={clearRecents} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+              <Text style={styles.clearText}>Limpiar</Text>
             </TouchableOpacity>
-          )}
-        />
-      )}
+          </View>
+        )}
 
-      {showNoResults && (
-        <EmptyState
-          icon="search"
-          iconSize={72}
-          iconColor="#3a3a3a"
-          message="No hay resultados"
-          submessage="Probá con otro término"
-        />
-      )}
-    </Animated.View>
+        {showRecents && (
+          <View style={{ flex: 1 }}>
+            {recents.length === 0 ? (
+              <EmptyState
+                icon="search"
+                iconSize={72}
+                iconColor="#3a3a3a"
+                message="Sin búsquedas recientes"
+                submessage="Tus busquedas recientes van a aparecer aqui"
+              />
+            ) : (
+              <FlatList
+                data={recents}
+                keyExtractor={(s) => s}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={contentPadding}
+                renderItem={({ item }) => (
+                  <TouchableOpacity style={styles.recentRow} onPress={() => doSearch(item)}>
+                    <Ionicons name="time" size={16} color="#9aa0a6" />
+                    <Text style={styles.recentText} numberOfLines={1}>{item}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </View>
+        )}
+
+        {showResults && (
+          <FlatList
+            data={results!}
+            keyExtractor={(it) => `${it.type}:${it.id}`}
+            contentContainerStyle={[{ paddingTop: 8 }, contentPadding]}
+            keyboardShouldPersistTaps="handled"
+            renderItem={({ item }) => (
+              <TouchableOpacity style={styles.resultRow} onPress={() => onSelect(item)} activeOpacity={0.8}>
+                {item.thumbnail ? (
+                  <Image source={{ uri: item.thumbnail }} style={styles.thumb} />
+                ) : (
+                  <View style={styles.thumbFallback}>
+                    <Ionicons name="musical-notes" size={18} color="#9aa0a6" />
+                  </View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.resultTitle} numberOfLines={1}>{item.title}</Text>
+                  <Text style={styles.resultSubtitle} numberOfLines={1}>
+                    {item.type === "artist"
+                      ? `${typeLabel(item.type)} • ${item.artistName}`
+                      : item.type === "song"
+                        ? `${typeLabel(item.type)} • ${item.artistName}`
+                        : `${typeLabel(item.type)} • ${item.artistName}`}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#9aa0a6" />
+              </TouchableOpacity>
+            )}
+          />
+        )}
+
+        {showNoResults && (
+          <EmptyState
+            icon="search"
+            iconSize={72}
+            iconColor="#3a3a3a"
+            message="No hay resultados"
+            submessage="Probá con otro término"
+          />
+        )}
+      </Animated.View>
     </SafeAreaView>
   );
 }

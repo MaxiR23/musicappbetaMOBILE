@@ -21,6 +21,10 @@ const DEBUG =
   (typeof process !== 'undefined' &&
     process.env?.EXPO_PUBLIC_DEBUG_PLAYER === '1') || false;
 
+//DBG: {
+//const DEBUG = true;
+//DBG: }
+
 const dlog = (...a: any[]) => { if (DEBUG) console.log(...a); };
 const dwarn = (...a: any[]) => { if (DEBUG) console.warn(...a); };
 
@@ -52,6 +56,48 @@ export default async function playbackService() {
       // silencioso: si la API no existe, seguí el flujo normal
     }
     // si NO está en repeat-one, dejá que otros handlers manejen el avance
+  });
+
+  // --- Manejo de errores de IO (streams que terminan antes de duración reportada) ---
+  TrackPlayer.addEventListener(Event.PlaybackError, async (e) => {
+    const errorCode = e?.code || '';
+    const isIOError = errorCode === 'android-io-unspecified' ||
+      errorCode === 'android-io-bad-http-status' ||
+      errorCode.includes('io');
+
+    if (isIOError) {
+      try {
+        const position = await TrackPlayer.getPosition();
+        const duration = await TrackPlayer.getDuration();
+        const buffered = await TrackPlayer.getBufferedPosition();
+
+        // Si estamos cerca del final del buffer o de la duración reportada
+        const nearEndOfBuffer = buffered > 0 && position >= buffered - 2;
+        const nearEndOfTrack = duration > 0 && position / duration > 0.92;
+
+        if (nearEndOfBuffer || nearEndOfTrack) {
+          console.log('[RNTP] Stream terminó antes de duración reportada, avanzando...');
+
+          // Verificar si hay más tracks en la cola
+          const queue = await TrackPlayer.getQueue();
+          const currentIndex = await TrackPlayer.getActiveTrackIndex();
+
+          if (currentIndex !== null && currentIndex < queue.length - 1) {
+            await TrackPlayer.skipToNext();
+            await TrackPlayer.play();
+          } else {
+            // Última canción - dejar que MusicProvider maneje autoplay
+            console.log('[RNTP] Última canción de la cola, emitiendo evento de fin');
+          }
+          return;
+        }
+      } catch (err) {
+        console.warn('[RNTP] Error handling playback error:', err);
+      }
+    }
+
+    // Log otros errores
+    console.warn('[RNTP][error]', errorCode, e?.message);
   });
 
   // --- Diagnóstico de primer play / latencia ---

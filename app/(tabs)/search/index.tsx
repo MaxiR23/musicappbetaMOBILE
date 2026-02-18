@@ -24,7 +24,8 @@ export default function SearchScreen() {
         url: "",
         duration: item.duration,
         durationSeconds: undefined,
-        albumId: null,
+        albumId: item.albumId ?? null,  
+        albumName: item.albumName ?? undefined,
       };
       playFromList([track] as any, 0, { type: "queue", name: null });
     } else if (item.type === "album") {
@@ -44,7 +45,7 @@ export default function SearchScreen() {
           contentStyle: { backgroundColor: "#0f0f0f" },
         }}
       />
-      <SearchPanel searchFn={searchFn} onSelect={onSelect} onClose={() => router.back()} contentPadding={contentPadding}  />
+      <SearchPanel searchFn={searchFn} onSelect={onSelect} onClose={() => router.back()} contentPadding={contentPadding} />
     </>
   );
 }

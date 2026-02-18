@@ -122,7 +122,8 @@ export function mapArtistTopSongs(
     
     const trackId = song.videoId ?? song.id;
     const albumId = song.albumId ?? song.album?.id ?? null;
-    
+    const albumName = song.albumTitle ?? song.albumName ?? song.album?.name ?? null;
+
     return {
       id: trackId,
       title: song.title,
@@ -133,6 +134,7 @@ export function mapArtistTopSongs(
       artistId: resolvedArtistId,
       artists: artistsArr,
       albumId,
+      albumName,
       url: "",
     };
   });
