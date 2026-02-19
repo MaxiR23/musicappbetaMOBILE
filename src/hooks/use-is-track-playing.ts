@@ -1,4 +1,3 @@
-// src/hooks/use-is-track-playing.ts
 import { State, usePlaybackState } from "react-native-track-player";
 import { useMusic } from "./use-music";
 

@@ -1,5 +1,3 @@
-// src/utils/song-mapper.ts
-
 /**
  * Interface para el formato estándar de una canción mapeada
  * Este es el formato que espera el reproductor

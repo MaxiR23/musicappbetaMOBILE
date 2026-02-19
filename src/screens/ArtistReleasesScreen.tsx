@@ -1,4 +1,3 @@
-// app/artist/[id]/releases/index.tsx
 import ReleaseCard from "@/src/components/shared/ReleaseCard";
 import ScreenHeader from "@/src/components/shared/ScreenHeader";
 import { ReleaseGridSkeletonLayout } from "@/src/components/shared/skeletons/Skeleton";

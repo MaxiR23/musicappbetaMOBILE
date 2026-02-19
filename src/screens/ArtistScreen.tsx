@@ -1,4 +1,3 @@
-// app/artist/[id]/index.tsx
 import { ArtistSkeletonLayout } from "@/src/components/shared/skeletons/Skeleton";
 import { useDetailScreen } from "@/src/hooks/use-detail-screen";
 import { useMusic } from "@/src/hooks/use-music";

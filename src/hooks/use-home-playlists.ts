@@ -1,4 +1,3 @@
-// hooks/use-home-playlists.ts
 import { onPlaylistChange } from '@/src/utils/playlist-events';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCacheInvalidation } from './use-cache-invalidation';
@@ -13,7 +12,7 @@ export function useHomePlaylists(userId: string) {
     try {
       if (force) await invalidatePlaylists();
 
-      const pls = await getPlaylists();  // YA cachea internamente con versión
+      const pls = await getPlaylists();
       setPlaylists(Array.isArray(pls) ? pls : []);
     } catch (e: any) {
       console.warn("[API] getPlaylists error:", e?.message || e);
@@ -36,7 +35,7 @@ export function useHomePlaylists(userId: string) {
     if (!ready) return;
     
     const unsubscribe = onPlaylistChange(() => {
-      console.log('🔄 [PLAYLISTS] Change detected, refreshing...');
+      console.log('[playlists] Change detected, refreshing...');
       refreshPlaylists(true);
     });
     

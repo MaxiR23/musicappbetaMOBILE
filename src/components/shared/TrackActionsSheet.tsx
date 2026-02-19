@@ -1,4 +1,3 @@
-// src/components/TrackActionsSheet.tsx
 import { useMusicApi } from "@/src/hooks/use-music-api";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
@@ -25,24 +24,38 @@ type ExtraAction = {
     onPress: () => void | Promise<void>;
 };
 
+/**
+ * Props del componente:
+ * - open: Si el sheet está abierto.
+ * - onOpenChange: Callback cuando cambia el estado de apertura.
+ * - track: Track actual (si es null, funciona en modo genérico).
+ *
+ * - playlistId: ID de playlist (modo por-canción).
+ * - onRemove: Callback para remover un track de una playlist (requiere playlistId).
+ *
+ * - extraActions: Acciones extra para agregar al listado.
+ *
+ * - headerTitle: Override del título del header (ej: "Opciones") (modo genérico).
+ * - subtitle: Línea secundaria cuando no hay track (ej: "Nombre • mail") (modo genérico).
+ * - showAddTo: Mostrar acción "Add to" (default: true).
+ * - showRemove: Mostrar acción "Remove" (default: true si hay playlistId + onRemove).
+ * - showShare: Mostrar acción "Share" (default: true).
+ */
 type Props = {
-    open: boolean;
-    onOpenChange: (o: boolean) => void;
-    track: Track | null;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  track: Track | null;
 
-    // uso “track” (por-canción)
-    playlistId?: string;
-    onRemove?: (playlistId: string, trackId: string) => Promise<void> | void;
+  playlistId?: string;
+  onRemove?: (playlistId: string, trackId: string) => Promise<void> | void;
 
-    // acciones extra
-    extraActions?: ExtraAction[];
+  extraActions?: ExtraAction[];
 
-    // 🆕 modo genérico (para avatar / menú de usuario / etc.)
-    headerTitle?: string;       // override del título ("Opciones")
-    subtitle?: string;          // línea secundaria cuando no hay track (p.ej. nombre • mail)
-    showAddTo?: boolean;        // default: true
-    showRemove?: boolean;       // default: true (si hay playlistId+onRemove)
-    showShare?: boolean;        // default: true
+  headerTitle?: string;
+  subtitle?: string;
+  showAddTo?: boolean;
+  showRemove?: boolean;
+  showShare?: boolean;
 };
 
 type Mode = "root" | "add" | "create";
@@ -174,7 +187,7 @@ export default function TrackActionsSheet({
         }
     }
 
-    // 🆕 flags (por defecto como hoy: todo visible)
+    // flags (por defecto: todo visible)
     const allowAdd = showAddTo !== false && !!track;
     const allowRemove = showRemove !== false && !!playlistId && !!onRemove && !!track;
     const allowShare = showShare !== false && !!track;

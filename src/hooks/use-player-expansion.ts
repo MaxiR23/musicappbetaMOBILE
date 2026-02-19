@@ -1,4 +1,3 @@
-// hooks/use-player-expansion.ts
 import { useNavigation } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Animated, BackHandler, Dimensions } from "react-native";

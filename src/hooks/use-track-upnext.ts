@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-
 interface UseTrackUpNextParams {
   currentSong: any;
   playSource: any;
@@ -33,7 +32,7 @@ export function useTrackUpNext({
         setUpNextData(null);
         setUpNextError("No hay cola disponible.");
       } else {
-        console.log('✅ Up Next cargado:', res.upNext.length, 'canciones');
+        console.log('[Upnext] cargado:', res.upNext.length, 'canciones');
         setUpNextData(res);
       }
     } catch {
@@ -59,9 +58,9 @@ export function useTrackUpNext({
       : null;
 
     if (contextId && contextId !== currentContextRef.current) {
-      console.log('🔄 Contexto cambió:', currentContextRef.current, '→', contextId);
-      console.log('🔄 Reseteando Up Next...');
-      
+      //DBG
+      //console.log('Contexto cambió:', currentContextRef.current, '→', contextId);
+      //console.log('Reseteando Up Next...');
       currentContextRef.current = contextId;
       
       setUpNextOpen(false);
@@ -69,7 +68,8 @@ export function useTrackUpNext({
       setUpNextError(null);
       setUpNextLoading(false);
     } else if (contextId) {
-      console.log('✅ Mismo contexto, manteniendo Up Next:', contextId);
+      //DBG
+      //console.log('Mismo contexto, manteniendo Up Next:', contextId);
     }
   }, [playSource?.type, playSource?.name]);
 

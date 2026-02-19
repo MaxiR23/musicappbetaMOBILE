@@ -1,4 +1,3 @@
-// hooks/use-repeat-mode.ts
 import { useEffect, useState } from "react";
 import TrackPlayer, { RepeatMode } from "react-native-track-player";
 
@@ -17,7 +16,7 @@ export function useRepeatMode() {
 
   const toggleRepeatOne = async () => {
     const next = !repeatOne;
-    setRepeatOne(next); // ← Actualizá PRIMERO el estado local
+    setRepeatOne(next); // Primero actualiza el estado local
     
     try {
       await TrackPlayer.setRepeatMode(next ? RepeatMode.Track : RepeatMode.Off);

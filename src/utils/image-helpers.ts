@@ -1,4 +1,3 @@
-// utils/image-helpers.ts
 import { upgradeYtmImage } from "./ytmImage";
 
 /**

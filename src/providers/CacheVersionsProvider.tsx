@@ -1,4 +1,3 @@
-// providers/CacheVersionsProvider.tsx
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from "expo-constants";
 import { PropsWithChildren, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -30,7 +29,7 @@ export default function CacheVersionsProvider({ children }: PropsWithChildren) {
     setError(null);
 
     try {
-      console.log('[cache-versions] 🔄 Consultando versiones del backend...');
+      console.log('[cache-versions] Consultando versiones del backend...');
       const res = await fetch(BACKEND_URL);
       
       if (!res.ok) {
@@ -53,7 +52,7 @@ export default function CacheVersionsProvider({ children }: PropsWithChildren) {
         const oldVer = oldVersions[type];
         
         if (oldVer && oldVer !== newVer) {
-          console.log(`[cache-versions] ✅ ${type} cambió: ${oldVer} → ${newVer}`);
+          console.log(`[cache-versions] ${type} cambió: ${oldVer} → ${newVer}`);
           hasChanges = true;
         }
       }
@@ -67,7 +66,7 @@ export default function CacheVersionsProvider({ children }: PropsWithChildren) {
 
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Error desconocido');
-      console.error('[cache-versions] ❌ Error:', error.message);
+      console.error('[cache-versions] Error:', error.message);
       setError(error);
       
       // Fallback: cargar desde AsyncStorage
@@ -76,7 +75,7 @@ export default function CacheVersionsProvider({ children }: PropsWithChildren) {
         if (stored) {
           const cachedVersions = JSON.parse(stored);
           setVersions(cachedVersions);
-          console.log('[cache-versions] 📦 Usando versiones cacheadas');
+          console.log('[cache-versions] Usando versiones cacheadas');
         }
       } catch (cacheErr) {
         console.error('[cache-versions] Error al cargar cache:', cacheErr);

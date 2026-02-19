@@ -1,11 +1,10 @@
-// src/utils/cachedFetch.ts
 import { cacheGet, cacheSet } from "./cache";
 
 type FetchJSONOpts = {
-  key: string;                 // clave única del caché
-  ttl?: number;                // ms (opcional, auto-detecta si no se pasa)
+  key: string; // clave única del caché
+  ttl?: number; // ms (opcional, auto-detecta si no se pasa)
   headers?: Record<string, string>;
-  revalidate?: boolean;        // SWR: devolver cache y después refrescar
+  revalidate?: boolean; // SWR: devolver cache y después refrescar
   onUpdate?: (fresh: any) => void; // hook para cuando hay dato fresco
 };
 
@@ -21,7 +20,7 @@ export async function cachedFetchJSON(
     return { data: cached, fromCache: true };
   }
 
-  // 2) si hay caché y queremos SWR → devolvés ya y refrescás aparte
+  // 2) si hay caché y queremos SWR -> devolvés ya y refrescás aparte
   if (cached && revalidate) {
     // refresco en "segundo plano" (no bloquea la UI)
     (async () => {
@@ -42,7 +41,7 @@ export async function cachedFetchJSON(
     return { data: cached, fromCache: true };
   }
 
-  // 3) no hay caché → fetch normal
+  // 3) no hay caché -> fetch normal
   const res = await fetch(url, { ...init, headers: { ...(init.headers || {}), ...headers } });
   const body = await res.json().catch(() => null);
   

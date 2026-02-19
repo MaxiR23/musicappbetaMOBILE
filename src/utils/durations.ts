@@ -1,5 +1,3 @@
-// src/utils/duration.ts
-
 /**
  * Convierte milisegundos a formato legible (mm:ss o hh:mm:ss)
  * 

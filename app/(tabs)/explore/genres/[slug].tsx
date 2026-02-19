@@ -1,4 +1,3 @@
-// app/genres/[slug].tsx
 import EmptyState from "@/src/components/shared/EmptyState";
 import LoadingView from "@/src/components/shared/LoadingView";
 import ReleaseCard from "@/src/components/shared/ReleaseCard";

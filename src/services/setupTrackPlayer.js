@@ -20,15 +20,14 @@ export async function ensureTrackPlayer() {
   if (g.__RNTP__.ready) return;
 
   try {
-    // ❗ opciones en top-level (no dentro de "android")
+    // opciones en top-level (no dentro de "android")
     await TrackPlayer.setupPlayer({
       waitForBuffer: false,
-
       // Buffers (Android)
-      minBuffer: 2,                   // segundos
-      maxBuffer: 12,                  // segundos
-      playBuffer: 0.5,                // arranca con ~0.5s
-      backBuffer: 0,                  // segundos
+      minBuffer: 2,    // segundos
+      maxBuffer: 12,   // segundos
+      playBuffer: 0.5, // arranca con ~0.5s
+      backBuffer: 0,   // segundos
       maxCacheSize: 64 * 1024 * 1024, // bytes
 
       // ExoPlayer readiness

@@ -1,49 +1,30 @@
-// hooks/use-detail-screen.ts
 import { useCallback, useEffect, useState } from "react";
 
+/**
+ * Opciones para el hook useDetailScreen:
+ * - id: ID del recurso a cargar (album, artist, playlist).
+ * - fetcher: Función que obtiene los datos desde la API (ej: getAlbum/getArtist/getPlaylistById).
+ * - transformer: Transformación opcional antes de guardar en estado (normalización/mapeo).
+ * - onError: Callback opcional cuando ocurre un error.
+ */
 interface UseDetailScreenOptions<T, R = T> {
-  /**
-   * ID del recurso a cargar (album, artist, playlist)
-   */
   id: string | undefined;
-  
-  /**
-   * Función que obtiene los datos desde la API
-   * Ejemplo: getAlbum, getArtist, getPlaylistById
-   */
   fetcher: (id: string) => Promise<T>;
-  
-  /**
-   * Función opcional para transformar los datos antes de guardarlos en el estado
-   * Útil para normalizar la estructura de respuesta de diferentes APIs
-   */
   transformer?: (data: T) => R;
-  
-  /**
-   * Callback opcional que se ejecuta cuando hay un error
-   */
   onError?: (error: any) => void;
 }
 
+/**
+ * Retorno del hook useDetailScreen:
+ * - data: Datos cargados (null si aún no se cargaron).
+ * - loading: Indica si está cargando.
+ * - error: Error si hubo alguno.
+ * - reload: Recarga manual de los datos.
+ */
 interface UseDetailScreenReturn<R> {
-  /**
-   * Los datos cargados (null si aún no se cargaron)
-   */
   data: R | null;
-  
-  /**
-   * Indica si está cargando
-   */
   loading: boolean;
-  
-  /**
-   * Error si hubo alguno
-   */
   error: Error | null;
-  
-  /**
-   * Función para recargar manualmente los datos
-   */
   reload: () => Promise<void>;
 }
 

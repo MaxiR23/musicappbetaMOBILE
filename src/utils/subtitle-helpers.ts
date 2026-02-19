@@ -1,5 +1,3 @@
-// utils/subtitle-helpers.ts
-
 /**
  * Limpia texto de duración (minutes → min, hours → h)
  */

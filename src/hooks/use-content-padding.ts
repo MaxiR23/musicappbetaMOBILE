@@ -1,4 +1,3 @@
-// src/hooks/use-content-padding.ts
 import { useMemo } from 'react';
 import { useMusic } from './use-music';
 

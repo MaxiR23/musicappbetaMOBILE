@@ -1,5 +1,3 @@
-// src/utils/reorder-logger.ts
-
 /**
  * Flag para habilitar/deshabilitar logs de reordenamiento
  * Solo funciona en desarrollo

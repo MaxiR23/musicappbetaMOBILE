@@ -1,4 +1,3 @@
-// utils/colorUtils.native.ts
 export type RGB = [number, number, number];
 export type ThemeFromImage = {
   /** Scrim para superponer sobre la portada blur. Orden LinearGradient: [top, bottom] */

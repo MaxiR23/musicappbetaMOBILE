@@ -1,4 +1,3 @@
-// hooks/use-cache-invalidation.ts 
 import { cacheClearPrefix, cacheDel } from '@/src/utils/cache';
 import { emitRecentChange } from '@/src/utils/recent-events';
 import { useCallback } from 'react';
@@ -15,7 +14,7 @@ export function useCacheInvalidation(userId?: string) {
     console.log('[invalidate] recent plays');
     await cacheDel('home:recent:plays:12:v1', userId);
 
-    // emite evento para que hooks se enteren
+    //notifica a los listeners de "recents" para que refresquen su data (sin acoplarlos a este hook).
     emitRecentChange();
   }, [userId]);
 

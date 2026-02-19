@@ -1,12 +1,11 @@
-// hooks/use-seek-slider.ts
 import { useEffect, useRef, useState } from "react";
 import { Animated } from "react-native";
 
 interface UseSeekSliderParams {
-  progress: number;      // 0..1
-  duration: number;      // ms
-  currentTime: number;   // ms
-  onSeek: (val01: number) => void;  // 0..1
+  progress: number; // 0..1
+  duration: number; // ms
+  currentTime: number; // ms
+  onSeek: (val01: number) => void; // 0..1
 }
 
 /**

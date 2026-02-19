@@ -36,7 +36,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const switchingRef = useRef(false);
   const lastLoggedContextKeyRef = useRef<string | null>(null);
   const lastLoggedTrackIdRef = useRef<string | null>(null);
-  // *** CAMBIO: reemplazamos trackPlayTimeRef por listenTimeRef para acumular tiempo real escuchado ***
   const listenTimeRef = useRef<{ trackId: string; accumulated: number; lastPosition: number } | null>(null);
   const endingRef = useRef(false);
 
@@ -167,9 +166,9 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       );
       if (ctx) {
         // DBG: {
-        console.log('[tracklog][RAW CONTEXT]', ctx);
-        console.log('[tracklog][RAW SOURCE]', source);
-        console.log('[tracklog][RAW LIST]', list);
+        //console.log('[tracklog][RAW CONTEXT]', ctx);
+        //console.log('[tracklog][RAW SOURCE]', source);
+        //console.log('[tracklog][RAW LIST]', list);
         /// } 
 
         if (lastLoggedContextKeyRef.current !== ctx.key) {
@@ -212,9 +211,9 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   async function playFromRelated(song: Song) {
     if (switchingRef.current) return;
     switchingRef.current = true;
-
-    console.log('Reproduciendo desde Related:', song.title);
-    console.log('Borrando queue anterior y creando nueva');
+    //DBG
+    //console.log('Reproduciendo desde Related:', song.title);
+    //console.log('Borrando queue anterior y creando nueva');
 
     // Resetear autoplay reproducidos
     playedAutoplayIdsRef.current.clear();

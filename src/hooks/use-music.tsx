@@ -1,4 +1,3 @@
-// hooks/use-music.tsx
 import { useContext } from "react";
 import { MusicContext } from "./../context/MusicContext";
 

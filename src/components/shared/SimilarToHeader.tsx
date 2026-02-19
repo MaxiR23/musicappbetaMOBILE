@@ -2,12 +2,20 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { memo } from "react";
 import { Image, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 
+/**
+ * Props del componente:
+ * - label: Texto arriba (default: "More like").
+ * - name: Nombre del seed (opcional).
+ * - thumb: URL del seed (opcional).
+ * - size: Tamaño del avatar (default: 48).
+ * - style: Estilos extra para el contenedor.
+ */
 type Props = {
-  label?: string;                 // texto arriba (default: "More like")
-  name?: string | null;           // nombre del seed
-  thumb?: string | null;          // url del seed
-  size?: number;                  // tamaño del avatar (default: 48)
-  style?: StyleProp<ViewStyle>;   // estilos extra para el contenedor
+  label?: string;
+  name?: string | null;
+  thumb?: string | null;
+  size?: number;
+  style?: StyleProp<ViewStyle>;
 };
 
 function _SimilarToHeader({

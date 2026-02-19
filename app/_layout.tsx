@@ -1,4 +1,3 @@
-// app/_layout.tsx
 import { DarkTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";

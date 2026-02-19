@@ -1,4 +1,3 @@
-// hooks/use-home-recent.ts
 import { cacheGet, cacheSet } from '@/src/utils/cache';
 import { subscribeToRecentChanges } from '@/src/utils/recent-events';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -29,7 +28,7 @@ export function useHomeRecent(userId: string, _currentSongId?: string) {
 
       // 1. Si NO es bypass, intenta leer de caché
       if (!forceBypassCache) {
-        const cached = await cacheGet<RecentItem[]>(CACHE_KEY, { userId });  // ← CAMBIO: objeto { userId }
+        const cached = await cacheGet<RecentItem[]>(CACHE_KEY, { userId });
         if (cached && Array.isArray(cached)) {
           setRecent(cached);
           fetchingRef.current = false;
@@ -43,7 +42,7 @@ export function useHomeRecent(userId: string, _currentSongId?: string) {
       const items = resp?.items ?? [];
 
       // 3. Guarda en caché (indefinido, hasta invalidación manual)
-      await cacheSet(CACHE_KEY, items, { userId });  // ← CAMBIO: objeto { userId }
+      await cacheSet(CACHE_KEY, items, { userId });
       
       setRecent(items);
     } catch (e: any) {

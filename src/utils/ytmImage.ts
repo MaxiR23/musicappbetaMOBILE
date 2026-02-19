@@ -1,7 +1,5 @@
-// src/utils/ytmImage.ts
-
 /**
- * Sube el tamaño de una imagen de YT Music (lh3.googleusercontent.com)
+ * Sube el tamaño de una imagen de la url.
  * cambiando el sufijo de tamaño. Si no reconoce el formato, devuelve la URL tal cual.
  *
  * Ejemplos de entrada comunes:

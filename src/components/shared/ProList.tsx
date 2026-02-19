@@ -1,4 +1,3 @@
-// src/components/shared/ProList.tsx
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { FlatList, FlatListProps, View } from "react-native";
 
@@ -16,7 +15,7 @@ export default function ProList({
   maxToRenderPerBatch = 8,
   updateCellsBatchingPeriod = 50,
   removeClippedSubviews = true,
-  onEndReached: onEndReachedProp, // <-- tu callback pasa y se invoca
+  onEndReached: onEndReachedProp,
   ...rest
 }: Props) {
   const itemsAll = useMemo(() => React.Children.toArray(children).filter(Boolean), [children]);
@@ -33,15 +32,19 @@ export default function ProList({
     canLoadMoreRef.current = true;
   }, []);
 
-  const handleEnd = useCallback(() => {
-    if (!canLoadMoreRef.current) return;
-    canLoadMoreRef.current = false;
+  const handleEnd = useCallback(
+    (info: { distanceFromEnd: number }) => {
+      if (!canLoadMoreRef.current) return;
+      canLoadMoreRef.current = false;
 
-    if (items.length < itemsAll.length) {
-      setBlocks((b) => b + 1);        // revela más bloques
-    }
-    onEndReachedProp?.();             // dispara tu log/callback
-  }, [items.length, itemsAll.length, onEndReachedProp]);
+      if (items.length < itemsAll.length) {
+        setBlocks((b) => b + 1);
+      }
+
+      onEndReachedProp?.(info);
+    },
+    [items.length, itemsAll.length, onEndReachedProp]
+  );
 
   return (
     <FlatList

@@ -1,6 +1,4 @@
-// hooks\use-track-likes.ts
 import { useEffect, useState } from "react";
-
 interface UseTrackLikesParams {
   currentSong: any;
   likeTrack: (id: string) => Promise<any>;

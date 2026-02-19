@@ -1,4 +1,3 @@
-// src/screens/PlaylistScreen.tsx
 import PlaybackButtons from "@/src/components/features/player/PlaybackButtons";
 import PlaylistEditView from "@/src/components/features/playlist/PlaylistEditView";
 import PlaylistOptionsSheet from "@/src/components/features/playlist/PlaylistOptionsSheet";
