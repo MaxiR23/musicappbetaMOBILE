@@ -681,10 +681,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
     // Listener para tracking de tiempo de reproducción REAL (30 segundos acumulados)
     const subProgress = TrackPlayer.addEventListener(Event.PlaybackProgressUpdated, async (progress) => {
-      const pos = await findActiveIndex();
-      if (pos == null) return;
+      const pos = queueIndexRef.current;
+      if (pos < 0) return;
 
-      const trackToLog = queue[pos];
+      const trackToLog = queueRef.current[pos];
       if (!trackToLog) return;
 
       const trackId = String(trackToLog.id);
@@ -699,13 +699,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       const delta = currentPosition - listenTimeRef.current.lastPosition;
 
       // Solo acumular si el delta es de reproducción normal (entre 0 y ~3s)
-      // Deltas grandes = seek adelante, negativos = seek atrás o reinicio
       const isNormalPlayback = delta > 0 && delta < 3;
 
       if (isNormalPlayback) {
         listenTimeRef.current.accumulated += delta;
       } else {
-        // Seek detectado: solo actualizar posición, NO acumular
         console.log(`[tracklog] Seek detectado (delta: ${delta.toFixed(2)}s), no se acumula`);
       }
 
@@ -713,13 +711,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
       // Verificar si acumuló 30 segundos REALES
       if (listenTimeRef.current.accumulated >= 30) {
-        const lastLog = lastLoggedTrackIdRef.current;
-        const alreadyLogged = lastLog && lastLog.split(':')[0] === trackId;
+        const alreadyLogged = lastLoggedTrackIdRef.current === trackId;
 
         if (!alreadyLogged) {
           console.log(`[tracklog] 30s reales acumulados para: ${trackId}`);
-          const now = Date.now();
-          lastLoggedTrackIdRef.current = `${trackId}:${now}`;
+          lastLoggedTrackIdRef.current = trackId;
 
           const trackContext = {
             album_id: (trackToLog as any).albumId ?? (trackToLog as any).album_id ?? undefined,
