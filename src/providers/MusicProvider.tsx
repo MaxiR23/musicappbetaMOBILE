@@ -100,44 +100,59 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     await ensureTrackPlayer();
 
     const BASE_URL = getBaseUrl();
-    if (!BASE_URL || !list?.length) {
-      console.warn("[sync] BASE_URL o lista inválidos");
-      return;
-    }
+    if (!BASE_URL || !list?.length) return;
 
-    const tracks = list.map((s, i) => ({
-      id: String(s.id),
-      url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
-      title: (s as any).title,
-      artist: (s as any).artistName ?? (s as any).artist ?? "",
-      artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
+    const idx = Math.max(0, Math.min(startIndex, list.length - 1));
+
+    const currentTrack = {
+      id: String(list[idx].id),
+      url: `${BASE_URL}/music/play?id=${encodeURIComponent(list[idx].id)}&redir=2`,
+      title: (list[idx] as any).title,
+      artist: (list[idx] as any).artistName ?? (list[idx] as any).artist ?? "",
+      artwork: (list[idx] as any).thumbnail ?? (list[idx] as any).thumbnail_url ?? undefined,
       type: TrackType.Default,
       headers: {
         Range: "bytes=0-",
         "Accept-Encoding": "identity",
         Connection: "keep-alive",
       },
-      __idx: i,
-    })) as any[];
-
-    const idx = Math.max(0, Math.min(startIndex, tracks.length - 1));
+    } as any;
 
     syncingRef.current = true;
     try {
       await TrackPlayer.reset();
-      await TrackPlayer.setRepeatMode(RepeatMode.Off);
-      await TrackPlayer.add(tracks);
-      await TrackPlayer.skip(idx);
+      await TrackPlayer.add(currentTrack);
       TrackPlayer.play().catch(() => { });
 
-      try {
-        const ids = list.map((s: any) => String(s.id)).filter(Boolean);
-        const uniq = Array.from(new Set(ids));
-        const slice = uniq.slice(Math.max(0, idx - 3), idx + 16);
-        warmBatch(slice, BASE_URL);
-      } catch { }
+      setTimeout(async () => {
+        try {
+          const beforeTracks = list.slice(0, idx).map((s) => ({
+            id: String(s.id),
+            url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
+            title: (s as any).title,
+            artist: (s as any).artistName ?? (s as any).artist ?? "",
+            artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
+            type: TrackType.Default,
+            headers: { Range: "bytes=0-", "Accept-Encoding": "identity", Connection: "keep-alive" },
+          })) as any[];
+
+          const afterTracks = list.slice(idx + 1).map((s) => ({
+            id: String(s.id),
+            url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
+            title: (s as any).title,
+            artist: (s as any).artistName ?? (s as any).artist ?? "",
+            artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
+            type: TrackType.Default,
+            headers: { Range: "bytes=0-", "Accept-Encoding": "identity", Connection: "keep-alive" },
+          })) as any[];
+
+          if (beforeTracks.length > 0) await TrackPlayer.add(beforeTracks, 0);
+          if (afterTracks.length > 0) await TrackPlayer.add(afterTracks);
+        } catch { }
+      }, 50);
+
     } catch (e) {
-      console.error("[sync] ERROR reset/add/play:", e);
+      console.error("[sync] ERROR:", e);
       throw e;
     } finally {
       syncingRef.current = false;
@@ -175,11 +190,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           lastLoggedContextKeyRef.current = ctx.key;
           const srcMeta = { name: source?.name ?? null, thumb: source?.thumb ?? null };
           if (ctx.kind === "album") {
-            await logPlayAlbum(ctx.id, srcMeta).catch(() => { });
+            logPlayAlbum(ctx.id, srcMeta).catch(() => { });
           } else if (ctx.kind === "artist") {
-            await logPlayArtist(ctx.id, srcMeta).catch(() => { });
+            logPlayArtist(ctx.id, srcMeta).catch(() => { });
           } else if (ctx.kind === "playlist") {
-            await logPlayPlaylist(ctx.id, srcMeta).catch(() => { });
+            logPlayPlaylist(ctx.id, srcMeta).catch(() => { });
           }
 
           setTimeout(async () => {

@@ -54,7 +54,7 @@ export default function MusicPlayer({
     getTrackRelated,
   } = useMusicApi() as any;
 
-  // 🔥 Estados locales - MOVER ANTES de los hooks que los necesitan
+  // Estados locales - MOVER ANTES de los hooks que los necesitan
   const [actionsOpen, setActionsOpen] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<any | null>(null);
   const [activePlayerTab, setActivePlayerTab] = useState<"upnext" | "lyrics" | "related" | null>(null);
@@ -66,15 +66,15 @@ export default function MusicPlayer({
     onCloseTab: () => setActivePlayerTab(null),
   });
 
-  // 🔥 NUEVA LÓGICA: Collapse inteligente con useCallback
+  // collapse useCallback
   const handleCollapse = React.useCallback(() => {
     if (activePlayerTab !== null) {
-      // Si hay un tab activo, solo cerrar el tab (mantener expanded)
-      console.log('📱 Cerrando tab, manteniendo player expandido');
+      //DBG: si hay un tab activo, solo cerrar el tab (mantener expanded)
+      //console.log('Cerrando tab, manteniendo player expandido');
       setActivePlayerTab(null);
     } else {
-      // Si no hay tab activo, hacer collapse completo al mini
-      console.log('📱 Colapsando player al mini');
+      //DBG: si no hay tab activo, hacer collapse completo al mini
+      //console.log('Colapsando player al mini');
       collapse();
     }
   }, [activePlayerTab, collapse]);
@@ -82,7 +82,7 @@ export default function MusicPlayer({
   const { panResponder, setPanLocked } = usePlayerPanGesture({
     isExpandedRef,
     slideAnim,
-    collapse: handleCollapse // ← Usar la función inteligente en lugar de collapse directo
+    collapse: handleCollapse // inteligente en lugar de collapse directo
   });
 
   const { isLiked, liking, toggleLike } = useTrackLikes({ currentSong, likeTrack, unlikeTrack, isTrackLiked });
@@ -195,8 +195,6 @@ export default function MusicPlayer({
   // Navegar a álbum desde Related
   const goToAlbum = (albumId?: string | null) => {
     if (!albumId || navigatingRef.current) return;
-    console.log('📀 Navegando a álbum:', albumId);
-
     navigatingRef.current = true;
 
     if (pathname && pathname.includes("/album/")) {
@@ -232,11 +230,11 @@ export default function MusicPlayer({
     }
   }, [currentSong?.id]);
 
-  // HANDLER MODIFICADO: Marcar canciones clickeadas del autoplay
+  // Marcar canciones clickeadas del autoplay
   const handleUpNextTrackPress = async (track: any, isFromAutoplay: boolean) => {
     console.log('handleUpNextTrackPress:', track.title, '| isFromAutoplay:', isFromAutoplay);
 
-    // SIEMPRE activar flag para NO cerrar el tab (tanto autoplay como playlist)
+    // Siempre activar flag para NO cerrar el tab (tanto autoplay como playlist)
     skipTabCloseOnNextSongChange.current = true;
 
     // Si es del autoplay, crear el objeto Song y agregar a la cola
@@ -286,7 +284,7 @@ export default function MusicPlayer({
     await playFromRelated(newSong);
 
     // El useEffect se encargará de cargar el nuevo autoplay cuando detecte el cambio de currentSong
-    console.log('✅ Nueva queue desde Related creada (autoplay se recargará automáticamente)');
+    console.log('Nueva queue desde Related creada (autoplay se recargará automáticamente)');
   };
 
   // Handler para cambio de tab
