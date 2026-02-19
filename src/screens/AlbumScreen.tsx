@@ -1,4 +1,3 @@
-// app/album/[id].tsx
 import { AlbumSkeletonLayout } from "@/src/components/shared/skeletons/Skeleton";
 import TrackActionsSheet from "@/src/components/shared/TrackActionsSheet";
 import { useDetailScreen } from "@/src/hooks/use-detail-screen";

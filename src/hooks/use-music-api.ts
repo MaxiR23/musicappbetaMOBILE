@@ -1,4 +1,3 @@
-// hooks/use-music-api.ts
 import { useCallback } from "react";
 import { musicService } from "../services/musicService";
 import { AlbumDetails, Artist, Song } from "../types/music";

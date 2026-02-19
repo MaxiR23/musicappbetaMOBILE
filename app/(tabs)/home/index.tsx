@@ -301,7 +301,6 @@ export default function HomeScreen() {
   );
 }
 
-// estilos
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0e0e0e", padding: 10 },
   section: { marginBottom: 20 },

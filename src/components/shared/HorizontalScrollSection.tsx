@@ -1,4 +1,3 @@
-// src/components/HorizontalScrollSection.tsx
 import { Ionicons } from "@expo/vector-icons";
 import React, { ReactNode } from "react";
 import {
@@ -14,34 +13,69 @@ import {
   ViewStyle,
 } from "react-native";
 
+/**
+ * Props:
+ * - title: Título de la sección (si showTitle=false se oculta).
+ * - showTitle: Mostrar/ocultar título (default: true).
+ * - titlePaddingLeft: Padding left del título (default: 8).
+ *
+ * - items: Lista de items a renderizar.
+ *
+ * - keyExtractor: Devuelve una key única por item.
+ * - imageExtractor: Devuelve URL de imagen (opcional).
+ * - titleExtractor: Devuelve título del item (opcional).
+ * - subtitleExtractor: Devuelve subtítulo del item (opcional).
+ *
+ * - onItemPress: Callback al tocar un item.
+ *
+ * - cardWidth: Ancho de cada card (default: 140).
+ * - imageHeight: Alto de la imagen (default: 140).
+ * - circularImage: Imagen circular (default: false).
+ * - imageBorderRadius: Border radius manual (sobrescribe circularImage si viene).
+ *
+ * - contentPaddingHorizontal: Padding horizontal del contenido (default: 12).
+ * - gap: Separación entre items (default: 16).
+ * - sectionStyle: Estilo del contenedor de la sección.
+ * - titleStyle: Estilo del texto del título.
+ * - subtitleStyle: Estilo del texto del subtítulo.
+ * - itemContainerStyle: Estilo del contenedor de cada item.
+ * - imageStyle: Estilo de la imagen.
+ * - contentContainerStyle: Estilo extra para el contentContainer (FlatList).
+ *
+ * - titleLines: Cantidad de líneas para el título (default: 1).
+ * - subtitleLines: Cantidad de líneas para el subtítulo (default: 1).
+ *
+ * - renderItem: Render personalizado; si se pasa, ignora los extractors.
+ *
+ * - initialNumToRender: Perf (FlatList) (default: 6).
+ * - maxToRenderPerBatch: Perf (FlatList) (default: 6).
+ * - windowSize: Perf (FlatList) (default: 5).
+ * - removeClippedSubviews: Perf (FlatList) (default: true).
+ *
+ * - has_more: Si muestra la flechita de “ver más” a la derecha del título.
+ * - onPressMore: Acción al tocar “ver más” (la navegación la decide el caller).
+ */
 interface HorizontalScrollSectionProps<T = any> {
-  /** Título de la sección (ocultable con showTitle=false) */
   title?: string;
-  showTitle?: boolean; // default: true
-  /** Padding left del título (configurable) */
-  titlePaddingLeft?: number; // default: 8
+  showTitle?: boolean;
+  titlePaddingLeft?: number;
 
-  /** Lista de items */
   items: T[];
 
-  /** Extractores */
   keyExtractor: (item: T, index: number) => string;
   imageExtractor?: (item: T) => string | undefined;
   titleExtractor?: (item: T) => string | undefined;
   subtitleExtractor?: (item: T) => string | undefined;
 
-  /** Tap en item */
   onItemPress?: (item: T, index: number) => void;
 
-  /** Layout / medidas */
-  cardWidth?: number;         // default: 140
-  imageHeight?: number;       // default: 140
-  circularImage?: boolean;    // default: false
-  imageBorderRadius?: number; // sobrescribe circularImage si viene
+  cardWidth?: number;
+  imageHeight?: number;
+  circularImage?: boolean;
+  imageBorderRadius?: number;
 
-  /** Espaciado y estilos para igualar otras pantallas */
-  contentPaddingHorizontal?: number;          // default: 12 (match PlayerTabs)
-  gap?: number;                                // default: 16
+  contentPaddingHorizontal?: number;
+  gap?: number;
   sectionStyle?: StyleProp<ViewStyle>;
   titleStyle?: StyleProp<TextStyle>;
   subtitleStyle?: StyleProp<TextStyle>;
@@ -49,22 +83,17 @@ interface HorizontalScrollSectionProps<T = any> {
   imageStyle?: StyleProp<ImageStyle>;
   contentContainerStyle?: StyleProp<ViewStyle>;
 
-  /** Líneas de texto */
-  titleLines?: number;    // default: 1
-  subtitleLines?: number; // default: 1
+  titleLines?: number;
+  subtitleLines?: number;
 
-  /** Render personalizado (si lo pasás, ignora extractors) */
   renderItem?: (item: T, index: number) => ReactNode;
 
-  /** Perf knobs (pasan directo a FlatList) */
-  initialNumToRender?: number;       // default: 6
-  maxToRenderPerBatch?: number;      // default: 6
-  windowSize?: number;               // default: 5
-  removeClippedSubviews?: boolean;   // default: true
+  initialNumToRender?: number;
+  maxToRenderPerBatch?: number;
+  windowSize?: number;
+  removeClippedSubviews?: boolean;
 
-  /** Opcional: mostrar flechita a la derecha del título */
   has_more?: boolean;
-  /** Opcional: acción al tocar la flechita (la navegación la decide el caller) */
   onPressMore?: () => void;
 }
 
@@ -85,7 +114,7 @@ export default React.memo(function HorizontalScrollSection<T>({
   circularImage = false,
   imageBorderRadius,
 
-  contentPaddingHorizontal = 8, // ← por defecto igual que tus pantallas
+  contentPaddingHorizontal = 8, 
   gap = 16,
   sectionStyle,
   titleStyle,
@@ -235,7 +264,6 @@ const styles = StyleSheet.create({
   section: {
     marginTop: 12,
   },
-  // Camino original (se mantiene tal cual)
   title: {
     color: "#fff",
     fontSize: 18,
@@ -243,7 +271,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 8,
   },
-  // Mismo spacing que el título original, sin duplicar padding
   titleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -251,15 +278,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 8,
   },
-  // Tipografía idéntica a 'title', sin margin/padding
   titleTextOnly: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "700",
   },
-  card: {
-    // ancho dinámico por prop
-  },
+  card: {},
   imageContainer: {
     overflow: "hidden",
     backgroundColor: "#1a1a1a",

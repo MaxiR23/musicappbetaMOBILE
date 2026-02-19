@@ -1,7 +1,5 @@
-// src/components/shared/GenreCard.tsx
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-
 interface GenreCardProps {
   name: string;
   onPress: () => void;

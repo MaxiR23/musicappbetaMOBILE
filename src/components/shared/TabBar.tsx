@@ -1,22 +1,22 @@
-// src/components/shared/TabBar.tsx
 import React from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 export interface Tab {
-  /** ID único del tab */
-  id: string;
-  /** Label a mostrar */
-  label: string;
+  id: string; /** ID único del tab */
+  label: string; /** Label a mostrar */
 }
 
+/**
+ * Props del componente TabBar:
+ * - tabs: Array de tabs.
+ * - activeTabId: ID del tab activo.
+ * - onTabChange: Callback al cambiar de tab (recibe tabId).
+ * - scrollable: Si los tabs deben hacer scroll horizontal (default: true cuando hay muchos tabs).
+ */
 interface TabBarProps {
-  /** Array de tabs */
   tabs: Tab[];
-  /** ID del tab activo */
   activeTabId: string;
-  /** Callback al cambiar de tab */
   onTabChange: (tabId: string) => void;
-  /** Si los tabs deben hacer scroll horizontal (default: true cuando hay muchos tabs) */
   scrollable?: boolean;
 }
 
@@ -36,7 +36,6 @@ interface TabBarProps {
  *   onTabChange={setActiveTab}
  * />
  * 
- * @example
  * // Con tabs dinámicos (categories)
  * const tabs = categories.map(cat => ({ id: cat, label: cat }));
  * <TabBar tabs={tabs} activeTabId={activeCategory} onTabChange={setActiveCategory} />

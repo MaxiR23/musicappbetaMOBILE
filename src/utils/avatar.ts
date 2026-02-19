@@ -1,4 +1,3 @@
-// src/utils/avatar.ts
 export const GRADIENTS: [string, string][] = [
   ["#ff9966", "#ff5e62"],
   ["#36D1DC", "#5B86E5"],

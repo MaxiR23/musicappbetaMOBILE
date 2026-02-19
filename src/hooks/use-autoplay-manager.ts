@@ -1,9 +1,7 @@
-// src/hooks/use-autoplay-manager.ts
 import { useEffect, useRef } from "react";
 import { Song } from "../types/music";
 import { getUpgradedThumb } from "../utils/image-helpers";
 import { mapGenericTrack } from "../utils/song-mapper";
-
 interface UseAutoplayManagerParams {
   currentSong: Song | null;
   playSource: any;

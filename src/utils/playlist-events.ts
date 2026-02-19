@@ -1,4 +1,3 @@
-// @/src/utils/playlist-events.ts
 type Listener = () => void;
 
 class PlaylistEventEmitter {

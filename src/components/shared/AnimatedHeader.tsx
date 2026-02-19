@@ -14,27 +14,30 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
+/**
+ * Props:
+ * - backgroundImage: URL de la imagen de fondo
+ * - title: Título principal (artista/álbum/playlist)
+ * - subtitle: Subtítulo opcional (ej: "16.3M monthly listeners", "2024 • 12 songs")
+ * - sections: Array de secciones a renderizar
+ * - renderSection: Función para renderizar cada sección (section, index) => ReactElement | null
+ * - headerHeight: Altura del header expandido (default: 400)
+ * - collapsedHeight: Altura del header colapsado (default: 100)
+ * - onBackPress: Callback al presionar el botón back
+ * - contentPaddingHorizontal: Padding horizontal para el contenido (default: 0)
+ * - contentContainerStyle: Estilos extra para el contentContainerStyle
+ */
 interface AnimatedHeaderProps {
-    /** URL de la imagen de fondo */
-    backgroundImage: string;
-    /** Título principal (nombre del artista, álbum, playlist) */
-    title: string;
-    /** Subtítulo opcional (ej: "16.3M monthly listeners", "2024 • 12 songs") */
-    subtitle?: string;
-    /** Array de secciones a renderizar */
-    sections: any[];
-    /** Función para renderizar cada sección */
-    renderSection: (section: any, index: number) => React.ReactElement | null;
-    /** Altura del header expandido (default: 400) */
-    headerHeight?: number;
-    /** Altura del header colapsado (default: 100) */
-    collapsedHeight?: number;
-    /** Callback al presionar el botón back */
-    onBackPress?: () => void;
-    /** Padding horizontal para el contenido (default: 0) */
-    contentPaddingHorizontal?: number;
-    /** Estilos adicionales para el contentContainerStyle */
-    contentContainerStyle?: any;
+  backgroundImage: string;
+  title: string;
+  subtitle?: string;
+  sections: any[];
+  renderSection: (section: any, index: number) => React.ReactElement | null;
+  headerHeight?: number;
+  collapsedHeight?: number;
+  onBackPress?: () => void;
+  contentPaddingHorizontal?: number;
+  contentContainerStyle?: any;
 }
 
 export default function AnimatedHeader({

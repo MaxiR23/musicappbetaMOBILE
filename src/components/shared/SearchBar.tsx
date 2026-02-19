@@ -1,4 +1,3 @@
-// src/components/shared/SearchBar.tsx
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef } from "react";
 import {

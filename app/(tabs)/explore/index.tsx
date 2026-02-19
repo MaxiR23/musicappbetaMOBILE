@@ -1,4 +1,3 @@
-// app/genres/index.tsx
 import GenreCard from "@/src/components/shared/GenreCard";
 import LoadingView from "@/src/components/shared/LoadingView";
 import ScreenHeader from "@/src/components/shared/ScreenHeader";
@@ -9,7 +8,6 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { FlatList, StatusBar, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 interface Genre {
   id: string;
   name: string;

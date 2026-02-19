@@ -1,5 +1,3 @@
-// utils/data-helpers.ts
-
 /**
  * Normaliza artistas relacionados de diferentes formatos
  */

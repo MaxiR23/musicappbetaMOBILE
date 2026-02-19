@@ -1,4 +1,3 @@
-// hooks/use-home-feed.ts
 import { fetchFeed } from '@/src/services/feedService';
 import { fetchRecommendations } from '@/src/services/recommendService';
 import { cacheWrap, DAY_MS } from '@/src/utils/cache';

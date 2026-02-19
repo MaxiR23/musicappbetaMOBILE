@@ -1,4 +1,3 @@
-// utils/music-helpers.ts
 import { getUpgradedThumb, upgradeThumbUrl } from "@/src/utils/image-helpers";
 
 /**

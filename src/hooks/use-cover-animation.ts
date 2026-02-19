@@ -1,4 +1,3 @@
-// hooks/use-cover-animation.ts
 import { useEffect, useRef } from "react";
 import { Animated } from "react-native";
 

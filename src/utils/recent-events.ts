@@ -1,4 +1,3 @@
-// utils/recent-events.ts
 type RecentListener = () => void;
 
 const listeners: RecentListener[] = [];

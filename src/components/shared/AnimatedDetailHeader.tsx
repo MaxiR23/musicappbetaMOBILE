@@ -1,4 +1,3 @@
-// src/components/shared/AnimatedDetailHeader.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { ChevronLeft } from "lucide-react-native";

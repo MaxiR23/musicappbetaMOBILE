@@ -1,4 +1,3 @@
-// hooks/use-player-theme.ts
 import { useEffect, useState } from "react";
 import { getThemeFromImage } from "../utils/colorUtils.native";
 import { upgradeYtmImage } from "../utils/ytmImage";

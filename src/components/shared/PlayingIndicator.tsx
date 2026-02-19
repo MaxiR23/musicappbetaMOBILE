@@ -1,4 +1,3 @@
-// src/components/shared/PlayingIndicator.tsx
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {

@@ -1,4 +1,3 @@
-// hooks/use-player-pan-gesture.ts
 import { useRef, useState } from "react";
 import { Animated, Dimensions, PanResponder } from "react-native";
 

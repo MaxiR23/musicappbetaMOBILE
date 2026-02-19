@@ -1,4 +1,3 @@
-// utils/cache.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 /** TTL por defecto: 1 día */

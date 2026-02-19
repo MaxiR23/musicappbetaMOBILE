@@ -1,4 +1,3 @@
-// src/components/TrackRow.tsx
 import { useIsTrackPlaying } from "@/src/hooks/use-is-track-playing";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
@@ -12,61 +11,36 @@ import {
 import PlayingIndicator from "./PlayingIndicator";
 
 
+/**
+ * Props del componente TrackRow:
+ * - index: Número de track (1-based).
+ * - title: Título de la canción.
+ * - artist: Nombre del/los artista(s) (opcional).
+ * - thumbnail: URL del thumbnail/cover (opcional).
+ * - duration: Duración en formato "mm:ss" (opcional).
+ * - onPress: Callback al hacer tap en la fila.
+ * - onMorePress: Callback al hacer tap en el botón de más opciones (opcional).
+ * - showThumbnail: Mostrar thumbnail (default: true).
+ * - showMoreButton: Mostrar botón de más opciones (default: true).
+ * - showDuration: Mostrar duración (default: false).
+ * - showIndex: Mostrar índice (opcional; si no se pasa, depende del componente).
+ * - trackId: ID del track (para animación/estado de reproducción).
+ */
 interface TrackRowProps {
-  /**
-   * Número de track (1-based index)
-   */
   index: number;
-
-  /**
-   * Título de la canción
-   */
   title: string;
-
-  /**
-   * Nombre del/los artista(s)
-   */
   artist?: string;
-
-  /**
-   * URL del thumbnail/cover
-   */
   thumbnail?: string;
-
-  /**
-   * Duración en formato "mm:ss"
-   */
   duration?: string;
 
-  /**
-   * Callback al hacer tap en la fila
-   */
   onPress: () => void;
-
-  /**
-   * Callback al hacer tap en el botón de más opciones
-   */
   onMorePress?: () => void;
 
-  /**
-   * Si se debe mostrar el thumbnail (default: true)
-   */
   showThumbnail?: boolean;
-
-  /**
-   * Si se debe mostrar el botón de más opciones (default: true)
-   */
   showMoreButton?: boolean;
-
-  /**
-   * Si se debe mostrar la duración (default: false)
-   */
   showDuration?: boolean;
-
-  /* mostrar indice? */
   showIndex?: boolean;
 
-  /* mostrar animación al darle a play */
   trackId: string | number;
 }
 

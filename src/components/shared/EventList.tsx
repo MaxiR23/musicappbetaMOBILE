@@ -1,8 +1,6 @@
-// components/EventsList.tsx
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import EventCard from "./EventCard";
-
 interface EventsListProps {
   events: any[];
   artistName?: string;

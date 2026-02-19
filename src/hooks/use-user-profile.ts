@@ -1,4 +1,3 @@
-// hooks/use-user-profile.ts
 import { supabase } from '@/src/lib/supabase';
 import { getInitials, pickGradient } from '@/src/utils/avatar';
 import { useEffect, useMemo, useState } from 'react';

@@ -1,6 +1,4 @@
 import Constants from "expo-constants";
-
-// src/api/music.ts
 export interface Artist {
   header: {
     name: string;
@@ -81,14 +79,14 @@ export interface AlbumDetails {
 }
 
 export interface NewRelease {
-  id: string;          // album browseId (MPREb_…)
-  title: string;       // nombre del álbum
-  artist: string;      // nombre(s) del artista
-  artist_id?: string;  // UC… (opcional)
+  id: string; 
+  title: string;
+  artist: string;
+  artist_id?: string;
   thumb?: string | null;
-  release_date?: string; // "YYYY-MM-DD"
+  release_date?: string;
   track_count?: number | null;
-  url?: string;        // "/browse/MPREb_…"
+  url?: string;
 }
 
 const BASE_URL =

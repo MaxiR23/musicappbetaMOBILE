@@ -1,17 +1,19 @@
-// src/components/shared/ScreenHeader.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
+/**
+ * Props del componente ScreenHeader:
+ * - title: Título del header.
+ * - onBackPress: Callback custom para el botón back (si no se provee, usa router.back()).
+ * - showBack: Mostrar/ocultar botón back (default: true).
+ * - rightContent: Contenido opcional a la derecha (acciones/íconos).
+ */
 interface ScreenHeaderProps {
-  /** Título del header */
   title: string;
-  /** Callback customizado para el botón back (si no se provee, usa router.back) */
   onBackPress?: () => void;
-  /** Si se muestra el botón de back (default: true) */
   showBack?: boolean;
-  /** Contenido adicional a la derecha (opcional) */
   rightContent?: React.ReactNode;
 }
 
@@ -22,7 +24,6 @@ interface ScreenHeaderProps {
  * @example
  * <ScreenHeader title="Explorar géneros" />
  * 
- * @example
  * <ScreenHeader 
  *   title="Artist" 
  *   rightContent={<ShareButton />}

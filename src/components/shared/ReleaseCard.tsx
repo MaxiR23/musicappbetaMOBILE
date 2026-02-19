@@ -1,4 +1,3 @@
-// src/components/shared/ReleaseCard.tsx
 import PlaylistCover from "@/src/components/features/playlist/PlaylistCover";
 import React from "react";
 import {
@@ -9,16 +8,21 @@ import {
   View,
 } from "react-native";
 
+/**
+ * Props del componente ReleaseCard:
+ * - cover: URL de la portada (álbum/single) (opcional).
+ * - thumbnails: Lista de thumbnails para mosaico (usado cuando no hay cover, ej: playlists) (opcional).
+ * - title: Título del álbum/single/playlist.
+ * - subtitle: Texto secundario (ej: "Album • 2024", "Single • 2023") (opcional).
+ * - onPress: Callback al presionar la card.
+ *
+ * Nota: normalmente se usa `cover` O `thumbnails`. Si vienen ambos, `cover` suele tener prioridad.
+ */
 interface ReleaseCardProps {
-  /** URL de la cover del album/single */
   cover?: string | null;
-  /** Array de thumbnails para mosaico (playlists) */
   thumbnails?: string[];
-  /** Título del album/single */
   title: string;
-  /** Subtítulo (Album • 2024, Single • 2023, etc) */
   subtitle?: string;
-  /** Callback al presionar la card */
   onPress: () => void;
 }
 

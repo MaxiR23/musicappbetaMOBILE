@@ -1,4 +1,3 @@
-// src/components/shared/skeletons/Skeleton.tsx
 import { LinearGradient } from "expo-linear-gradient";
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {

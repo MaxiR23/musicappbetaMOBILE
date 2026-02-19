@@ -1,4 +1,3 @@
-// hooks/use-track-metadata.ts
 import { first } from "@/src/utils/data-helpers";
 import { upgradeYtmImage } from "@/src/utils/ytmImage";
 import { useMemo } from "react";

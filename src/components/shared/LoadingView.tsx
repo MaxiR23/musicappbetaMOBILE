@@ -1,24 +1,25 @@
-// src/components/shared/LoadingView.tsx
 import React from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
+/**
+ * Props del componente LoadingView:
+ * - message: Mensaje opcional debajo del spinner.
+ * - size: Tamaño del spinner ("small" | "large") (default: "large").
+ * - color: Color del spinner (default: "#fff").
+ */
 interface LoadingViewProps {
-  /** Mensaje a mostrar debajo del spinner (opcional) */
   message?: string;
-  /** Tamaño del spinner (default: "large") */
   size?: "small" | "large";
-  /** Color del spinner (default: "#fff") */
   color?: string;
 }
 
 /**
  * Vista de loading estandarizada con spinner y mensaje opcional.
  * Ocupa todo el espacio disponible (flex: 1) y centra el contenido.
- * 
+ *
  * @example
  * <LoadingView />
- * 
- * @example
+ *
  * <LoadingView message="Cargando playlists..." />
  */
 export default function LoadingView({

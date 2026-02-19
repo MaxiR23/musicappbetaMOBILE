@@ -1,4 +1,3 @@
-// src/hooks/use-mounted.ts
 import { useEffect, useRef } from "react";
 
 /**

@@ -3,20 +3,23 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
+/**
+ * Props del componente EmptyState:
+ * - icon: Nombre del ícono de Ionicons.
+ * - iconSize: Tamaño del ícono (default: 48).
+ * - iconColor: Color del ícono (default: "#888").
+ * - message: Mensaje principal.
+ * - submessage: Mensaje secundario (opcional).
+ * - actionLabel: Texto del botón de acción (si no se provee, no se muestra botón).
+ * - onAction: Callback al presionar el botón.
+ */
 interface EmptyStateProps {
-  /** Nombre del ícono de Ionicons */
   icon?: keyof typeof Ionicons.glyphMap;
-  /** Tamaño del ícono (default: 48) */
   iconSize?: number;
-  /** Color del ícono (default: "#888") */
   iconColor?: string;
-  /** Mensaje principal */
   message: string;
-  /** Mensaje secundario (opcional) */
   submessage?: string;
-  /** Texto del botón de acción (si no se provee, no se muestra botón) */
   actionLabel?: string;
-  /** Callback al presionar el botón */
   onAction?: () => void;
 }
 
@@ -24,31 +27,30 @@ interface EmptyStateProps {
  * Vista de estado vacío/error estandarizada.
  * Muestra ícono + mensaje + submensaje opcional + botón de acción opcional.
  * Ocupa todo el espacio disponible (flex: 1) y centra el contenido.
- * 
+ *
  * @example
  * // Error simple
- * <EmptyState 
+ * <EmptyState
  *   icon="alert-circle-outline"
  *   message="Error al cargar playlists"
  * />
- * 
- * @example
+ *
  * // Con retry button
- * <EmptyState 
+ * <EmptyState
  *   icon="alert-circle-outline"
  *   message="Error al cargar datos"
  *   actionLabel="Reintentar"
  *   onAction={() => refetch()}
  * />
- * 
- * @example
+ *
  * // Empty state
- * <EmptyState 
+ * <EmptyState
  *   icon="musical-notes-outline"
  *   message="No hay playlists disponibles"
  *   submessage='en la categoría "Rock"'
  * />
  */
+
 export default function EmptyState({
   icon = "information-circle-outline",
   iconSize = 48,

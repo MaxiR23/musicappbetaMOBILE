@@ -1,64 +1,34 @@
-// src/components/BackButton.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import { StyleSheet, TouchableOpacity, ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+/**
+ * Props:
+ * - onPress: Callback personalizado al presionar (por defecto usa router.back()).
+ * - iconColor: Color del ícono (por defecto blanco).
+ * - iconSize: Tamaño del ícono (por defecto 24).
+ * - absolute: Si debe ser position: absolute (default: true).
+ * - withBackground: Si debe tener fondo semi-transparente (default: true cuando absolute=true).
+ * - icon: Tipo de ícono a usar ("arrow-back" | "chevron-back").
+ * - topOffset: Offset adicional desde el top (se suma al safe area).
+ * - left: Posición left cuando es absolute.
+ * - width: Ancho del botón.
+ * - height: Alto del botón.
+ * - style: Estilo personalizado del contenedor.
+ */
 interface BackButtonProps {
-  /**
-   * Callback personalizado al presionar (por defecto usa router.back())
-   */
   onPress?: () => void;
-
-  /**
-   * Color del ícono (por defecto blanco)
-   */
   iconColor?: string;
-
-  /**
-   * Tamaño del ícono (por defecto 24)
-   */
   iconSize?: number;
-
-  /**
-   * Si debe ser position: absolute (default: true)
-   */
   absolute?: boolean;
-
-  /**
-   * Si debe tener fondo semi-transparente (default: true cuando absolute=true)
-   */
   withBackground?: boolean;
-
-  /**
-   * Tipo de ícono a usar
-   */
   icon?: "arrow-back" | "chevron-back";
-
-  /**
-   * Offset adicional desde el top (se suma al safe area)
-   */
   topOffset?: number;
-
-  /**
-   * Posición left cuando es absolute
-   */
   left?: number;
-
-  /**
-   * Ancho del botón
-   */
   width?: number;
-
-  /**
-   * Alto del botón
-   */
   height?: number;
-
-  /**
-   * Estilo personalizado del contenedor
-   */
   style?: ViewStyle;
 }
 

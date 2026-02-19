@@ -1,4 +1,3 @@
-// hooks/use-track-lyrics.ts
 import { useEffect, useRef, useState } from "react";
 import { ScrollView } from "react-native";
 

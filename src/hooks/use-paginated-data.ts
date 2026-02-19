@@ -1,25 +1,26 @@
-// src/hooks/use-paginated-data.ts
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface UsePaginatedDataOptions<T> {
-  /** Data completa a paginar */
-  data: T[];
-  /** Items por página (default: 20) */
-  itemsPerPage?: number;
+  data: T[]; /** Data completa a paginar */
+  itemsPerPage?: number; /** Items por página (default: 20) */
 }
 
+/**
+ * Retorno del hook:
+ * - visibleData: Items visibles actualmente (paginados).
+ * - hasMore: Indica si hay más items por cargar.
+ * - loadMore: Carga el siguiente “bloque” de items.
+ * - totalCount: Total de items disponibles.
+ * - displayCount: Cantidad de items visibles actualmente.
+ */
 interface UsePaginatedDataReturn<T> {
-  /** Data visible actualmente (paginada) */
   visibleData: T[];
-  /** Si hay más items por cargar */
   hasMore: boolean;
-  /** Función para cargar más items */
   loadMore: () => void;
-  /** Total de items */
   totalCount: number;
-  /** Cantidad de items visibles actualmente */
   displayCount: number;
 }
+
 
 /**
  * Hook para manejar paginación virtual en listas largas.
