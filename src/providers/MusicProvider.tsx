@@ -163,9 +163,32 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     if (switchingRef.current) return;
     switchingRef.current = true;
 
-    // Resetear autoplay reproducidos al cambiar contexto
     playedAutoplayIdsRef.current.clear();
 
+    const ctx = resolveContextKey(list, source);
+    const isSameContext = ctx && lastLoggedContextKeyRef.current === ctx.key;
+
+    // Actualizar refs primero (para que el listener tenga valores correctos)
+    queueRef.current = list;
+    queueIndexRef.current = startIndex;
+    originalQueueSizeRef.current = list.length;
+
+    // Reproducir
+    try {
+      if (isSameContext) {
+        await ensureTrackPlayer();
+        await TrackPlayer.skip(startIndex);
+        await TrackPlayer.play();
+      } else {
+        await syncWithTrackPlayer(list, startIndex);
+      }
+    } catch (err) {
+      console.error("[RNTP] error:", err);
+      switchingRef.current = false;
+      return;
+    }
+
+    // Actualizar estados (disparan efectos y re-sincronizan refs via useEffect)
     setQueue(list);
     setQueueIndex(startIndex);
     setCurrentSong(list[startIndex] ?? null);
@@ -173,20 +196,13 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     setInitialQueueSize(list.length);
 
     try {
-      const ctx = resolveContextKey(list, source);
       setPlaySource(
         source
           ? { ...source, id: ctx?.id ?? null }
           : { type: "queue", id: null, name: null, thumb: null }
       );
       if (ctx) {
-        // DBG: {
-        //console.log('[tracklog][RAW CONTEXT]', ctx);
-        //console.log('[tracklog][RAW SOURCE]', source);
-        //console.log('[tracklog][RAW LIST]', list);
-        /// } 
-
-        if (lastLoggedContextKeyRef.current !== ctx.key) {
+        if (!isSameContext) {
           lastLoggedContextKeyRef.current = ctx.key;
           const srcMeta = { name: source?.name ?? null, thumb: source?.thumb ?? null };
           if (ctx.kind === "album") {
@@ -211,12 +227,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       }
     } catch (e) {
       console.warn("[tracklog] logging failed:", e);
-    }
-
-    try {
-      await syncWithTrackPlayer(list, startIndex);
-    } catch (err) {
-      console.error("[RNTP] error en syncWithTrackPlayer]:", err);
     } finally {
       switchingRef.current = false;
     }
