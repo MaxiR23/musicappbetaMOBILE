@@ -100,44 +100,59 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     await ensureTrackPlayer();
 
     const BASE_URL = getBaseUrl();
-    if (!BASE_URL || !list?.length) {
-      console.warn("[sync] BASE_URL o lista inválidos");
-      return;
-    }
+    if (!BASE_URL || !list?.length) return;
 
-    const tracks = list.map((s, i) => ({
-      id: String(s.id),
-      url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
-      title: (s as any).title,
-      artist: (s as any).artistName ?? (s as any).artist ?? "",
-      artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
+    const idx = Math.max(0, Math.min(startIndex, list.length - 1));
+
+    const currentTrack = {
+      id: String(list[idx].id),
+      url: `${BASE_URL}/music/play?id=${encodeURIComponent(list[idx].id)}&redir=2`,
+      title: (list[idx] as any).title,
+      artist: (list[idx] as any).artistName ?? (list[idx] as any).artist ?? "",
+      artwork: (list[idx] as any).thumbnail ?? (list[idx] as any).thumbnail_url ?? undefined,
       type: TrackType.Default,
       headers: {
         Range: "bytes=0-",
         "Accept-Encoding": "identity",
         Connection: "keep-alive",
       },
-      __idx: i,
-    })) as any[];
-
-    const idx = Math.max(0, Math.min(startIndex, tracks.length - 1));
+    } as any;
 
     syncingRef.current = true;
     try {
       await TrackPlayer.reset();
-      await TrackPlayer.setRepeatMode(RepeatMode.Off);
-      await TrackPlayer.add(tracks);
-      await TrackPlayer.skip(idx);
+      await TrackPlayer.add(currentTrack);
       TrackPlayer.play().catch(() => { });
 
-      try {
-        const ids = list.map((s: any) => String(s.id)).filter(Boolean);
-        const uniq = Array.from(new Set(ids));
-        const slice = uniq.slice(Math.max(0, idx - 3), idx + 16);
-        warmBatch(slice, BASE_URL);
-      } catch { }
+      setTimeout(async () => {
+        try {
+          const beforeTracks = list.slice(0, idx).map((s) => ({
+            id: String(s.id),
+            url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
+            title: (s as any).title,
+            artist: (s as any).artistName ?? (s as any).artist ?? "",
+            artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
+            type: TrackType.Default,
+            headers: { Range: "bytes=0-", "Accept-Encoding": "identity", Connection: "keep-alive" },
+          })) as any[];
+
+          const afterTracks = list.slice(idx + 1).map((s) => ({
+            id: String(s.id),
+            url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
+            title: (s as any).title,
+            artist: (s as any).artistName ?? (s as any).artist ?? "",
+            artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
+            type: TrackType.Default,
+            headers: { Range: "bytes=0-", "Accept-Encoding": "identity", Connection: "keep-alive" },
+          })) as any[];
+
+          if (beforeTracks.length > 0) await TrackPlayer.add(beforeTracks, 0);
+          if (afterTracks.length > 0) await TrackPlayer.add(afterTracks);
+        } catch { }
+      }, 50);
+
     } catch (e) {
-      console.error("[sync] ERROR reset/add/play:", e);
+      console.error("[sync] ERROR:", e);
       throw e;
     } finally {
       syncingRef.current = false;
@@ -148,9 +163,32 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     if (switchingRef.current) return;
     switchingRef.current = true;
 
-    // Resetear autoplay reproducidos al cambiar contexto
     playedAutoplayIdsRef.current.clear();
 
+    const ctx = resolveContextKey(list, source);
+    const isSameContext = ctx && lastLoggedContextKeyRef.current === ctx.key;
+
+    // Actualizar refs primero (para que el listener tenga valores correctos)
+    queueRef.current = list;
+    queueIndexRef.current = startIndex;
+    originalQueueSizeRef.current = list.length;
+
+    // Reproducir
+    try {
+      if (isSameContext) {
+        await ensureTrackPlayer();
+        await TrackPlayer.skip(startIndex);
+        await TrackPlayer.play();
+      } else {
+        await syncWithTrackPlayer(list, startIndex);
+      }
+    } catch (err) {
+      console.error("[RNTP] error:", err);
+      switchingRef.current = false;
+      return;
+    }
+
+    // Actualizar estados (disparan efectos y re-sincronizan refs via useEffect)
     setQueue(list);
     setQueueIndex(startIndex);
     setCurrentSong(list[startIndex] ?? null);
@@ -158,28 +196,21 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     setInitialQueueSize(list.length);
 
     try {
-      const ctx = resolveContextKey(list, source);
       setPlaySource(
         source
           ? { ...source, id: ctx?.id ?? null }
           : { type: "queue", id: null, name: null, thumb: null }
       );
       if (ctx) {
-        // DBG: {
-        //console.log('[tracklog][RAW CONTEXT]', ctx);
-        //console.log('[tracklog][RAW SOURCE]', source);
-        //console.log('[tracklog][RAW LIST]', list);
-        /// } 
-
-        if (lastLoggedContextKeyRef.current !== ctx.key) {
+        if (!isSameContext) {
           lastLoggedContextKeyRef.current = ctx.key;
           const srcMeta = { name: source?.name ?? null, thumb: source?.thumb ?? null };
           if (ctx.kind === "album") {
-            await logPlayAlbum(ctx.id, srcMeta).catch(() => { });
+            logPlayAlbum(ctx.id, srcMeta).catch(() => { });
           } else if (ctx.kind === "artist") {
-            await logPlayArtist(ctx.id, srcMeta).catch(() => { });
+            logPlayArtist(ctx.id, srcMeta).catch(() => { });
           } else if (ctx.kind === "playlist") {
-            await logPlayPlaylist(ctx.id, srcMeta).catch(() => { });
+            logPlayPlaylist(ctx.id, srcMeta).catch(() => { });
           }
 
           setTimeout(async () => {
@@ -196,12 +227,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       }
     } catch (e) {
       console.warn("[tracklog] logging failed:", e);
-    }
-
-    try {
-      await syncWithTrackPlayer(list, startIndex);
-    } catch (err) {
-      console.error("[RNTP] error en syncWithTrackPlayer]:", err);
     } finally {
       switchingRef.current = false;
     }
@@ -681,10 +706,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
     // Listener para tracking de tiempo de reproducción REAL (30 segundos acumulados)
     const subProgress = TrackPlayer.addEventListener(Event.PlaybackProgressUpdated, async (progress) => {
-      const pos = await findActiveIndex();
-      if (pos == null) return;
+      const pos = queueIndexRef.current;
+      if (pos < 0) return;
 
-      const trackToLog = queue[pos];
+      const trackToLog = queueRef.current[pos];
       if (!trackToLog) return;
 
       const trackId = String(trackToLog.id);
@@ -699,13 +724,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       const delta = currentPosition - listenTimeRef.current.lastPosition;
 
       // Solo acumular si el delta es de reproducción normal (entre 0 y ~3s)
-      // Deltas grandes = seek adelante, negativos = seek atrás o reinicio
       const isNormalPlayback = delta > 0 && delta < 3;
 
       if (isNormalPlayback) {
         listenTimeRef.current.accumulated += delta;
       } else {
-        // Seek detectado: solo actualizar posición, NO acumular
         console.log(`[tracklog] Seek detectado (delta: ${delta.toFixed(2)}s), no se acumula`);
       }
 
@@ -713,13 +736,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
       // Verificar si acumuló 30 segundos REALES
       if (listenTimeRef.current.accumulated >= 30) {
-        const lastLog = lastLoggedTrackIdRef.current;
-        const alreadyLogged = lastLog && lastLog.split(':')[0] === trackId;
+        const alreadyLogged = lastLoggedTrackIdRef.current === trackId;
 
         if (!alreadyLogged) {
           console.log(`[tracklog] 30s reales acumulados para: ${trackId}`);
-          const now = Date.now();
-          lastLoggedTrackIdRef.current = `${trackId}:${now}`;
+          lastLoggedTrackIdRef.current = trackId;
 
           const trackContext = {
             album_id: (trackToLog as any).albumId ?? (trackToLog as any).album_id ?? undefined,

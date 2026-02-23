@@ -7,7 +7,7 @@ import { useMounted } from "@/src/hooks/use-mounted";
 import { useMusicApi } from "@/src/hooks/use-music-api";
 import { usePaginatedData } from "@/src/hooks/use-paginated-data";
 import { getUpgradedThumb } from "@/src/utils/image-helpers";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, useSegments } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, StatusBar, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -30,6 +30,8 @@ export default function ArtistReleasesScreen() {
   }>();
 
   const contentPadding = useContentPadding();
+  
+  const segments = useSegments();
 
   const initialTab: TabKey = tab === "singles" ? "singles" : "albums";
   const artistId = String(id);
@@ -89,7 +91,7 @@ export default function ArtistReleasesScreen() {
           cover={cover}
           title={item.title}
           subtitle={subtitle}
-          onPress={() => router.push(`/(tabs)/home/album/${item.id}`)}
+          onPress={() => router.push(`/(tabs)/${segments[1]}/album/${item.id}`)}
         />
       );
     },

@@ -229,7 +229,6 @@ export default function ArtistScreen() {
               keyExtractor={(rel, idx) => `related-${rel.id}-${idx}`}
               imageExtractor={(rel) => upgradeThumbUrl(rel.img, 256)}
               titleExtractor={(rel) => rel.name}
-              subtitleExtractor={(rel) => rel.subtitle}
               onItemPress={(rel) => {
                 if (String(rel.id) === String(id)) return;
                 router.push(`/(tabs)/${currentTab}/artist/${rel.id}`);
@@ -253,7 +252,6 @@ export default function ArtistScreen() {
       <AnimatedHeader
         backgroundImage={heroUrl}
         title={artist?.header?.name || ""}
-        subtitle={artist?.header?.monthlyListeners}
         sections={sections}
         renderSection={renderSection}
         onBackPress={() => router.back()}

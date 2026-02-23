@@ -1,4 +1,3 @@
-// @/src/components/RecentSection.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -31,6 +30,8 @@ export default function RecentSection({ items }: Props) {
       onItemPress={() => { }}
       cardWidth={120}
       imageHeight={120}
+      has_more={items.length > 6}
+      onPressMore={() => router.push({ pathname: '/(tabs)/home/feed-list', params: { key: 'recents', title: 'Escuchados recientemente' } })}
       renderItem={(it) => {
         const SIZE = 120;
         const isArtist = it.type === "artist";

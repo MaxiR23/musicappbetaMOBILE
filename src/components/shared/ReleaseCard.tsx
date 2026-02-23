@@ -14,6 +14,7 @@ import {
  * - thumbnails: Lista de thumbnails para mosaico (usado cuando no hay cover, ej: playlists) (opcional).
  * - title: Título del álbum/single/playlist.
  * - subtitle: Texto secundario (ej: "Album • 2024", "Single • 2023") (opcional).
+ * - circular: Si la imagen debe ser circular (ej: artistas) (opcional).
  * - onPress: Callback al presionar la card.
  *
  * Nota: normalmente se usa `cover` O `thumbnails`. Si vienen ambos, `cover` suele tener prioridad.
@@ -23,6 +24,7 @@ interface ReleaseCardProps {
   thumbnails?: string[];
   title: string;
   subtitle?: string;
+  circular?: boolean;
   onPress: () => void;
 }
 
@@ -36,6 +38,7 @@ export default React.memo(function ReleaseCard({
   thumbnails,
   title,
   subtitle,
+  circular = false,
   onPress,
 }: ReleaseCardProps) {
   return (
@@ -44,11 +47,11 @@ export default React.memo(function ReleaseCard({
       style={styles.card}
       onPress={onPress}
     >
-      <View style={styles.coverWrap}>
+      <View style={[styles.coverWrap, circular && styles.coverCircular]}>
         {thumbnails && thumbnails.length > 0 ? (
           <PlaylistCover
             images={thumbnails}
-            borderRadius={0}
+            borderRadius={circular ? 9999 : 0}
           />
         ) : cover ? (
           <Image source={{ uri: cover }} style={styles.cover} />
@@ -78,6 +81,9 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "#1a1a1a",
     aspectRatio: 1,
+  },
+  coverCircular: {
+    borderRadius: 9999,
   },
   cover: {
     width: "100%",

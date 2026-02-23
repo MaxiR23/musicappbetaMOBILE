@@ -270,7 +270,7 @@ export default function AlbumScreen() {
                 onBackPress={() => router.back()}
                 contentContainerStyle={[
                     contentPadding,
-                    needsExtraPadding && { paddingBottom: 100 }
+                    needsExtraPadding && { paddingBottom: 140 }
                 ]}
             />
 

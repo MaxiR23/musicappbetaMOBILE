@@ -270,7 +270,7 @@ export default function SearchPanel({
                   <Text style={styles.resultTitle} numberOfLines={1}>{item.title}</Text>
                   <Text style={styles.resultSubtitle} numberOfLines={1}>
                     {item.type === "artist"
-                      ? `${typeLabel(item.type)} • ${item.artistName}`
+                      ? `${typeLabel(item.type)}`
                       : item.type === "song"
                         ? `${typeLabel(item.type)} • ${item.artistName}`
                         : `${typeLabel(item.type)} • ${item.artistName}`}

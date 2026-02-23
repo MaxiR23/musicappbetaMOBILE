@@ -286,7 +286,7 @@ export const musicService = {
 
   moveTrackInPlaylist: async (playlistId: string, oldPosition: number, newPosition: number) => {
     const result = await authFetch(
-      `${BASE_URL}/music/playlists/${encodeURIComponent(playlistId)}/move-track`,
+      `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/move-track`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
