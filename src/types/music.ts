@@ -4,7 +4,6 @@ export interface Artist {
     name: string;
     description: string;
     thumbnails: { url: string; width: number; height: number }[];
-    monthlyListeners?: string;
   };
   topSongs: TopSong[];
   albums: Album[];

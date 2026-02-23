@@ -4,7 +4,6 @@
 export function normalizeRelatedArtists(related: any): {
   id: string;
   name: string;
-  subtitle: string;
   img: string | null;
 }[] {
   const src = related;
@@ -19,9 +18,6 @@ export function normalizeRelatedArtists(related: any): {
       // Extrae nombre
       const name = r.name ?? r.title ?? r.artist ?? "";
 
-      // Extrae subtítulo
-      const subtitle = r.subtitle ?? r.subTitle ?? r.subtext ?? "";
-
       // Extrae imagen
       const img =
         r.thumbnail?.url ??
@@ -29,7 +25,7 @@ export function normalizeRelatedArtists(related: any): {
         r.thumbnails?.[r.thumbnails.length - 1]?.url ??
         null;
 
-      return { id, name, subtitle, img };
+      return { id, name, img };
     })
     .filter((x) => x.id && x.name); // Solo items válidos
 }

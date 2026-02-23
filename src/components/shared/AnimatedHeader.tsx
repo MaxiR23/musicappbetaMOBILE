@@ -18,7 +18,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
  * Props:
  * - backgroundImage: URL de la imagen de fondo
  * - title: Título principal (artista/álbum/playlist)
- * - subtitle: Subtítulo opcional (ej: "16.3M monthly listeners", "2024 • 12 songs")
  * - sections: Array de secciones a renderizar
  * - renderSection: Función para renderizar cada sección (section, index) => ReactElement | null
  * - headerHeight: Altura del header expandido (default: 400)
@@ -30,7 +29,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 interface AnimatedHeaderProps {
   backgroundImage: string;
   title: string;
-  subtitle?: string;
   sections: any[];
   renderSection: (section: any, index: number) => React.ReactElement | null;
   headerHeight?: number;
@@ -43,7 +41,6 @@ interface AnimatedHeaderProps {
 export default function AnimatedHeader({
     backgroundImage,
     title,
-    subtitle,
     sections,
     renderSection,
     headerHeight = 400,
@@ -153,7 +150,6 @@ export default function AnimatedHeader({
             {/* Título grande (abajo) */}
             <Animated.View style={[styles.heroInfo, largeTitleStyle]}>
                 <Text style={styles.artistName}>{title}</Text>
-                {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
             </Animated.View>
         </Animated.View>
     );
@@ -288,11 +284,6 @@ const styles = StyleSheet.create({
         fontWeight: "900",
         color: "#fff",
         marginBottom: 4,
-    },
-    subtitle: {
-        fontSize: 14,
-        color: "#ccc",
-        fontWeight: "500",
     },
 
     // Contenido
