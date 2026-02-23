@@ -179,6 +179,7 @@ export default function HomeScreen() {
           title="Nuevos lanzamientos"
           items={newReleases}
           type="album"
+          feedKey="new-releases"
         />
 
         {/* similar to (1) */}
@@ -210,6 +211,7 @@ export default function HomeScreen() {
           title="Más escuchados · Álbumes"
           items={topAlbums}
           type="album"
+          feedKey="top-albums"
         />
 
         {/* más escuchados · Canciones */}
@@ -217,6 +219,7 @@ export default function HomeScreen() {
           title="Más escuchados · Canciones"
           items={topTracks}
           type="track"
+          feedKey="top-tracks"
           onTrackPress={(index, queueName) => {
             playFromList(mappedTopTracks, index, { type: "queue", name: queueName });
           }}
@@ -252,6 +255,7 @@ export default function HomeScreen() {
           title="Singles nuevos"
           items={newSingles}
           type="track"
+          feedKey="new-singles"
           onTrackPress={(index, queueName) => {
             playFromList(mappedNewSingles, index, { type: "queue", name: queueName });
           }}
@@ -262,6 +266,7 @@ export default function HomeScreen() {
           title="Desde tu seed"
           items={seedTracks}
           type="track"
+          feedKey="seed-tracks"
           onTrackPress={(index, queueName) => {
             playFromList(mappedSeedTracks, index, { type: "queue", name: queueName });
           }}
@@ -272,6 +277,7 @@ export default function HomeScreen() {
           title="Álbumes recomendados"
           items={recoAlbums}
           type="album"
+          feedKey="reco-albums"
         />
 
       </ProList>
