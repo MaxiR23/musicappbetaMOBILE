@@ -45,7 +45,7 @@ export default function SearchScreen() {
           contentStyle: { backgroundColor: "#0f0f0f" },
         }}
       />
-      <SearchPanel searchFn={searchFn} onSelect={onSelect} onClose={() => router.back()} contentPadding={contentPadding} />
+      <SearchPanel searchFn={searchFn} onSelect={onSelect} onClose={() => router.replace("/(tabs)/search")} contentPadding={contentPadding} />
     </>
   );
 }
