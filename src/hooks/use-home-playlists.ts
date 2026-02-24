@@ -1,5 +1,5 @@
 import { onPlaylistChange } from '@/src/utils/playlist-events';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCacheInvalidation } from './use-cache-invalidation';
 import { useMusicApi } from './use-music-api';
 
@@ -10,7 +10,9 @@ export function useHomePlaylists(userId: string) {
 
   const refreshPlaylists = useCallback(async (force = false) => {
     try {
-      if (force) await invalidatePlaylists();
+      if (force) {
+        await invalidatePlaylists();
+      }
 
       const pls = await getPlaylists();
       setPlaylists(Array.isArray(pls) ? pls : []);
@@ -20,6 +22,10 @@ export function useHomePlaylists(userId: string) {
     }
   }, [getPlaylists, invalidatePlaylists]);
 
+  //ref para evitar re-suscripciones
+  const refreshRef = useRef(refreshPlaylists);
+  refreshRef.current = refreshPlaylists;
+
   const playlistsWithCreate = useMemo(() => {
     return [{ id: '__create__', isCreateButton: true }, ...playlists];
   }, [playlists]);
@@ -28,19 +34,18 @@ export function useHomePlaylists(userId: string) {
 
   useEffect(() => {
     if (!ready) return;
-    refreshPlaylists();
-  }, [ready, refreshPlaylists]);
+    refreshRef.current();
+  }, [ready]);
 
   useEffect(() => {
     if (!ready) return;
     
     const unsubscribe = onPlaylistChange(() => {
-      console.log('[playlists] Change detected, refreshing...');
-      refreshPlaylists(true);
+      refreshRef.current(true);
     });
     
     return unsubscribe;
-  }, [ready, refreshPlaylists]);
+  }, [ready]);  
 
   return {
     playlists,

@@ -17,7 +17,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import HomeBanner from "@/src/components/features/home/HomeBanner";
 import RecentSection from "@/src/components/features/home/RecentSection";
-import CreatePlaylistModal from "@/src/components/shared/CreatePlaylistModal";
 import TrackActionsSheet from "@/src/components/shared/TrackActionsSheet";
 import { supabase } from "@/src/lib/supabase";
 
@@ -27,7 +26,6 @@ import FeedSection from "@/src/components/features/home/FeedSection";
 import SimilarToHeader from "@/src/components/shared/SimilarToHeader";
 import { useContentPadding } from "@/src/hooks/use-content-padding";
 import { useHomeFeed } from "@/src/hooks/use-home-feed";
-import { useHomePlaylists } from "@/src/hooks/use-home-playlists";
 import { useHomeRecent } from "@/src/hooks/use-home-recent";
 import { useUserProfile } from "@/src/hooks/use-user-profile";
 
@@ -40,7 +38,6 @@ export default function HomeScreen() {
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
 
   const { userName, userEmail, userId, initials, gradient } = useUserProfile();
-  const { refreshPlaylists } = useHomePlaylists(userId);
   const { recentVisible } = useHomeRecent(userId, currentSong?.id);
   const {
     newReleases,
@@ -281,13 +278,6 @@ export default function HomeScreen() {
         />
 
       </ProList>
-
-      {/* modal crear playlist */}
-      <CreatePlaylistModal
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onCreated={refreshPlaylists}
-      />
 
       {/* submenú avatar */}
       <TrackActionsSheet

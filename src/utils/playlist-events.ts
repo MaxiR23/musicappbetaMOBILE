@@ -20,10 +20,11 @@ class PlaylistEventEmitter {
 const playlistEmitter = new PlaylistEventEmitter();
 
 export const emitPlaylistChange = () => {
-  console.log('📢 [EVENTS] Playlist changed');
+  //DBG: console.log('[EVENTS] emitPlaylistChange called, listeners:', playlistEmitter.listeners.length);
   playlistEmitter.emit();
 };
 
 export const onPlaylistChange = (callback: () => void) => {
+  //DBG: console.log('[EVENTS] onPlaylistChange subscribed');
   return playlistEmitter.subscribe(callback);
 };

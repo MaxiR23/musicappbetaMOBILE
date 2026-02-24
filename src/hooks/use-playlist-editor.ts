@@ -45,7 +45,7 @@ export function usePlaylistEditor(playlist: any) {
   // Elimina track inline (optimista)
   const handleInlineRemove = async (internalId: string | number) => {
     if (!playlist) return null;
-    
+
     try {
       await removeTrackFromPlaylist(playlist.id, String(internalId));
 
@@ -54,7 +54,7 @@ export function usePlaylistEditor(playlist: any) {
         (s: any) => String(s.internalId) !== String(internalId)
       );
       setEditSongs(nextSongs);
-      
+
       reorderLog("remove", { internalId: String(internalId) });
 
       // Retorna nueva data para actualizar playlist principal
@@ -62,7 +62,7 @@ export function usePlaylistEditor(playlist: any) {
         (acc: number, s: any) => acc + parseDurationToMs(s.duration),
         0
       );
-      
+
       return {
         songs: nextSongs,
         songCount: nextSongs.length,
@@ -92,10 +92,10 @@ export function usePlaylistEditor(playlist: any) {
       newPos,
       moved: movedItem
         ? {
-            internalId: movedItem.internalId,
-            id: movedItem.id,
-            title: movedItem.title,
-          }
+          internalId: movedItem.internalId,
+          id: movedItem.id,
+          title: movedItem.title,
+        }
         : null,
     });
 
@@ -124,6 +124,9 @@ export function usePlaylistEditor(playlist: any) {
         });
 
         const res: any = await moveTrackInPlaylist(playlist.id, oldPos, newPos);
+        //DBG: console.log('[reorder] res.order:', JSON.stringify(res?.order?.slice(0, 3)));
+        //DBG: console.log('[reorder] editSongs IDs:', editSongs.slice(0, 3).map(s => ({ internalId: s.internalId, id: s.id })));
+
         reorderLog("persist:ok", { gaps: res?.gaps, dups: res?.dups });
 
         if (res?.order?.length) {

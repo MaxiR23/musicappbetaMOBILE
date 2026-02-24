@@ -13,13 +13,14 @@ const RELOG_ENABLED = true;
  */
 export function reorderLog(tag: string, data?: any): void {
   if (!__DEV__ || !RELOG_ENABLED) return;
-  
-  try {
+
+  //DBG:
+  /* try {
     const message = data ? JSON.stringify(data) : "";
     console.log(`REORDER:${tag}`, message);
-  } catch {
-    console.log(`REORDER:${tag}`);
-  }
+  } catch (e) {
+    console.log(`REORDER:${tag}`, e);
+  } */
 }
 
 /**
@@ -53,28 +54,21 @@ export function applyServerOrder(
   order: { internalId: string | number; trackId?: string | number; position: number }[]
 ): any[] {
   if (!order?.length) return songs;
-  
-  // Crear mapas de posiciones por internalId y trackId
-  const byInternal = new Map(
-    order.map(o => [String(o.internalId), Number(o.position)])
-  );
-  const byTrack = new Map(
+
+  // Crear mapa de posiciones por trackId (que matchea con song.internalId)
+  const byTrackId = new Map(
     order.map(o => [String(o.trackId ?? ""), Number(o.position)])
   );
-  
+
   // Asignar posiciones a cada canción
   const withPos = songs.map((s: any, i: number) => {
-    const p1 = byInternal.get(String(s.internalId));
-    const p2 = byTrack.get(String(s.id));
-    const pos = typeof p1 === "number" 
-      ? p1 
-      : (typeof p2 === "number" ? p2 : (i + 1));
-    
+    // song.internalId matchea con order.trackId
+    const pos = byTrackId.get(String(s.internalId)) ?? (i + 1);
     return { s, pos };
   });
-  
+
   // Ordenar por posición
   withPos.sort((a, b) => a.pos - b.pos);
-  
+
   return withPos.map(x => x.s);
 }

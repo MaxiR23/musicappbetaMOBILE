@@ -13,7 +13,6 @@ import { usePlaylistEditor } from "@/src/hooks/use-playlist-editor";
 import { useUserProfile } from "@/src/hooks/use-user-profile";
 import { formatDurationCustom, parseDurationToMs } from "@/src/utils/durations";
 import { upgradeThumbUrl } from "@/src/utils/image-helpers";
-import { emitPlaylistChange } from "@/src/utils/playlist-events";
 import { applyServerOrder } from "@/src/utils/reorder-logger";
 import { mapPlaylistSongs } from "@/src/utils/song-mapper";
 import { Ionicons } from "@expo/vector-icons";
@@ -225,7 +224,6 @@ export default function PlaylistScreen() {
             try {
               await deletePlaylist(playlist.id);
               await invalidatePlaylists();
-              emitPlaylistChange();
               setMenuOpen(false);
               router.back();
             } catch (e: any) {
@@ -246,7 +244,6 @@ export default function PlaylistScreen() {
     const newSongs = saveEdits();
     if (newSongs) {
       setPlaylist((prev: any) => (prev ? { ...prev, songs: newSongs } : prev));
-      emitPlaylistChange();
       invalidatePlaylists().catch(() => { });
     }
   };
@@ -255,7 +252,6 @@ export default function PlaylistScreen() {
     const result = await handleInlineRemove(internalId);
     if (result) {
       setPlaylist((prev: any) => (prev ? { ...prev, ...result } : prev));
-      emitPlaylistChange();
       invalidatePlaylists().catch(() => { });
     }
   };
@@ -294,7 +290,6 @@ export default function PlaylistScreen() {
           : prev
       );
 
-      emitPlaylistChange();
       invalidatePlaylists().catch(() => { });
     } catch (e: any) {
       Alert.alert("Error", e?.message || "No se pudo quitar el tema.");

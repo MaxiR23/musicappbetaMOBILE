@@ -12,8 +12,6 @@ import {
   View,
 } from "react-native";
 
-import { emitPlaylistChange } from '@/src/utils/playlist-events';
-
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -36,7 +34,6 @@ export default function CreatePlaylistModal({ open, onOpenChange, onCreated }: P
     setErr(null);
     try {
       const created = await createPlaylist(name.trim(), description.trim() || undefined, isPublic);
-      emitPlaylistChange();
       onCreated?.(created);
       setName("");
       setDescription("");

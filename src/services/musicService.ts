@@ -1,6 +1,6 @@
-// services/musicService.ts
 import { cacheClearPrefix, cacheWrap } from "@/src/utils/cache";
 import { toTrackPayload } from "@/src/utils/music-helpers";
+import { emitPlaylistChange } from "@/src/utils/playlist-events";
 import Constants from "expo-constants";
 import { supabase } from "../lib/supabase";
 import { AlbumDetails, Artist, Song } from "../types/music";
@@ -163,7 +163,11 @@ export const musicService = {
   getPlaylists: async (versions: CacheVersions): Promise<any[]> => {
     return cacheWrap(
       'playlists:list',
-      () => authFetch(`${BASE_URL}/playlists/`),
+      async () => {
+        const data = await authFetch(`${BASE_URL}/playlists/`);
+        //DBG: console.log('[getPlaylists] RAW from backend:', JSON.stringify(data?.slice?.(0, 1)));
+        return data;
+      },
       { version: versions['user-playlists'] }
     );
   },
@@ -187,12 +191,13 @@ export const musicService = {
     });
 
     await cacheClearPrefix('playlists:list');
+    emitPlaylistChange();
+
     return result;
   },
 
   addTrackToPlaylist: async (playlistId: string, song: Song) => {
     const payload = toTrackPayload(song as any);
-    console.log("[API] addTrackToPlaylist →", { playlistId, payload });
 
     const result = await authFetch(
       `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/tracks`,
@@ -203,6 +208,9 @@ export const musicService = {
     );
 
     await cacheClearPrefix(`playlist:${playlistId}`);
+    await cacheClearPrefix('playlists:list');
+    emitPlaylistChange();
+
     return result;
   },
 
@@ -214,6 +222,8 @@ export const musicService = {
 
     await cacheClearPrefix(`playlist:${playlistId}`);
     await cacheClearPrefix('playlists:list');
+    emitPlaylistChange();
+
     return result;
   },
 
@@ -224,6 +234,9 @@ export const musicService = {
     );
 
     await cacheClearPrefix(`playlist:${playlistId}`);
+    await cacheClearPrefix('playlists:list');
+    emitPlaylistChange();
+
     return result;
   },
 
@@ -249,7 +262,7 @@ export const musicService = {
     );
   },
 
-  logPlayTrack: async (trackId: string, context?: { 
+  logPlayTrack: async (trackId: string, context?: {
     album_id?: string;
     album_name?: string;
     artist_id?: string;
@@ -295,6 +308,8 @@ export const musicService = {
     );
 
     await cacheClearPrefix(`playlist:${playlistId}`);
+    await cacheClearPrefix('playlists:list');
+    emitPlaylistChange(); 
     return result;
   },
 
