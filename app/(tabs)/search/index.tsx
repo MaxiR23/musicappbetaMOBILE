@@ -8,7 +8,7 @@ import React from "react";
 export default function SearchScreen() {
   const router = useRouter();
   const { searchSongs } = useMusicApi();
-  const { playFromList } = useMusic();
+  const { playFromSearch } = useMusic();
   const contentPadding = useContentPadding();
 
   const searchFn = async (q: string) => await searchSongs(q);
@@ -27,7 +27,7 @@ export default function SearchScreen() {
         albumId: item.albumId ?? null,  
         albumName: item.albumName ?? undefined,
       };
-      playFromList([track] as any, 0, { type: "queue", name: null });
+      playFromSearch(track as any);
     } else if (item.type === "album") {
       router.push(`/(tabs)/search/album/${item.id}`);
     } else {

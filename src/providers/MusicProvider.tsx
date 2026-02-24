@@ -49,7 +49,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     | { type: "album"; name?: string | null; thumb?: string | null }
     | { type: "artist"; name?: string | null; thumb?: string | null }
     | { type: "queue"; name?: string | null; thumb?: string | null }
-    | { type: "related"; id: string; name?: string | null; thumb?: string | null };
+    | { type: "related"; id: string; name?: string | null; thumb?: string | null }
+    | { type: "search"; id: string; name?: string | null; thumb?: string | null };
 
   function getBaseUrl() {
     return (
@@ -261,6 +262,36 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       console.log('Reproducción desde Related iniciada');
     } catch (err) {
       console.error("[RNTP] error en syncWithTrackPlayer:", err);
+    } finally {
+      switchingRef.current = false;
+    }
+  }
+
+  async function playFromSearch(song: Song) {
+    if (switchingRef.current) return;
+    switchingRef.current = true;
+
+    playedAutoplayIdsRef.current.clear();
+
+    const newQueue = [song];
+
+    queueRef.current = newQueue;
+    queueIndexRef.current = 0;
+    originalQueueSizeRef.current = 1;
+
+    setQueue(newQueue);
+    setQueueIndex(0);
+    setCurrentSong(song);
+    setOriginalQueueSize(1);
+    setInitialQueueSize(1);
+    setPlaySource({ type: "search", id: String(song.id), name: (song as any).title ?? null, thumb: null });
+
+    lastLoggedContextKeyRef.current = null;
+
+    try {
+      await syncWithTrackPlayer(newQueue, 0);
+    } catch (err) {
+      console.error("[playFromSearch] error:", err);
     } finally {
       switchingRef.current = false;
     }
@@ -861,6 +892,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       queueIndex,
       playFromList,
       playFromRelated,
+      playFromSearch,
       next,
       skipToIndex,
       prev,
