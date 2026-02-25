@@ -57,7 +57,7 @@ interface PlayerTabsProps {
   playSource?: any;
   currentSong?: any;
 
-  // 🆕 Cola y autoplay
+  // Cola y autoplay
   queue?: any[];
   queueIndex?: number;
   originalQueueSize?: number;
@@ -726,7 +726,8 @@ const styles = StyleSheet.create({
   lyricsText: {
     color: "#fff",
     fontSize: 16,
-    lineHeight: 28,
+    fontWeight: "600",
+    lineHeight: 26,
     textAlign: "center",
     letterSpacing: 0.3,
   },
