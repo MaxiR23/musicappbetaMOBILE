@@ -4,17 +4,17 @@ import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import TrackPlayer, { State as TPState } from "react-native-track-player";
 
-import AuthContainer from "@/src/components/features/auth/AuthContainer";
-import { useAuth } from "@/src/hooks/use-auth";
-import AuthProvider from "@/src/providers/AuthProvider";
-import CacheVersionsProvider from "@/src/providers/CacheVersionsProvider";
+import AuthContainer from "@/components/features/auth/AuthContainer";
+import { useAuth } from "@/hooks/use-auth";
+import AuthProvider from "@/providers/AuthProvider";
+import CacheVersionsProvider from "@/providers/CacheVersionsProvider";
 
-import MusicPlayer from "@/src/components/features/player/MusicPlayer";
-import { MusicProvider } from "../src/providers/MusicProvider";
-import { ensureTrackPlayer } from "../src/services/setupTrackPlayer";
+import MusicPlayer from "@/components/features/player/MusicPlayer";
+import { MusicProvider } from "@/providers/MusicProvider";
+import { ensureTrackPlayer } from "@/services/setupTrackPlayer";
 
-import { useMusic } from "@/src/hooks/use-music";
-import { useMusicApi } from "@/src/hooks/use-music-api";
+import { useMusic } from "@/hooks/use-music";
+import { useMusicApi } from "@/hooks/use-music-api";
 
 const MyTheme = {
   ...DarkTheme,

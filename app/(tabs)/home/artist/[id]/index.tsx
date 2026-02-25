@@ -1,1 +1,1 @@
-export { default } from '@/src/screens/ArtistScreen';
+export { default } from '@/screens/ArtistScreen';

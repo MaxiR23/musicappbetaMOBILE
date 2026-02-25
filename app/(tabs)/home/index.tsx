@@ -1,33 +1,33 @@
-import ProList from "@/src/components/shared/ProList";
-import { useMusic } from "@/src/hooks/use-music";
+import ProList from "@/components/shared/ProList";
+import { useMusic } from "@/hooks/use-music";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  InteractionManager,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    InteractionManager,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { cleanExpiredCache } from '@/src/utils/cache';
+import { cleanExpiredCache } from '@/utils/cache';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import HomeBanner from "@/src/components/features/home/HomeBanner";
-import RecentSection from "@/src/components/features/home/RecentSection";
-import TrackActionsSheet from "@/src/components/shared/TrackActionsSheet";
-import { supabase } from "@/src/lib/supabase";
+import HomeBanner from "@/components/features/home/HomeBanner";
+import RecentSection from "@/components/features/home/RecentSection";
+import TrackActionsSheet from "@/components/shared/TrackActionsSheet";
+import { supabase } from "@/lib/supabase";
 
-import HorizontalScrollSection from "@/src/components/shared/HorizontalScrollSection";
+import HorizontalScrollSection from "@/components/shared/HorizontalScrollSection";
 
-import FeedSection from "@/src/components/features/home/FeedSection";
-import SimilarToHeader from "@/src/components/shared/SimilarToHeader";
-import { useContentPadding } from "@/src/hooks/use-content-padding";
-import { useHomeFeed } from "@/src/hooks/use-home-feed";
-import { useHomeRecent } from "@/src/hooks/use-home-recent";
-import { useUserProfile } from "@/src/hooks/use-user-profile";
+import FeedSection from "@/components/features/home/FeedSection";
+import SimilarToHeader from "@/components/shared/SimilarToHeader";
+import { useContentPadding } from "@/hooks/use-content-padding";
+import { useHomeFeed } from "@/hooks/use-home-feed";
+import { useHomeRecent } from "@/hooks/use-home-recent";
+import { useUserProfile } from "@/hooks/use-user-profile";
 
 export default function HomeScreen() {
   const router = useRouter();

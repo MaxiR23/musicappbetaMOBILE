@@ -1,9 +1,9 @@
-import GenreCard from "@/src/components/shared/GenreCard";
-import LoadingView from "@/src/components/shared/LoadingView";
-import ScreenHeader from "@/src/components/shared/ScreenHeader";
-import { useContentPadding } from "@/src/hooks/use-content-padding";
-import { useMounted } from "@/src/hooks/use-mounted";
-import { useMusicApi } from "@/src/hooks/use-music-api";
+import GenreCard from "@/components/shared/GenreCard";
+import LoadingView from "@/components/shared/LoadingView";
+import ScreenHeader from "@/components/shared/ScreenHeader";
+import { useContentPadding } from "@/hooks/use-content-padding";
+import { useMounted } from "@/hooks/use-mounted";
+import { useMusicApi } from "@/hooks/use-music-api";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { FlatList, StatusBar, StyleSheet, View } from "react-native";

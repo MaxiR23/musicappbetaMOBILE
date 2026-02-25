@@ -1,7 +1,7 @@
-import SearchPanel, { ResultItem } from "@/src/components/features/search/SearchPanel";
-import { useContentPadding } from "@/src/hooks/use-content-padding";
-import { useMusic } from "@/src/hooks/use-music";
-import { useMusicApi } from "@/src/hooks/use-music-api";
+import SearchPanel, { ResultItem } from "@/components/features/search/SearchPanel";
+import { useContentPadding } from "@/hooks/use-content-padding";
+import { useMusic } from "@/hooks/use-music";
+import { useMusicApi } from "@/hooks/use-music-api";
 import { Stack, useRouter } from "expo-router";
 import React from "react";
 

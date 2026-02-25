@@ -74,11 +74,11 @@ npx expo start --android # Android
 | Directorio | Descripción |
 |-----------|-------------|
 | `app/` | Screens con Expo Router (file-based) |
-| `src/components/` | Componentes reutilizables (features + shared) |
-| `src/hooks/` | Custom Hooks (music, api, cache) |
-| `src/context/` | Context providers (Music, Auth) |
-| `src/utils/` | Helpers y utilidades |
-| `src/types/` | TypeScript definitions |
+| `components/` | Componentes reutilizables (features + shared) |
+| `hooks/` | Custom Hooks (music, api, cache) |
+| `context/` | Context providers (Music, Auth) |
+| `utils/` | Helpers y utilidades |
+| `types/` | TypeScript definitions |
 | `assets/` | Imágenes y fonts |
 
 <details>
@@ -93,7 +93,6 @@ beatly/
 │   ├── album/[id].tsx
 │   ├── artist/[id].tsx
 │   └── playlist/[id].tsx
-├── src/
 │   ├── components/
 │   │   ├── features/
 │   │   └── shared/

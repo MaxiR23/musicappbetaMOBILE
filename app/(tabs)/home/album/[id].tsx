@@ -1,1 +1,1 @@
-export { default } from '@/src/screens/AlbumScreen';
+export { default } from '@/screens/AlbumScreen';

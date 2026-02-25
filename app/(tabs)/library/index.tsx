@@ -1,10 +1,10 @@
-import CreatePlaylistModal from "@/src/components/shared/CreatePlaylistModal";
-import LoadingView from "@/src/components/shared/LoadingView";
-import ReleaseCard from "@/src/components/shared/ReleaseCard";
-import ScreenHeader from "@/src/components/shared/ScreenHeader";
-import { useContentPadding } from "@/src/hooks/use-content-padding";
-import { useHomePlaylists } from "@/src/hooks/use-home-playlists";
-import { useUserProfile } from "@/src/hooks/use-user-profile";
+import CreatePlaylistModal from "@/components/shared/CreatePlaylistModal";
+import LoadingView from "@/components/shared/LoadingView";
+import ReleaseCard from "@/components/shared/ReleaseCard";
+import ScreenHeader from "@/components/shared/ScreenHeader";
+import { useContentPadding } from "@/hooks/use-content-padding";
+import { useHomePlaylists } from "@/hooks/use-home-playlists";
+import { useUserProfile } from "@/hooks/use-user-profile";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
