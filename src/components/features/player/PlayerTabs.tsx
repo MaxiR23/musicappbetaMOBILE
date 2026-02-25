@@ -77,16 +77,16 @@ interface PlayerTabsProps {
 
   // Callbacks
   onTogglePlay: () => void;
-  onCoverPress: () => void; // 🔥 Para cerrar el tab (volver al expanded player)
+  onCoverPress: () => void;
   onTabChange: (tab: TabType) => void;
   onFetchLyrics: () => Promise<void>;
   onFetchUpNext: () => Promise<void>;
   onFetchRelated: () => Promise<void>;
 
-  // 🆕 Callbacks para Up Next
+  // Callbacks para Up Next
   onUpNextTrackPress?: (track: any, isFromAutoplay: boolean) => void;
 
-  // 🆕 Callbacks para Related
+  // Callbacks para Related
   onRelatedTrackPress?: (track: any) => void;
   onRelatedArtistPress?: (artistId: string) => void;
   onRelatedAlbumPress?: (albumId: string) => void;
@@ -119,9 +119,9 @@ export function PlayerTabs({
   onFetchUpNext,
   onFetchRelated,
   onUpNextTrackPress,
-  onRelatedTrackPress, // 🆕
-  onRelatedArtistPress, // 🆕
-  onRelatedAlbumPress, // 🆕
+  onRelatedTrackPress,
+  onRelatedArtistPress, 
+  onRelatedAlbumPress, 
 }: PlayerTabsProps) {
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
@@ -341,7 +341,7 @@ export function PlayerTabs({
                 })()}
 
                 {(() => {
-                  // 🆕 SECCIÓN 2: AUTOPLAY (sugerencias que NO están en el queue aún)
+                  // SECCIÓN 2: AUTOPLAY (sugerencias que NO están en el queue aún)
                   if (!upNextData?.upNext || upNextData.upNext.length <= 1) {
                     return null;
                   }
@@ -510,7 +510,7 @@ export function PlayerTabs({
                     );
                   }
 
-                  // 👤 ARTISTAS → Scroll horizontal con fotos circulares
+                  // ARTISTAS → Scroll horizontal con fotos circulares
                   if (sectionType === "artists") {
                     return (
                       <View key={sectionKey} style={styles.relatedSection}>
@@ -537,7 +537,7 @@ export function PlayerTabs({
                     );
                   }
 
-                  // 💿 ÁLBUMES → Scroll horizontal con fotos cuadradas
+                  // ÁLBUMES → Scroll horizontal con fotos cuadradas
                   if (sectionType === "albums") {
                     return (
                       <View key={sectionKey} style={styles.relatedSection}>
@@ -695,7 +695,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
 
-  // 🆕 Secciones de Queue
+  // Secciones de Queue
   queueSection: {
     marginBottom: 24,
   },
