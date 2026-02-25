@@ -40,18 +40,18 @@ Sistema de likes · Playlists públicas/privadas · Compartir · Eventos de arti
 
 **Prerrequisitos:** Node.js 18+ · npm 9+ · Expo CLI
 
-**1️⃣ Clonar** el repositorio
+**1) Clonar** el repositorio
 ```bash
 git clone https://github.com/tu-usuario/beatly.git
 cd beatly
 ```
 
-**2️⃣ Instalar** dependencias
+**2) Instalar** dependencias
 ```bash
 npm install  # o yarn install
 ```
 
-**3️⃣ Configurar** variables de entorno
+**3) Configurar** variables de entorno
 
 Crear `.env` en la raíz:
 ```env
@@ -60,7 +60,7 @@ EXPO_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key_aqui
 ```
 
-**4️⃣ Iniciar** el proyecto
+**4) Iniciar** el proyecto
 ```bash
 npx expo start           # Desarrollo
 npx expo start --ios     # iOS
@@ -73,13 +73,13 @@ npx expo start --android # Android
 
 | Directorio | Descripción |
 |-----------|-------------|
-| `app/` | 🎯 Screens con Expo Router (file-based) |
-| `src/components/` | 🧩 Componentes reutilizables (features + shared) |
-| `src/hooks/` | 🪝 Custom Hooks (music, api, cache) |
-| `src/context/` | 🌐 Context providers (Music, Auth) |
-| `src/utils/` | 🛠️ Helpers y utilidades |
-| `src/types/` | 📝 TypeScript definitions |
-| `assets/` | 🎨 Imágenes y fonts |
+| `app/` | Screens con Expo Router (file-based) |
+| `src/components/` | Componentes reutilizables (features + shared) |
+| `src/hooks/` | Custom Hooks (music, api, cache) |
+| `src/context/` | Context providers (Music, Auth) |
+| `src/utils/` | Helpers y utilidades |
+| `src/types/` | TypeScript definitions |
+| `assets/` | Imágenes y fonts |
 
 <details>
 <summary>Ver árbol completo</summary>
