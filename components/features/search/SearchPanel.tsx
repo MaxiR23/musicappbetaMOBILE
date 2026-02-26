@@ -5,13 +5,13 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -24,6 +24,7 @@ export type ResultItem = {
   albumId?: string | null;
   albumName?: string | null;
   duration?: string;
+  durationSeconds?: number;
   thumbnail?: string;
 };
 
@@ -117,6 +118,7 @@ export default function SearchPanel({
       albumId: s.goTo?.albumId ?? null,
       albumName: s.albumName ?? null,
       duration: s.duration || "",
+      durationSeconds: s.durationSeconds ?? undefined,
       thumbnail: getUpgradedThumb(s, 512),
       type: "song",
     }));

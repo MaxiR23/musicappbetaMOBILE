@@ -268,6 +268,7 @@ export const musicService = {
     artist_id?: string;
     track_name?: string;
     artist_name?: string;
+    durationSeconds?: number;
     thumbnail_url?: string;
   }) => {
     return authFetch(

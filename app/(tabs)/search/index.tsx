@@ -23,7 +23,7 @@ export default function SearchScreen() {
         thumbnail: item.thumbnail ?? "",
         url: "",
         duration: item.duration,
-        durationSeconds: undefined,
+        durationSeconds: item.durationSeconds ?? undefined,
         albumId: item.albumId ?? null,  
         albumName: item.albumName ?? undefined,
       };

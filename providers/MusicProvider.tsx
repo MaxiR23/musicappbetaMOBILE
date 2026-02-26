@@ -779,10 +779,12 @@ export function MusicProvider({ children }: { children: ReactNode }) {
             artist_id: (trackToLog as any).artistId ?? (trackToLog as any).artist_id ?? undefined,
             artist_name: (trackToLog as any).artistName ?? (trackToLog as any).artist ?? undefined,
             track_name: (trackToLog as any).title ?? undefined,
+            durationSeconds: (trackToLog as any).durationSeconds ?? undefined,
             thumbnail_url: (trackToLog as any).thumbnail ?? (trackToLog as any).thumbnail_url ?? undefined,
           };
 
           logPlayTrack(trackId, trackContext).catch(() => { });
+          //DBG: CHECK TRACK console.log("[duration-check] trackToLog json =", JSON.stringify(trackToLog, null, 2));
           console.log("[tracklog] track logged after 30s real:", trackId, trackContext);
         }
       }
