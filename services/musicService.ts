@@ -313,6 +313,30 @@ export const musicService = {
     );
   },
 
+  getMonthlyStats: async (options?: {
+    include?: string;
+    limit?: number;
+  }): Promise<{
+    month_start: string;
+    artists?: any[];
+    albums?: any[];
+    tracks?: any[];
+  }> => {
+    const params = new URLSearchParams();
+    if (options?.include) params.set("include", options.include);
+    if (options?.limit) params.set("limit", String(options.limit));
+
+    const query = params.toString();
+    const url = `${BASE_URL}/stats/monthly${query ? `?${query}` : ""}`;
+    const cacheKey = `monthly-stats${query ? `:${query}` : ""}`;
+
+    return cacheWrap(
+      cacheKey,
+      () => authFetch(url),
+      { userId: 'me' }
+    );
+  },
+  
   // ==================== LIKES ==================== (coming soon)
 
   // ==================== OTHER ====================

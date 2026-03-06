@@ -29,7 +29,7 @@ import { useHomeFeed } from "@/hooks/use-home-feed";
 import { useHomeRecent } from "@/hooks/use-home-recent";
 import { useUserProfile } from "@/hooks/use-user-profile";
 
-import WeeklyStatsCard from "@/components/features/home/WeeklyStatsCard";
+import MonthlyStatsCard from "@/components/features/home/MonthlyStatsCard";
 import { useMusicApi } from "@/hooks/use-music-api";
 
 export default function HomeScreen() {
@@ -76,8 +76,8 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    getWeeklyStats({ include: "artists", limit: 3 }).then((data) => {
-      setWeeklyArtists(data?.artists ?? []);
+    getMonthlyStats({ include: "artists", limit: 3 }).then((data) => {
+      setMonthlyArtists(data?.artists ?? []);
     }).catch(() => { });
   }, []);
 
@@ -100,8 +100,8 @@ export default function HomeScreen() {
   const mappedNewSingles = useMemo(() => mapTracksForPlayer(newSingles), [newSingles, mapTracksForPlayer]);
   const mappedSeedTracks = useMemo(() => mapTracksForPlayer(seedTracks), [seedTracks, mapTracksForPlayer]);
 
-  const { getWeeklyStats } = useMusicApi();
-  const [weeklyArtists, setWeeklyArtists] = useState<any[]>([]);
+  const { getMonthlyStats } = useMusicApi();
+  const [monthlyArtists, setMonthlyArtists] = useState<any[]>([]);
 
   // ── tomar 2 seeds para ubicar bloques ──
   const items1 = useMemo(() => (recoBySeed[0]?.[1] || []), [recoBySeed]);
@@ -127,7 +127,7 @@ export default function HomeScreen() {
 
   return (
     <>
-      {/* 🔍 Barra de búsqueda */}
+      {/* Barra de búsqueda */}
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#0e0e0e" }}>
         <View style={{ paddingTop: 10, paddingHorizontal: 16, paddingBottom: 8 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
@@ -168,7 +168,7 @@ export default function HomeScreen() {
       >
         {/* banner */}
         <HomeBanner />
-        <WeeklyStatsCard artists={weeklyArtists} />
+        <MonthlyStatsCard artists={monthlyArtists} />
 
         {/* TODO: CHECK OLD CODE BELOW, if decided to be unused archived or delete PlaylistSection { */}
 

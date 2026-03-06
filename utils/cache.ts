@@ -4,6 +4,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 export const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_TTL = DAY_MS;
 
+function msUntilEndOfMonth(): number {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime() - now.getTime();
+}
+
 // TTLs específicos por tipo de contenido
 export const CACHE_TTL = {
   artist: 60 * 60 * 1000,
@@ -13,6 +18,7 @@ export const CACHE_TTL = {
   feed: 30 * 60 * 1000,
   recent: DAY_MS * 7,
   weeklyStats: DAY_MS * 7,
+  get monthlyStats() { return msUntilEndOfMonth(); },
   default: 5 * 60 * 1000,
 };
 
@@ -30,13 +36,14 @@ const k = (key: string, userId?: string | null, version?: string | null) => {
 };
 
 function getTTLForKey(key: string): number {
+  if (key.includes('monthly-stats')) return CACHE_TTL.monthlyStats;
+  if (key.includes('weekly-stats')) return CACHE_TTL.weeklyStats;
   if (key.includes('artist')) return CACHE_TTL.artist;
   if (key.includes('album')) return CACHE_TTL.album;
   if (key.includes('playlist')) return CACHE_TTL.playlist;
   if (key.includes('track')) return CACHE_TTL.track;
   if (key.includes('feed')) return CACHE_TTL.feed;
   if (key.includes('recent')) return CACHE_TTL.recent;
-  if (key.includes('weekly-stats')) return CACHE_TTL.weeklyStats;
   return CACHE_TTL.default;
 }
 

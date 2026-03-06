@@ -12,7 +12,7 @@ const getArtistFields = (artist: any, idx: number) => ({
   thumbnail: artist?.thumbnail_url ?? artist?.thumbnail,
 });
 
-export default function WeeklyStatsCard({ artists }: Props) {
+export default function MonthlyStatsCard({ artists }: Props) {
   const router = useRouter();
 
   if (!artists?.length) return null;
@@ -21,7 +21,7 @@ export default function WeeklyStatsCard({ artists }: Props) {
     <TouchableOpacity
       style={styles.container}
       activeOpacity={0.8}
-      //onPress={() => router.push("/(tabs)/home/stats")}
+      onPress={() => router.push("/(tabs)/home/stats")}
     >
       <View style={styles.artistsRow}>
         {artists.map((artist, idx) => {
@@ -41,7 +41,7 @@ export default function WeeklyStatsCard({ artists }: Props) {
         })}
       </View>
 
-      <Text style={styles.label}>Tu semana en música</Text>
+      <Text style={styles.label}>Tu mes en música</Text>
     </TouchableOpacity>
   );
 }

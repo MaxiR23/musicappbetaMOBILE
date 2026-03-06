@@ -143,6 +143,12 @@ export function useMusicApi() {
     []
   );
 
+  const getMonthlyStats = useCallback(
+    (options?: { include?: string; limit?: number }) =>
+      musicService.getMonthlyStats(options),
+    []
+  );
+
   // ==================== LIKES ==================== (coming soon)
 
   // ==================== OTHER ====================
@@ -197,6 +203,7 @@ export function useMusicApi() {
     logPlayTrack,
     logPlayPlaylist,
     getWeeklyStats,
+    getMonthlyStats,
     getRecentPlays,
     moveTrackInPlaylist,
     getTrackLyrics,
