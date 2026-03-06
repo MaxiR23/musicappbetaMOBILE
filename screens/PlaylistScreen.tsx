@@ -194,17 +194,17 @@ export default function PlaylistScreen() {
 
   const handlePlayAll = () => {
     if (!mappedSongs.length) return;
-    playFromList(mappedSongs, 0, { type: "playlist", name: playlist!.name });
+    playFromList(mappedSongs, 0, { type: "playlist", id: playlist!.id, name: playlist!.name });
   };
 
   const handleShuffleAll = () => {
     if (!mappedSongs.length) return;
     const shuffled = [...mappedSongs].sort(() => Math.random() - 0.5);
-    playFromList(shuffled, 0, { type: "playlist", name: playlist!.name });
+    playFromList(shuffled, 0, { type: "playlist", id: playlist!.id, name: playlist!.name });
   };
 
   const handleTrackPress = (index: number) => {
-    playFromList(mappedSongs, index, { type: "playlist", name: playlist!.name });
+    playFromList(mappedSongs, index, { type: "playlist", id: playlist!.id, name: playlist!.name });
   };
 
   const handleTrackMorePress = (track: any) => {

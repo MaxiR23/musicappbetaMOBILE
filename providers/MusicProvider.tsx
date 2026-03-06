@@ -35,6 +35,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const syncingRef = useRef(false);
   const switchingRef = useRef(false);
   const lastLoggedContextKeyRef = useRef<string | null>(null);
+  const lastLoadedContextKeyRef = useRef<string | null>(null);
   const lastLoggedTrackIdRef = useRef<string | null>(null);
   const listenTimeRef = useRef<{ trackId: string; accumulated: number; lastPosition: number } | null>(null);
   const endingRef = useRef(false);
@@ -167,7 +168,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     playedAutoplayIdsRef.current.clear();
 
     const ctx = resolveContextKey(list, source);
-    const isSameContext = ctx && lastLoggedContextKeyRef.current === ctx.key;
+    const isSameContext = ctx != null && lastLoadedContextKeyRef.current === ctx.key;
 
     // Actualizar refs primero (para que el listener tenga valores correctos)
     queueRef.current = list;
@@ -182,6 +183,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         await TrackPlayer.play();
       } else {
         await syncWithTrackPlayer(list, startIndex);
+        lastLoadedContextKeyRef.current = ctx?.key ?? null;
       }
     } catch (err) {
       console.error("[RNTP] error:", err);
