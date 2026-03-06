@@ -79,7 +79,7 @@ export default function FeedListScreen() {
               <ReleaseCard
                 cover={cover}
                 title={item.title || item.name}
-                subtitle={item.artist || item.artistName || (isArtist ? "Artista" : "Álbum")}
+                subtitle={item.artist || item.artist_name || (isArtist ? "Artista" : "Álbum")}
                 circular={isArtist}
                 onPress={() =>
                   router.push(

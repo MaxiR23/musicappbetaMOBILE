@@ -19,13 +19,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter, useSegments } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    Alert,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 
 export default function PlaylistScreen() {
@@ -87,11 +87,12 @@ export default function PlaylistScreen() {
                 internalId: t.id,
                 title: t.title,
                 artist: t.artist,
-                artistId: t.artist_id ?? null,
-                albumId: t.album ?? null,
-                duration: t.duration_ms
-                  ? `${Math.floor(t.duration_ms / 60000)}:${String(
-                    Math.floor((t.duration_ms % 60000) / 1000)
+                artist_id: t.artist_id,
+                album_id: t.album_id,
+                album_name: t.album_name,
+                duration: t.duration_seconds != null
+                  ? `${Math.floor(t.duration_seconds / 60)}:${String(
+                    t.duration_seconds % 60
                   ).padStart(2, "0")}`
                   : "--:--",
                 albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
@@ -101,7 +102,7 @@ export default function PlaylistScreen() {
               setPlaylist({
                 id: result.playlist.id,
                 name: result.playlist.title,
-                songCount: songs.length,
+                song_count: songs.length,
                 duration: formatDurationCustom(totalMs, { format: 'compact', round: true }),
                 songs,
               });
@@ -122,11 +123,12 @@ export default function PlaylistScreen() {
               internalId: t.id,
               title: t.title,
               artist: t.artist,
-              artistId: t.artist_id ?? null,
-              albumId: t.album ?? null,
-              duration: t.duration_ms
-                ? `${Math.floor(t.duration_ms / 60000)}:${String(
-                  Math.floor((t.duration_ms % 60000) / 1000)
+              artist_id: t.artist_id,
+              album_id: t.album_id,
+              album_name: t.album_name,
+              duration: t.duration_seconds != null
+                ? `${Math.floor(t.duration_seconds / 60)}:${String(
+                  t.duration_seconds % 60
                 ).padStart(2, "0")}`
                 : "--:--",
               albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,

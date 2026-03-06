@@ -22,12 +22,12 @@ export const mmssToMs = (s?: string | null): number | null => {
  * Transforma un objeto song en el payload que espera el backend
  */
 export const toTrackPayload = (song: any) => {
-  const id = first(song?.id, song?.videoId, song?.track_id, song?.video_id);
+  const id = first(song?.id, song?.track_id, song?.track_id, song?.video_id);
 
   const duration_ms =
     song?.duration_ms ??
-    (song?.durationSeconds != null
-      ? Math.round(Number(song.durationSeconds) * 1000)
+    (song?.duration_seconds != null
+      ? Math.round(Number(song.duration_seconds) * 1000)
       : mmssToMs(song?.duration));
 
   const thumbnail_url =
@@ -35,17 +35,17 @@ export const toTrackPayload = (song: any) => {
     upgradeThumbUrl(first(song?.thumbnail_url, song?.thumbnail, song?.albumCover), 512) ??
     null;
 
-  const artist_id = first(song?.artistId, song?.artist_id, song?.artists?.[0]?.id, null);
+  const artist_id = first(song?.artist_id, song?.artist_id, song?.artists?.[0]?.id, null);
   const artist =
     first(
-      song?.artistName,
+      song?.artist_name,
       song?.artist,
       Array.isArray(song?.artists) 
         ? song.artists.map((a: any) => a?.name).filter(Boolean).join(", ") 
         : null
     ) ?? null;
 
-  const album = first(song?.albumId, song?.album, null);
+  const album = first(song?.album_id, song?.album, null);
 
   return {
     id,

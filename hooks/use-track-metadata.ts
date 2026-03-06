@@ -4,14 +4,14 @@ import { useMemo } from "react";
 
 /**
  * Hook para extraer y normalizar metadatos de un track
- * Maneja múltiples formatos posibles de artistId, artistName, thumbnails, etc.
+ * Maneja múltiples formatos posibles de artist_id, artist_name, thumbnails, etc.
  */
 export function useTrackMetadata(currentSong: any) {
   return useMemo(() => {
     if (!currentSong) {
       return {
-        artistId: null,
-        artistName: "",
+        artist_id: null,
+        artist_name: "",
         rawThumb: "",
         thumbUrl: "",
         coverUrl: "",
@@ -20,15 +20,15 @@ export function useTrackMetadata(currentSong: any) {
     }
 
     // Extraer artist ID con múltiples fallbacks
-    const artistId = first(
-      currentSong?.artistId,
+    const artist_id = first(
+      currentSong?.artist_id,
       currentSong?.artist_id,
       currentSong?.artists?.[0]?.id
     ) || null;
 
     // Extraer artist name con múltiples fallbacks
-    const artistName = first(
-      currentSong?.artistName,
+    const artist_name = first(
+      currentSong?.artist_name,
       currentSong?.artist,
       Array.isArray(currentSong?.artists)
         ? currentSong.artists.map((a: any) => a?.name).filter(Boolean).join(", ")
@@ -49,8 +49,8 @@ export function useTrackMetadata(currentSong: any) {
     const bgUrl = upgradeYtmImage(rawThumb, 1200) || rawThumb;
 
     return {
-      artistId,
-      artistName,
+      artist_id,
+      artist_name,
       rawThumb,
       thumbUrl,
       coverUrl,

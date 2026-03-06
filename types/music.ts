@@ -5,21 +5,21 @@ export interface Artist {
     description: string;
     thumbnails: { url: string; width: number; height: number }[];
   };
-  topSongs: TopSong[];
+  top_songs: TopSong[];
   albums: Album[];
   singles_eps?: Single[];
   related: RelatedArtist[];
-  newReleases?: NewRelease[];
+  new_releases?: NewRelease[];
 }
 
 export interface TopSong {
   id: string;  
   title: string;
-  artistName?: string | null;
-  artistId?: string | null;
-  albumId?: string | null;
+  artist_name?: string | null;
+  artist_id?: string | null;
+  album_id?: string | null;
   duration?: string;
-  durationSeconds?: number;
+  duration_seconds?: number;
   thumbnail?: string | null;
 }
 
@@ -41,18 +41,18 @@ export interface Single {
 export interface RelatedArtist {
   id: string;
   name: string;
-  subtitle: string; // 👈 viene así del backend
+  subtitle: string;
   thumbnails: { url: string; width: number; height: number }[];
 }
 
 export interface Song {
   id: string;
   title: string;
-  artistName?: string | null;
-  artistId?: string;
-  albumId?: string | null;
+  artist_name?: string | null;
+  artist_id?: string;
+  album_id?: string | null;
   duration?: string;
-  durationSeconds?: number;
+  duration_seconds?: number;
   thumbnail: string; 
   url: string;
 }
@@ -69,11 +69,11 @@ export interface AlbumDetails {
     id: string;
     title: string;
     duration?: string;
-    durationSeconds?: number;
+    duration_seconds?: number;
     playlistId?: string;
     artists: { id: string | null; name: string | null }[];
-    artistId: string | null;
-    artistName: string | null;
+    artist_id: string | null;
+    artist_name: string | null;
   }[];
 }
 
@@ -153,10 +153,10 @@ export async function addTrackToPlaylist(fetchFn: typeof fetch, playlistId: stri
     body: JSON.stringify({
       track_id: song.id,
       title: song.title,
-      artist: song.artistName,
-      artist_id: song.artistId,
-      album: song.albumId ?? null,
-      duration_ms: song.durationSeconds ?? null,
+      artist: song.artist_name,
+      artist_id: song.artist_id,
+      album: song.album_id ?? null,
+      duration_seconds: song.duration_seconds ?? null,
       thumbnail_url: song.thumbnail,
     }),
   });

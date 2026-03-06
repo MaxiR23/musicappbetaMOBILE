@@ -1,6 +1,6 @@
 import { DarkTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import TrackPlayer, { State as TPState } from "react-native-track-player";
 
@@ -49,11 +49,8 @@ function Gate() {
 }
 
 function AuthedApp() {
-  // setup del player solo cuando el usuario está autenticado
   useEffect(() => {
-    ensureTrackPlayer().catch((e) =>
-      console.warn("TrackPlayer setup error", e)
-    );
+    ensureTrackPlayer().catch((e) => console.warn("TrackPlayer setup error", e));
   }, []);
 
   return (
@@ -65,23 +62,15 @@ function AuthedApp() {
 
 function InnerLayout() {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
 
   const { currentSong, queue, queueIndex, next, prev } = useMusic();
   const { prefetchSongs } = useMusicApi();
 
   const nextRef = useRef(next);
   const prevRef = useRef(prev);
-  useEffect(() => {
-    nextRef.current = next;
-  }, [next]);
-  useEffect(() => {
-    prevRef.current = prev;
-  }, [prev]);
+  useEffect(() => { nextRef.current = next; }, [next]);
+  useEffect(() => { prevRef.current = prev; }, [prev]);
 
-  // Prefetch próximos 3
   useEffect(() => {
     if (!queue?.length) return;
     const nextSongs = queue.slice(queueIndex + 1, queueIndex + 4);
@@ -89,24 +78,14 @@ function InnerLayout() {
     if (ids.length) prefetchSongs(ids);
   }, [queueIndex, queue, prefetchSongs]);
 
-  // Poll de progreso/estado
   useEffect(() => {
     let mounted = true;
     const id = setInterval(async () => {
       try {
-        const [prog, state] = await Promise.all([
-          TrackPlayer.getProgress(),
-          TrackPlayer.getState(),
-        ]);
+        const state = await TrackPlayer.getState();
         if (!mounted) return;
-
         setIsPlaying(state === TPState.Playing);
-        const dMs = (prog?.duration ?? 0) * 1000;
-        const pMs = (prog?.position ?? 0) * 1000;
-        setDuration(dMs);
-        setCurrentTime(pMs);
-        setProgress(dMs > 0 ? pMs / dMs : 0);
-      } catch { }
+      } catch {}
     }, 500);
     return () => {
       mounted = false;
@@ -114,28 +93,21 @@ function InnerLayout() {
     };
   }, []);
 
-  // NO re-hidratamos la cola acá. La única fuente de verdad es MusicProvider.playFromList()
-
-  const togglePlay = async () => {
+  const togglePlay = useCallback(async () => {
     await ensureTrackPlayer();
-    // si no hay canción/cola, no intentes reproducir
     if (!currentSong || queue.length === 0) return;
-
     const s = await TrackPlayer.getState().catch(() => null);
     if (s === TPState.Playing) {
-      await TrackPlayer.pause().catch(() => { });
+      await TrackPlayer.pause().catch(() => {});
       setIsPlaying(false);
     } else {
-      await TrackPlayer.play().catch(() => { });
+      await TrackPlayer.play().catch(() => {});
       setIsPlaying(true);
     }
-  };
+  }, [currentSong, queue]);
 
-  const seekTo = async (val01: number) => {
-    if (!duration) return;
-    const seconds = (val01 * duration) / 1000;
-    await TrackPlayer.seekTo(seconds).catch(() => { });
-  };
+  const handleNext = useCallback(() => nextRef.current?.(), []);
+  const handlePrev = useCallback(() => prevRef.current?.(), []);
 
   return (
     <View style={{ flex: 1 }}>
@@ -155,13 +127,9 @@ function InnerLayout() {
       {currentSong && (
         <MusicPlayer
           isPlaying={isPlaying}
-          progress={progress}
-          duration={duration}
-          currentTime={currentTime}
           onTogglePlay={togglePlay}
-          onSeek={seekTo}
-          onNext={() => nextRef.current?.()}
-          onPrev={() => prevRef.current?.()}
+          onNext={handleNext}
+          onPrev={handlePrev}
         />
       )}
     </View>

@@ -91,7 +91,7 @@ export function useHomeFeed(userId: string) {
     try {
       const data = await cacheWrap(
         `home:recommendations:v1`,
-        () => fetchRecommendations(undefined, fetchWithAuth),
+        () => fetchRecommendations(),
         { userId, ttl: DAY_MS, version: versions['user-recommendations'] }
       );
       setRecoArtists(Array.isArray(data.artists) ? data.artists : []);
@@ -106,7 +106,7 @@ export function useHomeFeed(userId: string) {
   const recoBySeed = useMemo(() => {
     const map = new Map<string, any[]>();
     for (const a of recoArtists || []) {
-      const sid = a?.similarTo?.id || "__no_seed__";
+      const sid = a?.similar_to?.id || "__no_seed__";
       if (!map.has(sid)) map.set(sid, []);
       map.get(sid)!.push(a);
     }

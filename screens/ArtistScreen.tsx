@@ -34,14 +34,14 @@ export default function ArtistScreen() {
     fetcher: getArtist,
   });
 
-  const newRelease = artist?.newReleases?.[0];
+  const newRelease = artist?.new_releases?.[0];
   const upcomingReleases = artist?.upcoming_album ? [artist.upcoming_album] : [];
 
   const mappedTop = useMemo(() => {
     if (!artist) return [];
-    return mapArtistTopSongs(artist.topSongs, {
-      artistId: id ?? null,
-      defaultArtistName: artist.header?.name,
+    return mapArtistTopSongs(artist.top_songs, {
+      artist_id: id ?? null,
+      defaultartist_name: artist.header?.name,
     });
   }, [artist, id]);
 
@@ -62,7 +62,7 @@ export default function ArtistScreen() {
       },
       {
         type: 'topSongs',
-        data: artist.topSongs,
+        data: artist.top_songs,
       },
       artist.albums?.length > 0 && {
         type: 'albums',
@@ -72,9 +72,9 @@ export default function ArtistScreen() {
         type: 'singles',
         data: artist.singles_eps,
       },
-      artist.upcomingEvents?.length > 0 && {
+      artist.upcoming_events?.length > 0 && {
         type: 'events',
-        data: artist.upcomingEvents,
+        data: artist.upcoming_events,
       },
       related.length > 0 && {
         type: 'related',
@@ -136,7 +136,7 @@ export default function ArtistScreen() {
             <Text style={styles.sectionTitle}>Canciones Populares</Text>
             {section.data.map((song: any, index: number) => (
               <TrackRow
-                key={`topsong-${song.id || song.videoId}-${index}`}
+                key={`topsong-${song.id || song.track_id}-${index}`}
                 index={index + 1}
                 title={song.title}
                 thumbnail={getUpgradedThumb(song, 256)}
@@ -212,7 +212,7 @@ export default function ArtistScreen() {
           <View style={{ marginBottom: 20 }}>
             <EventsList
               events={section.data}
-              artistName={artist?.header?.name}
+              artist_name={artist?.header?.name}
               title="Upcoming events"
               initialCount={3}
               maxCount={10}

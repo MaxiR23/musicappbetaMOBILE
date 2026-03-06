@@ -149,7 +149,7 @@ export default function AnimatedHeader({
 
             {/* Título grande (abajo) */}
             <Animated.View style={[styles.heroInfo, largeTitleStyle]}>
-                <Text style={styles.artistName}>{title}</Text>
+                <Text style={styles.artist_name}>{title}</Text>
             </Animated.View>
         </Animated.View>
     );
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
         left: 16,
         right: 16,
     },
-    artistName: {
+    artist_name: {
         fontSize: 42,
         fontWeight: "900",
         color: "#fff",

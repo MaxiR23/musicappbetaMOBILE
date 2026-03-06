@@ -81,14 +81,14 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   ): { key: string; kind: "album" | "artist" | "playlist"; id: string } | null {
     if (!source) return null;
     if (source.type === "album") {
-      const albumId =
-        majorityId(list, (s: any) => s.albumId ?? s.album_id ?? null) || null;
-      return albumId ? { key: `album:${albumId}`, kind: "album", id: albumId } : null;
+      const album_id =
+        majorityId(list, (s: any) => s.album_id ?? s.album_id ?? null) || null;
+      return album_id ? { key: `album:${album_id}`, kind: "album", id: album_id } : null;
     }
     if (source.type === "artist") {
-      const artistId =
-        majorityId(list, (s: any) => s.artistId ?? s.artist_id ?? null) || null;
-      return artistId ? { key: `artist:${artistId}`, kind: "artist", id: artistId } : null;
+      const artist_id =
+        majorityId(list, (s: any) => s.artist_id ?? s.artist_id ?? null) || null;
+      return artist_id ? { key: `artist:${artist_id}`, kind: "artist", id: artist_id } : null;
     }
     if (source.type === "playlist") {
       const pid = (source as any).id;
@@ -109,7 +109,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       id: String(list[idx].id),
       url: `${BASE_URL}/music/play?id=${encodeURIComponent(list[idx].id)}&redir=2`,
       title: (list[idx] as any).title,
-      artist: (list[idx] as any).artistName ?? (list[idx] as any).artist ?? "",
+      artist: (list[idx] as any).artist_name ?? (list[idx] as any).artist ?? "",
       artwork: (list[idx] as any).thumbnail ?? (list[idx] as any).thumbnail_url ?? undefined,
       type: TrackType.Default,
       headers: {
@@ -131,7 +131,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
             id: String(s.id),
             url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
             title: (s as any).title,
-            artist: (s as any).artistName ?? (s as any).artist ?? "",
+            artist: (s as any).artist_name ?? (s as any).artist ?? "",
             artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
             type: TrackType.Default,
             headers: { Range: "bytes=0-", "Accept-Encoding": "identity", Connection: "keep-alive" },
@@ -141,7 +141,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
             id: String(s.id),
             url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
             title: (s as any).title,
-            artist: (s as any).artistName ?? (s as any).artist ?? "",
+            artist: (s as any).artist_name ?? (s as any).artist ?? "",
             artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
             type: TrackType.Default,
             headers: { Range: "bytes=0-", "Accept-Encoding": "identity", Connection: "keep-alive" },
@@ -386,7 +386,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
             id: String(nextAutoplaySong.id),
             url: `${getBaseUrl()}/music/play?id=${encodeURIComponent(nextAutoplaySong.id)}&redir=2`,
             title: (nextAutoplaySong as any).title,
-            artist: (nextAutoplaySong as any).artistName ?? "",
+            artist: (nextAutoplaySong as any).artist_name ?? "",
             artwork: (nextAutoplaySong as any).thumbnail ?? undefined,
             type: TrackType.Default,
             headers: {
@@ -542,7 +542,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
             id: String(s.id),
             url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
             title: (s as any).title,
-            artist: (s as any).artistName ?? (s as any).artist ?? "",
+            artist: (s as any).artist_name ?? (s as any).artist ?? "",
             artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
             type: TrackType.Default,
             headers: {
@@ -564,7 +564,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
             id: String(s.id),
             url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
             title: (s as any).title,
-            artist: (s as any).artistName ?? (s as any).artist ?? "",
+            artist: (s as any).artist_name ?? (s as any).artist ?? "",
             artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
             type: TrackType.Default,
             headers: {
@@ -642,7 +642,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           id: String(s.id),
           url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
           title: (s as any).title,
-          artist: (s as any).artistName ?? (s as any).artist ?? "",
+          artist: (s as any).artist_name ?? (s as any).artist ?? "",
           artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
           type: TrackType.Default,
           headers: {
@@ -774,13 +774,13 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           lastLoggedTrackIdRef.current = trackId;
 
           const trackContext = {
-            album_id: (trackToLog as any).albumId ?? (trackToLog as any).album_id ?? undefined,
-            album_name: (trackToLog as any).albumName ?? (trackToLog as any).album_name ?? undefined,
-            artist_id: (trackToLog as any).artistId ?? (trackToLog as any).artist_id ?? undefined,
-            artist_name: (trackToLog as any).artistName ?? (trackToLog as any).artist ?? undefined,
-            track_name: (trackToLog as any).title ?? undefined,
-            durationSeconds: (trackToLog as any).durationSeconds ?? undefined,
-            thumbnail_url: (trackToLog as any).thumbnail ?? (trackToLog as any).thumbnail_url ?? undefined,
+            album_id: (trackToLog as any).album_id,
+            album_name: (trackToLog as any).album_name,
+            artist_id: (trackToLog as any).artist_id,
+            artist_name: (trackToLog as any).artist_name,
+            track_name: (trackToLog as any).title,
+            duration_seconds: (trackToLog as any).duration_seconds,
+            thumbnail_url: (trackToLog as any).thumbnail ?? (trackToLog as any).thumbnail_url ?? null,
           };
 
           logPlayTrack(trackId, trackContext).catch(() => { });
@@ -829,7 +829,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
                 id: String(nextAutoplaySong.id),
                 url: `${getBaseUrl()}/music/play?id=${encodeURIComponent(nextAutoplaySong.id)}&redir=2`,
                 title: (nextAutoplaySong as any).title,
-                artist: (nextAutoplaySong as any).artistName ?? "",
+                artist: (nextAutoplaySong as any).artist_name ?? "",
                 artwork: (nextAutoplaySong as any).thumbnail ?? undefined,
                 type: TrackType.Default,
                 headers: {

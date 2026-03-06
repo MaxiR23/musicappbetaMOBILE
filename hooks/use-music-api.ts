@@ -106,14 +106,14 @@ export function useMusicApi() {
   // ==================== PLAY LOGS ====================
 
   const logPlayAlbum = useCallback(
-    (albumId: string, source?: { name?: string | null; thumb?: string | null }) =>
-      musicService.logPlayAlbum(albumId, source),
+    (album_id: string, source?: { name?: string | null; thumb?: string | null }) =>
+      musicService.logPlayAlbum(album_id, source),
     []
   );
 
   const logPlayArtist = useCallback(
-    (artistId: string, source?: { name?: string | null; thumb?: string | null }) =>
-      musicService.logPlayArtist(artistId, source),
+    (artist_id: string, source?: { name?: string | null; thumb?: string | null }) =>
+      musicService.logPlayArtist(artist_id, source),
     []
   );
 
@@ -124,7 +124,7 @@ export function useMusicApi() {
       artist_id?: string;
       track_name?: string;
       artist_name?: string;
-      durationSeconds?: number;
+      duration_seconds?: number;
       thumbnail_url?: string;
     }) => musicService.logPlayTrack(trackId, context),
     []
@@ -133,6 +133,13 @@ export function useMusicApi() {
   const logPlayPlaylist = useCallback(
     (playlistId: string, source?: { name?: string | null; thumb?: string | null }) =>
       musicService.logPlayPlaylist(playlistId, source),
+    []
+  );
+
+  // ==================== STATS ====================
+  const getWeeklyStats = useCallback(
+    (options?: { include?: string; limit?: number }) =>
+      musicService.getWeeklyStats(options),
     []
   );
 
@@ -189,6 +196,7 @@ export function useMusicApi() {
     logPlayArtist,
     logPlayTrack,
     logPlayPlaylist,
+    getWeeklyStats,
     getRecentPlays,
     moveTrackInPlaylist,
     getTrackLyrics,

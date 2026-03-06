@@ -13,7 +13,7 @@ export function normalizeRelatedArtists(related: any): {
     .map((r: any) => {
       // Extrae ID de múltiples propiedades posibles
       const id =
-        r.id ?? r.browseId ?? r.channelId ?? r.artistId ?? null;
+        r.id ?? r.browseId ?? r.channelId ?? r.artist_id ?? null;
 
       // Extrae nombre
       const name = r.name ?? r.title ?? r.artist ?? "";
@@ -43,8 +43,8 @@ export function extractIncludedArtists(info: any): string {
       .join(", ");
   }
 
-  if (info.artistName) {
-    return info.artistName;
+  if (info.artist_name) {
+    return info.artist_name;
   }
 
   return "";
@@ -56,7 +56,7 @@ export function extractIncludedArtists(info: any): string {
  * 
  * @example
  * first(undefined, null, "", "valid") // "valid"
- * first(song.artistId, song.artist_id, song.artists?.[0]?.id) // primer valor válido
+ * first(song.artist_id, song.artist_id, song.artists?.[0]?.id) // primer valor válido
  */
 export function first<T>(...vals: T[]): T | undefined {
   return vals.find(v => v !== undefined && v !== null && v !== "");

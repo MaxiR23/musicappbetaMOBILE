@@ -12,6 +12,7 @@ export const CACHE_TTL = {
   track: 60 * 60 * 1000,
   feed: 30 * 60 * 1000,
   recent: DAY_MS * 7,
+  weeklyStats: DAY_MS * 7,
   default: 5 * 60 * 1000,
 };
 
@@ -35,6 +36,7 @@ function getTTLForKey(key: string): number {
   if (key.includes('track')) return CACHE_TTL.track;
   if (key.includes('feed')) return CACHE_TTL.feed;
   if (key.includes('recent')) return CACHE_TTL.recent;
+  if (key.includes('weekly-stats')) return CACHE_TTL.weeklyStats;
   return CACHE_TTL.default;
 }
 
@@ -95,7 +97,7 @@ export async function cacheSet<T>(
   mem.set(full, entry);
   try {
     await AsyncStorage.setItem(full, JSON.stringify(entry));
-  } catch {}
+  } catch { }
 }
 
 /** Wrapper con versión opcional */
@@ -113,8 +115,8 @@ export async function cacheWrap<T>(
 
   console.log(`[cache] MISS → fetching (${full})`);
   const data = await producer();
-  await cacheSet(key, data, { 
-    ttl: opts?.ttl ?? DEFAULT_TTL, 
+  await cacheSet(key, data, {
+    ttl: opts?.ttl ?? DEFAULT_TTL,
     userId: opts?.userId,
     version: opts?.version  // ← pasa version
   });
@@ -125,7 +127,7 @@ export async function cacheWrap<T>(
 export async function cacheDel(key: string, userId?: string | null, version?: string | null) {  // ← NUEVO: version
   const full = k(key, userId, version);
   mem.delete(full);
-  try { await AsyncStorage.removeItem(full); } catch {}
+  try { await AsyncStorage.removeItem(full); } catch { }
 }
 
 export async function cacheClearPrefix(prefix: string) {
@@ -134,7 +136,7 @@ export async function cacheClearPrefix(prefix: string) {
   const toDel = allKeys.filter((kk) => kk.startsWith(pref));
   toDel.forEach((kk) => mem.delete(kk));
   if (toDel.length) {
-    try { await AsyncStorage.multiRemove(toDel); } catch {}
+    try { await AsyncStorage.multiRemove(toDel); } catch { }
   }
 }
 
@@ -143,12 +145,12 @@ export async function cacheClearAll() {
   const toDel = allKeys.filter((kk) => kk.startsWith("cache:"));
   mem.clear();
   if (toDel.length) {
-    try { await AsyncStorage.multiRemove(toDel); } catch {}
+    try { await AsyncStorage.multiRemove(toDel); } catch { }
   }
 }
 
 export async function cleanExpiredCache(): Promise<void> {
-  const timeoutPromise = new Promise<void>((_, reject) => 
+  const timeoutPromise = new Promise<void>((_, reject) =>
     setTimeout(() => reject(new Error('timeout')), 5000)
   );
 

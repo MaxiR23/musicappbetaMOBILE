@@ -4,11 +4,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    InteractionManager,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  InteractionManager,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -28,6 +28,9 @@ import { useContentPadding } from "@/hooks/use-content-padding";
 import { useHomeFeed } from "@/hooks/use-home-feed";
 import { useHomeRecent } from "@/hooks/use-home-recent";
 import { useUserProfile } from "@/hooks/use-user-profile";
+
+import WeeklyStatsCard from "@/components/features/home/WeeklyStatsCard";
+import { useMusicApi } from "@/hooks/use-music-api";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -72,18 +75,23 @@ export default function HomeScreen() {
     return () => task.cancel();
   }, []);
 
+  useEffect(() => {
+    getWeeklyStats({ include: "artists", limit: 3 }).then((data) => {
+      setWeeklyArtists(data?.artists ?? []);
+    }).catch(() => { });
+  }, []);
+
   const mapTracksForPlayer = useCallback((arr: any[]) => {
     return arr.map((t: any) => ({
       id: String(t.id),
       title: t.title,
-      artistName: t.artist ?? "",
+      artist_name: t.artist ?? "",
       artist: t.artist ?? "",
-      artistId: t.artist_id ?? t.artistId,
-      artist_id: t.artist_id ?? t.artistId ?? null,
+      artist_id: t.artist_id ?? t.artist_id,
       thumbnail: t.thumb ?? t.thumbnail,
       thumbnail_url: t.thumb ?? t.thumbnail,
       duration: t.duration ?? null,
-      durationSeconds: typeof t.duration_s === "number" ? t.duration_s : null,
+      duration_seconds: typeof t.duration_seconds === "number" ? t.duration_seconds : null,
       url: "",
     }));
   }, []);
@@ -92,15 +100,18 @@ export default function HomeScreen() {
   const mappedNewSingles = useMemo(() => mapTracksForPlayer(newSingles), [newSingles, mapTracksForPlayer]);
   const mappedSeedTracks = useMemo(() => mapTracksForPlayer(seedTracks), [seedTracks, mapTracksForPlayer]);
 
+  const { getWeeklyStats } = useMusicApi();
+  const [weeklyArtists, setWeeklyArtists] = useState<any[]>([]);
+
   // ── tomar 2 seeds para ubicar bloques ──
   const items1 = useMemo(() => (recoBySeed[0]?.[1] || []), [recoBySeed]);
   const items2 = useMemo(() => (recoBySeed[1]?.[1] || []), [recoBySeed]);
   const seed1 = useMemo(() => {
-    const s = items1?.[0]?.similarTo;
+    const s = items1?.[0]?.similar_to;
     return s ? { name: s.name, thumb: s.thumbnail } : null;
   }, [items1]);
   const seed2 = useMemo(() => {
-    const s = items2?.[0]?.similarTo;
+    const s = items2?.[0]?.similar_to;
     return s ? { name: s.name, thumb: s.thumbnail } : null;
   }, [items2]);
 
@@ -157,6 +168,7 @@ export default function HomeScreen() {
       >
         {/* banner */}
         <HomeBanner />
+        <WeeklyStatsCard artists={weeklyArtists} />
 
         {/* TODO: CHECK OLD CODE BELOW, if decided to be unused archived or delete PlaylistSection { */}
 

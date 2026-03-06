@@ -3,7 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import EventCard from "./EventCard";
 interface EventsListProps {
   events: any[];
-  artistName?: string;
+  artist_name?: string;
   defaultPoster?: string;
   title?: string;
   initialCount?: number;
@@ -13,7 +13,7 @@ interface EventsListProps {
 
 export default function EventsList({
   events,
-  artistName,
+  artist_name,
   defaultPoster,
   title = "Upcoming events",
   initialCount = 3,
@@ -35,7 +35,7 @@ export default function EventsList({
         <EventCard
           key={`event-${event.id || "no-id"}-${i}`}
           event={event}
-          artistName={artistName}
+          artist_name={artist_name}
           defaultPoster={defaultPoster}
           variant="compact"
           onPress={onEventPress ? () => onEventPress(event) : undefined}

@@ -32,14 +32,14 @@ export type ArtistReco = {
   name: string | null;
   subtitle?: string | null;
   thumbnails: { url: string; width?: number; height?: number }[];
-  similarTo?: { id: string; name?: string | null; thumbnail?: string | null };
+  similar_to?: { id: string; name?: string | null; thumbnail?: string | null };
 };
 
 export type AlbumReco = {
   type: "album";
   id: string;
   title: string | null;
-  artistName?: string | null;
+  artist_name?: string | null;
   thumbnails: { url: string; width?: number; height?: number }[];
   release_date?: string | null;
   year?: number | null;
@@ -56,8 +56,6 @@ export async function fetchRecommendations(bucket?: string): Promise<UserRecomme
   const url = bucket 
     ? `${BASE_URL}/feed/recommendations/me?bucket=${encodeURIComponent(bucket)}`
     : `${BASE_URL}/feed/recommendations/me`;
-  
-  console.log("[recommend] GET", url);
 
   const json = await authFetch(url);
 
@@ -72,10 +70,10 @@ export async function fetchRecommendations(bucket?: string): Promise<UserRecomme
     name: a?.name ?? null,
     subtitle: a?.subtitle ?? null,
     thumbnails: Array.isArray(a?.thumbnails) ? a.thumbnails : [],
-    similarTo: a?.similarTo?.id ? {
-      id: String(a.similarTo.id),
-      name: a.similarTo?.name ?? null,
-      thumbnail: a.similarTo?.thumbnail ?? null,
+    similar_to: a?.similar_to?.id ? {
+      id: String(a.similar_to.id),
+      name: a.similar_to?.name ?? null,
+      thumbnail: a.similar_to?.thumbnail ?? null,
     } : undefined,
   })).filter(x => x.id);
 
@@ -83,7 +81,7 @@ export async function fetchRecommendations(bucket?: string): Promise<UserRecomme
     type: "album",
     id: String(al?.id ?? ""),
     title: al?.title ?? al?.name ?? null,
-    artistName: al?.artistName ?? al?.artist ?? null,
+    artist_name: al?.artist_name ?? al?.artist ?? null,
     thumbnails: Array.isArray(al?.thumbnails) ? al.thumbnails : [],
     release_date: al?.release_date ?? al?.releaseDate ?? null,
     year: typeof al?.year === "number" ? al.year : (al?.year ? Number(al.year) : null),

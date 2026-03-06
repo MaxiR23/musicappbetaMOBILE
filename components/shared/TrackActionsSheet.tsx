@@ -116,7 +116,7 @@ export default function TrackActionsSheet({
         if (!track) return;
         try {
             await Share.share({
-                message: `${track.title} • ${track.artistName ?? track.artist ?? ""}`,
+                message: `${track.title} • ${track.artist_name ?? track.artist ?? ""}`,
             });
         } catch (e) { }
     }
@@ -224,7 +224,7 @@ export default function TrackActionsSheet({
                     {!!(track?.title || subtitle) && (
                         <Text style={styles.trackLine} numberOfLines={1}>
                             {track?.title
-                                ? `${track.title} • ${track.artistName || track.artist || ""}`
+                                ? `${track.title} • ${track.artist_name || track.artist || ""}`
                                 : subtitle || ""}
                         </Text>
                     )}

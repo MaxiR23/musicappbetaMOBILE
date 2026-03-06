@@ -6,7 +6,7 @@ import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from "reac
 interface MiniPlayerProps {
   thumbUrl: string;
   title: string;
-  artistName: string;
+  artist_name: string;
   gradient: [string, string];
   isPlaying: boolean;
   hasNext: boolean;
@@ -16,13 +16,10 @@ interface MiniPlayerProps {
   onNext: () => void;
 }
 
-/**
- * Mini player colapsado que se muestra en la parte inferior de la pantalla
- */
-export function MiniPlayer({
+export const MiniPlayer = React.memo(function MiniPlayer({
   thumbUrl,
   title,
-  artistName,
+  artist_name,
   gradient,
   isPlaying,
   hasNext,
@@ -52,7 +49,7 @@ export function MiniPlayer({
           </Pressable>
           <Pressable onPress={onArtistPress} style={{ alignSelf: "flex-start" }}>
             <Text style={styles.artist} numberOfLines={1}>
-              {artistName}
+              {artist_name}
             </Text>
           </Pressable>
         </View>
@@ -67,13 +64,22 @@ export function MiniPlayer({
       </View>
     </View>
   );
-}
+},
+(prev, next) =>
+  prev.thumbUrl === next.thumbUrl &&
+  prev.title === next.title &&
+  prev.artist_name === next.artist_name &&
+  prev.gradient[0] === next.gradient[0] &&
+  prev.gradient[1] === next.gradient[1] &&
+  prev.isPlaying === next.isPlaying &&
+  prev.hasNext === next.hasNext
+);
 
 const styles = StyleSheet.create({
   wrapper: {
     position: "absolute",
-    bottom: 62,        
-    left: 10,        
+    bottom: 62,
+    left: 10,
     right: 10,
     borderRadius: 16,
     overflow: "hidden",

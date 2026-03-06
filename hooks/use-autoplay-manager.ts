@@ -99,7 +99,7 @@ export function useAutoplayManager(params: UseAutoplayManagerParams) {
 
       while (autoplayIndexRef.current < availableTracks.length) {
         const track = availableTracks[autoplayIndexRef.current];
-        const trackId = track.videoId || track.id;
+        const trackId = track.track_id || track.id;
 
         if (manuallyPlayedAutoplayIds.current.has(trackId)) {
           console.log(`Salteando "${track.title}" porque ya fue reproducida manualmente`);

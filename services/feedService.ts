@@ -60,7 +60,7 @@ export async function fetchFeed({ kind = "most_played", type = "album", store = 
     artist_id: null,
     album: null,
     duration: null,
-    duration_s: null,
+    duration_seconds: null,
   });
 
   const toTrack = (t: any) => ({
@@ -71,11 +71,10 @@ export async function fetchFeed({ kind = "most_played", type = "album", store = 
     artist: t.artist,
     thumb: t.thumb,
     url: t.url,
-    artistId: t.artist_id ?? t.artistId ?? null,
-    artist_id: t.artist_id ?? t.artistId ?? null,
+    artist_id: t.artist_id ?? t.artist_id ?? null,
     album: t.album ?? null,
     duration: t.duration ?? null,
-    duration_s: typeof t.duration_s === "number" ? t.duration_s : null,
+    duration_seconds: typeof t.duration_seconds === "number" ? t.duration_seconds : null,
     year: null,
     track_count: null,
     release_date: t.release_date || null,

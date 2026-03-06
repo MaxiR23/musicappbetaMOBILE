@@ -34,8 +34,8 @@ export default function ArtistReleasesScreen() {
   const segments = useSegments();
 
   const initialTab: TabKey = tab === "singles" ? "singles" : "albums";
-  const artistId = String(id);
-  const artistName = typeof name === "string" ? name : undefined;
+  const artist_id = String(id);
+  const artist_name = typeof name === "string" ? name : undefined;
 
   const { getArtistAlbums, getArtistSingles } = useMusicApi();
   const insets = useSafeAreaInsets();
@@ -48,17 +48,17 @@ export default function ArtistReleasesScreen() {
 
   useEffect(() => {
     (async () => {
-      if (!artistId) return;
+      if (!artist_id) return;
       setLoading(true);
       try {
         if (activeTab === "albums") {
           if (!albums) {
-            const res = await getArtistAlbums(artistId);
+            const res = await getArtistAlbums(artist_id);
             if (isMounted()) setAlbums(res.albums || []);
           }
         } else {
           if (!singles) {
-            const res = await getArtistSingles(artistId);
+            const res = await getArtistSingles(artist_id);
             if (isMounted()) setSingles(res.singles || []);
           }
         }
@@ -66,7 +66,7 @@ export default function ArtistReleasesScreen() {
         if (isMounted()) setLoading(false);
       }
     })();
-  }, [activeTab, artistId, albums, singles, getArtistAlbums, getArtistSingles, isMounted]);
+  }, [activeTab, artist_id, albums, singles, getArtistAlbums, getArtistSingles, isMounted]);
 
   const allData = useMemo(
     () => (activeTab === "albums" ? albums : singles) || [],
@@ -107,7 +107,7 @@ export default function ArtistReleasesScreen() {
     <>
       <StatusBar barStyle="light-content" />
       <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
-        <ScreenHeader title={artistName || "Artist"} />
+        <ScreenHeader title={artist_name || "Artist"} />
 
         <TabBar
           tabs={TABS}

@@ -5,15 +5,14 @@
 export interface MappedSong {
   id: string;
   title: string;
-  artistName: string;
-  artistId: string | null;
+  artist_name: string;
+  artist_id: string | null;
   artists?: any[];
-  albumName?: string | null;
-  albumId?: string | null;
+  album_name?: string | null;
+  album_id?: string | null;
   thumbnail?: string;
   duration?: string | null;
-  durationSeconds?: number | null;
-  url?: string;
+  duration_seconds?: number | null;
   internalId?: string | number;
 }
 
@@ -25,26 +24,26 @@ interface MapSongsOptions {
    * Thumbnail/cover por defecto si la canción no tiene
    */
   defaultThumbnail?: string;
-  
+
   /**
    * ID del álbum (para canciones de álbum)
    */
-  albumId?: string | null;
-  
+  album_id?: string | null;
+
   /**
    * ID del artista (para canciones de artista)
    */
-  artistId?: string | null;
+  artist_id?: string | null;
 
   /**
    * Nombre del álbum por defecto
    */
-  albumName?: string | null;
-  
+  album_name?: string | null;
+
   /**
    * Nombre del artista por defecto
    */
-  defaultArtistName?: string;
+  defaultartist_name?: string;
 }
 
 /**
@@ -58,32 +57,32 @@ export function mapAlbumTracks(
   tracks: any[],
   options: MapSongsOptions = {}
 ): MappedSong[] {
-  const { defaultThumbnail, albumId, albumName } = options;
-  
+  const { defaultThumbnail, album_id, album_name } = options;
+
   return tracks.map((track: any) => {
     const artists = Array.isArray(track.artists) ? track.artists : [];
     const primary = artists[0] || null;
-    
-    const artistName = 
-      track.artistName ?? 
+
+    const artist_name =
+      track.artist_name ??
       (artists.length ? artists.map((a: any) => a.name).join(", ") : "");
-    
-    const artistId = 
-      track.artistId ?? 
+
+    const artist_id =
+      track.artist_id ??
       (primary && primary.id ? primary.id : null);
-    
-    const trackId = track.videoId || track.id;
-    
+
+    const trackId = track.track_id || track.id;
+
     return {
       id: trackId,
       title: track.title,
-      artistName,
-      artistId,
+      artist_name,
+      artist_id,
       artists,
-      albumId: albumId ?? null,
-      albumName: albumName ?? null,
+      album_id: track.album_id ?? album_id ?? null,
+      album_name: track.album_name ?? album_name ?? null,
       duration: track.duration || null,
-      durationSeconds: track.durationSeconds || null,
+      duration_seconds: track.duration_seconds || null,
       thumbnail: defaultThumbnail || "",
     };
   });
@@ -100,40 +99,39 @@ export function mapArtistTopSongs(
   topSongs: any[],
   options: MapSongsOptions = {}
 ): MappedSong[] {
-  const { artistId, defaultArtistName } = options;
-  
+  const { artist_id, defaultartist_name } = options;
+
   return topSongs.map((song: any) => {
     const artistsArr = Array.isArray(song.artists) ? song.artists : [];
     const primary = artistsArr[0] || null;
-    
-    const artistName = 
-      song.artistName ?? 
-      (artistsArr.length 
-        ? artistsArr.map((a: any) => a.name).join(", ") 
-        : defaultArtistName || "");
-    
-    const resolvedArtistId = 
-      song.artistId ?? 
-      primary?.id ?? 
-      artistId ?? 
+
+    const artist_name =
+      song.artist_name ??
+      (artistsArr.length
+        ? artistsArr.map((a: any) => a.name).join(", ")
+        : defaultartist_name || "");
+
+    const resolvedartist_id =
+      song.artist_id ??
+      primary?.id ??
+      artist_id ??
       null;
-    
-    const trackId = song.videoId ?? song.id;
-    const albumId = song.albumId ?? song.album?.id ?? null;
-    const albumName = song.albumTitle ?? song.albumName ?? song.album?.name ?? null;
+
+    const trackId = song.track_id ?? song.id;
+    const album_id = song.album_id ?? song.album?.id ?? null;
+    const album_name = song.album_name ?? song.album?.name ?? null;
 
     return {
       id: trackId,
       title: song.title,
       thumbnail: song.thumbnail,
       duration: song.duration,
-      durationSeconds: song.durationSeconds,
-      artistName,
-      artistId: resolvedArtistId,
+      duration_seconds: song.duration_seconds,
+      artist_name,
+      artist_id: resolvedartist_id,
       artists: artistsArr,
-      albumId,
-      albumName,
-      url: "",
+      album_id,
+      album_name,
     };
   });
 }
@@ -149,13 +147,12 @@ export function mapPlaylistSongs(playlistSongs: any[]): MappedSong[] {
     id: song.id,
     internalId: song.internalId,
     title: song.title,
-    artistName: song.artist,
-    artistId: song.artistId ?? null,
-    albumId: song.albumId ?? null,
+    artist_name: song.artist,
+    artist_id: song.artist_id ?? null,
+    album_id: song.album_id ?? null,
     thumbnail: song.albumCover,
     duration: song.duration,
-    durationSeconds: null,
-    url: "",
+    duration_seconds: null,
   }));
 }
 
@@ -166,38 +163,38 @@ export function mapPlaylistSongs(playlistSongs: any[]): MappedSong[] {
  * @returns Canción en formato estándar
  */
 export function mapGenericTrack(track: any): MappedSong {
-  const trackId = track.videoId || track.id;
+  const trackId = track.track_id || track.id;
   const artistsArr = Array.isArray(track.artists) ? track.artists : [];
-  
-  const artistName = 
-    track.artistName ?? 
+
+  const artist_name =
+    track.artist_name ??
     (artistsArr.length ? artistsArr.map((a: any) => a.name).join(", ") : "Unknown");
-  
-  const artistId = 
-    track.artistId ?? 
-    artistsArr[0]?.id ?? 
+
+  const artist_id =
+    track.artist_id ??
+    artistsArr[0]?.id ??
     null;
-  
-  const albumId = 
-    track.albumId ?? 
-    track.album?.id ?? 
+
+  const album_id =
+    track.album_id ??
+    track.album?.id ??
     null;
-  
-  const albumName = 
-    track.albumName ?? 
-    track.album?.name ?? 
+
+  const album_name =
+    track.album_name ??
+    track.album?.name ??
     null;
-  
+
   return {
     id: trackId,
     title: track.title,
-    artistName,
-    artistId,
+    artist_name,
+    artist_id,
     artists: artistsArr,
-    albumId,
-    albumName,
+    album_id,
+    album_name,
     thumbnail: track.thumbnail,
     duration: track.duration || "--:--",
-    durationSeconds: track.durationSeconds || null,
+    duration_seconds: track.duration_seconds || null,
   };
 }

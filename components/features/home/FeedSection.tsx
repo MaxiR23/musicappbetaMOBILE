@@ -32,7 +32,7 @@ export default function FeedSection({ title, items, type, onTrackPress, feedKey 
         return undefined;
       }}
       titleExtractor={(item) => item.title ?? item.name}
-      subtitleExtractor={(item) => item.artist ?? item.artistName}
+      subtitleExtractor={(item) => item.artist ?? item.artist_name}
       onItemPress={(item, index) => {
         if (isTrack && onTrackPress) {
           onTrackPress(index, title);

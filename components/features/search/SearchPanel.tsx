@@ -19,12 +19,12 @@ export type ResultItem = {
   id: string;
   type: "artist" | "song" | "album";
   title: string;
-  artistName: string;
-  artistId?: string | null;
-  albumId?: string | null;
-  albumName?: string | null;
+  artist_name: string;
+  artist_id?: string | null;
+  album_id?: string | null;
+  album_name?: string | null;
   duration?: string;
-  durationSeconds?: number;
+  duration_seconds?: number;
   thumbnail?: string;
 };
 
@@ -101,33 +101,33 @@ export default function SearchPanel({
     }
 
     const mappedArtists: ResultItem[] = artistsSrc.map((a: any) => ({
-      id: a.artistId ?? a.id,
+      id: a.artist_id ?? a.id,
       title: a.name ?? a.title,
-      artistName: a.subtitle || "Artist",
-      artistId: a.artistId ?? a.id ?? null,
+      artist_name: a.subtitle || "Artist",
+      artist_id: a.artist_id ?? a.id ?? null,
       duration: "",
       thumbnail: getUpgradedThumb(a, 256),
       type: "artist",
     }));
 
     const mappedSongs: ResultItem[] = songsSrc.map((s: any) => ({
-      id: s.videoId ?? s.id,
+      id: s.track_id ?? s.id,
       title: s.title,
-      artistName: (s.artists || []).map((ar: any) => ar.name).join(", ") || "",
-      artistId: s.artists?.[0]?.browseId ?? s.artists?.[0]?.id ?? null,
-      albumId: s.goTo?.albumId ?? null,
-      albumName: s.albumName ?? null,
+      artist_name: (s.artists || []).map((ar: any) => ar.name).join(", ") || "",
+      artist_id: s.artists?.[0]?.artist_id ?? s.artists?.[0]?.id ?? null,
+      album_id: s.go_to?.album_id ?? null,
+      album_name: s.album_name ?? null,
       duration: s.duration || "",
-      durationSeconds: s.durationSeconds ?? undefined,
+      duration_seconds: s.duration_seconds ?? undefined,
       thumbnail: getUpgradedThumb(s, 512),
       type: "song",
     }));
 
     const mappedAlbums: ResultItem[] = albumsSrc.map((a: any) => ({
-      id: a.albumId ?? a.playlistId ?? a.id,
+      id: a.album_id ?? a.playlistId ?? a.id,
       title: a.title,
-      artistName: (a.artists || []).map((ar: any) => ar.name).join(", ") || "",
-      artistId: a.goTo?.artistId ?? a.artists?.[0]?.browseId ?? null,
+      artist_name: (a.artists || []).map((ar: any) => ar.name).join(", ") || "",
+      artist_id: a.go_to?.artist_id ?? a.artists?.[0]?.browseId ?? null,
       duration: "",
       thumbnail: getUpgradedThumb(a, 512),
       type: "album",
@@ -274,8 +274,8 @@ export default function SearchPanel({
                     {item.type === "artist"
                       ? `${typeLabel(item.type)}`
                       : item.type === "song"
-                        ? `${typeLabel(item.type)} • ${item.artistName}`
-                        : `${typeLabel(item.type)} • ${item.artistName}`}
+                        ? `${typeLabel(item.type)} • ${item.artist_name}`
+                        : `${typeLabel(item.type)} • ${item.artist_name}`}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#9aa0a6" />

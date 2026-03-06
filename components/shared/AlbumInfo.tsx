@@ -3,7 +3,7 @@ import { Image, StyleSheet, Text, View } from "react-native";
 
 interface AlbumInfoProps {
   title: string;
-  artistName?: string;
+  artist_name?: string;
   artistThumb?: string;
   meta?: string;
   subtitle?: string;
@@ -12,7 +12,7 @@ interface AlbumInfoProps {
 
 export default function AlbumInfo({
   title,
-  artistName,
+  artist_name,
   artistThumb,
   meta,
   subtitle,
@@ -23,12 +23,12 @@ export default function AlbumInfo({
       <Text style={styles.title}>{title}</Text>
 
       {/* Avatar + Nombre de artista */}
-      {!!artistName && (
+      {!!artist_name && (
         <View style={styles.artistRow}>
           {!!artistThumb && (
             <Image source={{ uri: artistThumb }} style={styles.artistAvatar} />
           )}
-          <Text style={styles.artistName}>{artistName}</Text>
+          <Text style={styles.artist_name}>{artist_name}</Text>
         </View>
       )}
 
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     backgroundColor: "#333",
   },
-  artistName: {
+  artist_name: {
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",

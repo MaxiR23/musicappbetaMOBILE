@@ -1,34 +1,45 @@
+import { formatDuration } from "@/utils/durations";
 import Slider from "@react-native-community/slider";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
+import TrackPlayer, { useProgress } from "react-native-track-player";
 
-interface SeekSliderProps {
-  localVal: number; // 0..1
-  dragging: boolean;
-  knobScale: Animated.Value;
-  displayCurrentMs: number;
-  duration: number;
-  formatTime: (ms: number) => string;
-  onSlidingStart: () => void;
-  onValueChange: (value: number) => void;
-  onSlidingComplete: (value: number) => void;
-}
+export const SeekSlider = React.memo(function SeekSlider() {
+  const { position, duration } = useProgress(1000);
+  const [dragging, setDragging] = useState(false);
+  const [localVal, setLocalVal] = useState(0);
+  const knobScale = useRef(new Animated.Value(1)).current;
 
-/**
- * Slider de progreso con estilo Apple
- * Incluye track, fill, knob animado y tiempos
- */
-export function SeekSlider({
-  localVal,
-  dragging,
-  knobScale,
-  displayCurrentMs,
-  duration,
-  formatTime,
-  onSlidingStart,
-  onValueChange,
-  onSlidingComplete,
-}: SeekSliderProps) {
+  const progress = duration > 0 ? position / duration : 0;
+  const clamped = Math.max(0, Math.min(1, progress));
+
+  useEffect(() => {
+    if (!dragging) setLocalVal(clamped);
+  }, [clamped, dragging]);
+
+  const startDrag = () => {
+    setDragging(true);
+    Animated.spring(knobScale, {
+      toValue: 1.25,
+      useNativeDriver: true,
+      friction: 6,
+    }).start();
+  };
+
+  const endDrag = async (v: number) => {
+    Animated.spring(knobScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 6,
+    }).start();
+    setDragging(false);
+    await TrackPlayer.seekTo(v * duration);
+  };
+
+  const displayCurrentMs = dragging
+    ? Math.round(localVal * (duration * 1000 || 0))
+    : position * 1000;
+
   return (
     <View style={styles.sliderContainer}>
       <View style={styles.wrap}>
@@ -47,9 +58,9 @@ export function SeekSlider({
         />
         <Slider
           value={localVal}
-          onSlidingStart={onSlidingStart}
-          onValueChange={onValueChange}
-          onSlidingComplete={onSlidingComplete}
+          onSlidingStart={startDrag}
+          onValueChange={setLocalVal}
+          onSlidingComplete={endDrag}
           minimumValue={0}
           maximumValue={1}
           minimumTrackTintColor="transparent"
@@ -60,12 +71,12 @@ export function SeekSlider({
       </View>
 
       <View style={styles.timeRow}>
-        <Text style={styles.time}>{formatTime(displayCurrentMs)}</Text>
-        <Text style={styles.time}>{formatTime(duration)}</Text>
+        <Text style={styles.time}>{formatDuration(displayCurrentMs)}</Text>
+        <Text style={styles.time}>{formatDuration(duration * 1000)}</Text>
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   sliderContainer: {

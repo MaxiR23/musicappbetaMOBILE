@@ -44,17 +44,15 @@ export default function AlbumScreen() {
     const mappedSongs = useMemo(() => {
         if (!album) return [];
         return mapAlbumTracks(album.tracks, {
-            albumId: id ?? null,
-            albumName: album.info?.title ?? null,
             defaultThumbnail: coverUrl,
         });
-    }, [album, id, coverUrl]);
+    }, [album, coverUrl]);
 
     const albumMeta = album?.info
         ? formatAlbumMeta({
             year: (album.info as any).year,
-            songCount: (album.info as any).songCount,
-            durationText: (album.info as any).durationText,
+            song_count: (album.info as any).song_count,
+            duration_text: (album.info as any).duration_text,
         })
         : "";
 
@@ -62,7 +60,7 @@ export default function AlbumScreen() {
         album?.info?.straplineThumbnail?.[0]?.url ||
         getUpgradedThumb(album?.info, 256) || "";
 
-    const artistNames = extractIncludedArtists(album?.info);
+    const artist_names = extractIncludedArtists(album?.info);
 
     const hasTracks = !!(album?.tracks && album.tracks.length > 0);
 
@@ -75,7 +73,7 @@ export default function AlbumScreen() {
                 type: 'info',
                 data: {
                     title: album.info?.title,
-                    artistName: artistNames,
+                    artist_name: artist_names,
                     artistThumb: artistThumbUrl,
                     meta: albumMeta,
                     subtitle: album.info?.subtitle,
@@ -90,24 +88,24 @@ export default function AlbumScreen() {
                 type: 'tracks',
                 data: album.tracks,
             },
-            album.upcomingEvents?.length > 0 && {
+            album.upcoming_events?.length > 0 && {
                 type: 'upcomingEvent',
-                data: album.upcomingEvents[0],
+                data: album.upcoming_events[0],
             },
-            album.otherVersions?.length > 0 && {
+            album.other_versions?.length > 0 && {
                 type: 'otherVersions',
-                data: album.otherVersions,
+                data: album.other_versions,
             },
-            album.moreFromArtist?.length > 0 && {
+            album.more_from_artist?.length > 0 && {
                 type: 'moreFromArtist',
-                data: album.moreFromArtist,
+                data: album.more_from_artist,
             },
-            album.releasesForYou?.length > 0 && {
+            album.releases_for_you?.length > 0 && {
                 type: 'releasesForYou',
-                data: album.releasesForYou,
+                data: album.releases_for_you,
             },
         ].filter(Boolean);
-    }, [album, albumMeta, artistNames, artistThumbUrl, hasTracks]);
+    }, [album, albumMeta, artist_names, artistThumbUrl, hasTracks]);
 
     const needsExtraPadding = (album?.tracks?.length || 0) <= 3;
 
@@ -129,7 +127,7 @@ export default function AlbumScreen() {
                 return (
                     <AlbumInfo
                         title={section.data.title || ""}
-                        artistName={section.data.artistName}
+                        artist_name={section.data.artist_name}
                         artistThumb={section.data.artistThumb}
                         meta={section.data.meta}
                         subtitle={section.data.subtitle}
@@ -164,7 +162,7 @@ export default function AlbumScreen() {
                         <FlatList
                             data={section.data}
                             keyExtractor={(song: any, index: number) =>
-                                `${song.id || song.videoId || "track"}-${index}`
+                                `${song.id || song.track_id || "track"}-${index}`
                             }
                             renderItem={({ item: song, index }) => (
                                 <TrackRow
@@ -172,7 +170,7 @@ export default function AlbumScreen() {
                                     title={song.title}
                                     artist={song.artists?.map((a: any) => a.name).join(", ")}
                                     showThumbnail={false}
-                                    trackId={song.videoId}
+                                    trackId={song.track_id}
                                     onPress={() =>
                                         playFromList(mappedSongs, index, {
                                             type: "album",
@@ -203,7 +201,7 @@ export default function AlbumScreen() {
                         </Text>
                         <EventCard
                             event={section.data}
-                            artistName={album?.info?.artistName || album?.info?.artists?.[0]?.name}
+                            artist_name={album?.info?.artist_name || album?.info?.artists?.[0]?.name}
                             defaultPoster={coverUrl}
                             variant="featured"
                         />

@@ -14,8 +14,8 @@ export function cleanDurationText(text: string): string {
  */
 export function formatAlbumMeta(info: {
   year?: number;
-  songCount?: number;
-  durationText?: string;
+  song_count?: number;
+  duration_text?: string;
 }): string {
   const parts: string[] = [];
 
@@ -23,12 +23,12 @@ export function formatAlbumMeta(info: {
     parts.push(String(info.year));
   }
 
-  if (typeof info.songCount === "number") {
-    parts.push(`${info.songCount} ${info.songCount === 1 ? "canción" : "canciones"}`);
+  if (typeof info.song_count === "number") {
+    parts.push(`${info.song_count} ${info.song_count === 1 ? "canción" : "canciones"}`);
   }
 
-  if (info.durationText) {
-    const cleaned = cleanDurationText(String(info.durationText));
+  if (info.duration_text) {
+    const cleaned = cleanDurationText(String(info.duration_text));
     parts.push(cleaned);
   }
 
@@ -41,13 +41,13 @@ export function formatAlbumMeta(info: {
 export function formatReleaseSubtitle(item: {
   type?: string;
   year?: string | number;
-  artistName?: string;
+  artist_name?: string;
 }): string {
   const parts: string[] = [];
 
   if (item.type) parts.push(item.type);
   if (item.year) parts.push(String(item.year));
-  if (item.artistName) parts.push(item.artistName);
+  if (item.artist_name) parts.push(item.artist_name);
 
   return parts.filter(Boolean).join(" • ");
 }
@@ -55,7 +55,7 @@ export function formatReleaseSubtitle(item: {
 /**
  * Formatea nombre de artistas (array o string)
  */
-export function formatArtistNames(
+export function formatartist_names(
   artists: { name: string }[] | string | undefined
 ): string {
   if (!artists) return "";

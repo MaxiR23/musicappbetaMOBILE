@@ -27,12 +27,12 @@ export function useTrackUpNext({
 
     try {
       const res = await getTrackUpNext(String(currentSong.id));
-      
-      if (!res?.ok || !res?.upNext) {
+
+      if (!res?.ok || !res?.up_next) {
         setUpNextData(null);
         setUpNextError("No hay cola disponible.");
       } else {
-        console.log('[Upnext] cargado:', res.upNext.length, 'canciones');
+        console.log("[Upnext] cargado:", res.up_next.length, "canciones");
         setUpNextData(res);
       }
     } catch {
@@ -53,8 +53,8 @@ export function useTrackUpNext({
   };
 
   useEffect(() => {
-    const contextId = playSource?.type 
-      ? `${playSource.type}-${playSource.name || 'unknown'}` 
+    const contextId = playSource?.type
+      ? `${playSource.type}-${playSource.name || 'unknown'}`
       : null;
 
     if (contextId && contextId !== currentContextRef.current) {
@@ -62,7 +62,7 @@ export function useTrackUpNext({
       //console.log('Contexto cambió:', currentContextRef.current, '→', contextId);
       //console.log('Reseteando Up Next...');
       currentContextRef.current = contextId;
-      
+
       setUpNextOpen(false);
       setUpNextData(null);
       setUpNextError(null);
@@ -80,6 +80,6 @@ export function useTrackUpNext({
     upNextError,
     toggleUpNext,
     shouldShowUpNext,
-    fetchUpNext 
+    fetchUpNext
   };
 }

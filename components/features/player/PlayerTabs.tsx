@@ -1,21 +1,22 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    Platform,
-    Pressable,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Platform,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import TrackRow from "../../shared/TrackRow";
 
 import HorizontalScrollSection from "@/components/shared/HorizontalScrollSection";
 import ProList from "@/components/shared/ProList";
+import { useMusic } from "@/hooks/use-music";
 import { getUpgradedThumb } from "@/utils/image-helpers";
 
 type TabType = "upnext" | "lyrics" | "related";
@@ -39,9 +40,9 @@ function getSectionType(section: any): "songs" | "artists" | "albums" | "unknown
   // Fallback: mirar el primer item
   const firstItem = section?.contents?.[0];
   if (firstItem) {
-    if (firstItem.videoId || firstItem.duration) return "songs";
-    if (firstItem.browseId?.startsWith("UC")) return "artists";
-    if (firstItem.browseId?.startsWith("MPREb_")) return "albums";
+    if (firstItem.track_id || firstItem.duration) return "songs";
+    if (firstItem.artist_id) return "artists";
+    if (firstItem.album_id) return "albums";
   }
 
   return "unknown";
@@ -49,17 +50,13 @@ function getSectionType(section: any): "songs" | "artists" | "albums" | "unknown
 
 interface PlayerTabsProps {
   initialTab?: TabType;
-  // Metadata de la canción actual
+  // Metadata de la canción actual (para el header)
   coverUrl: string;
   title: string;
-  artistName: string;
+  artist_name: string;
   isPlaying: boolean;
-  playSource?: any;
-  currentSong?: any;
 
   // Cola y autoplay
-  queue?: any[];
-  queueIndex?: number;
   originalQueueSize?: number;
 
   // Estados de cada tab
@@ -88,20 +85,16 @@ interface PlayerTabsProps {
 
   // Callbacks para Related
   onRelatedTrackPress?: (track: any) => void;
-  onRelatedArtistPress?: (artistId: string) => void;
-  onRelatedAlbumPress?: (albumId: string) => void;
+  onRelatedArtistPress?: (artist_id: string) => void;
+  onRelatedAlbumPress?: (album_id: string) => void;
 }
 
-export function PlayerTabs({
+export const PlayerTabs = React.memo(function PlayerTabs({
   initialTab = "upnext",
   coverUrl,
   title,
-  artistName,
+  artist_name,
   isPlaying,
-  playSource,
-  currentSong,
-  queue = [],
-  queueIndex = -1,
   originalQueueSize = 0,
   lyricsText,
   lyricsLoading,
@@ -120,9 +113,12 @@ export function PlayerTabs({
   onFetchRelated,
   onUpNextTrackPress,
   onRelatedTrackPress,
-  onRelatedArtistPress, 
-  onRelatedAlbumPress, 
+  onRelatedArtistPress,
+  onRelatedAlbumPress,
 }: PlayerTabsProps) {
+  // Obtener datos del contexto directamente
+  const { currentSong, queue, queueIndex, playSource } = useMusic();
+
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
   // Sincronizar con initialTab cuando cambie
@@ -153,9 +149,8 @@ export function PlayerTabs({
   useEffect(() => {
     const currentSongId = currentSong?.id;
 
-    // Si cambió la canción (y no es la primera carga)
     if (prevSongIdRef.current && currentSongId && prevSongIdRef.current !== currentSongId) {
-      console.log('Canción cambió, refrescando datos...');
+      console.log("Canción cambió, refrescando datos...");
 
       // Refrescar según el tab activo
       if (activeTab === "lyrics") {
@@ -170,7 +165,6 @@ export function PlayerTabs({
       }
     }
 
-    // Actualizar referencia
     prevSongIdRef.current = currentSongId;
   }, [currentSong?.id, activeTab]);
 
@@ -178,7 +172,6 @@ export function PlayerTabs({
     setActiveTab(tab);
     onTabChange(tab);
 
-    // Fetch data si es necesario
     if (tab === "lyrics" && !lyricsText && !lyricsLoading) {
       await onFetchLyrics();
     }
@@ -205,7 +198,7 @@ export function PlayerTabs({
             {title}
           </Text>
           <Text style={styles.headerArtist} numberOfLines={1}>
-            {artistName}
+            {artist_name}
           </Text>
         </View>
 
@@ -316,7 +309,7 @@ export function PlayerTabs({
                               trackId={track.id}
                               index={idx + 1}
                               title={track.title}
-                              artist={track.artistName || track.artist}
+                              artist={track.artist_name || track.artist}
                               thumbnail={track.thumbnail || track.thumbnail_url}
                               showIndex={false}
                               showMoreButton={true}
@@ -342,19 +335,19 @@ export function PlayerTabs({
 
                 {(() => {
                   // SECCIÓN 2: AUTOPLAY (sugerencias que NO están en el queue aún)
-                  if (!upNextData?.upNext || upNextData.upNext.length <= 1) {
+                  if (!upNextData?.up_next || upNextData.up_next.length <= 1) {
                     return null;
                   }
 
                   // Las sugerencias de autoplay (sin la primera que es la canción actual)
-                  const autoplaySuggestions = upNextData.upNext.slice(1);
+                  const autoplaySuggestions = upNextData.up_next.slice(1);
 
                   // IDs de canciones ya en el queue (para filtrar duplicados)
                   const queueIds = new Set(queue.map((s: any) => String(s.id)));
 
                   // Filtrar canciones que NO están en el queue
                   const autoplayNotInQueue = autoplaySuggestions.filter(
-                    (track: any) => !queueIds.has(String(track.videoId || track.id))
+                    (track: any) => !queueIds.has(String(track.track_id || track.id))
                   );
 
                   if (autoplayNotInQueue.length === 0) {
@@ -374,12 +367,12 @@ export function PlayerTabs({
                       <FlatList
                         data={autoplayNotInQueue}
                         keyExtractor={(track: any, idx: number) =>
-                          `autoplay-${track.videoId ?? track.id}-${idx}`
+                          `autoplay-${track.track_id ?? track.id}-${idx}`
                         }
                         renderItem={({ item: track, index: idx }) => (
                           <TrackRow
-                            key={track.videoId || idx}
-                            trackId={track.videoId}
+                            key={track.track_id || idx}
+                            trackId={track.track_id}
                             index={idx + 1}
                             title={track.title}
                             artist={track.artists?.map((a: any) => a.name).join(", ")}
@@ -408,7 +401,7 @@ export function PlayerTabs({
                 })()}
 
                 {/* Mensaje si no hay nada */}
-                {queue.length <= queueIndex + 1 && (!upNextData?.upNext || upNextData.upNext.length <= 1) && (
+                {queue.length <= queueIndex + 1 && (!upNextData?.up_next || upNextData.up_next.length <= 1) && (
                   <View style={styles.errorContainer}>
                     <Text style={styles.placeholderText}>No upcoming tracks</Text>
                   </View>
@@ -464,17 +457,24 @@ export function PlayerTabs({
               </View>
             )}
 
-            {!relatedLoading && !relatedError && relatedData && (
+            {!relatedLoading && !relatedError && Array.isArray(relatedData) && relatedData.length > 0 && (
               <View style={styles.relatedContent}>
                 {relatedData.map((section: any, sIdx: number) => {
-                  const sectionKey = `section-${section.title || ''}-${sIdx}`;
-                  const sectionType = getSectionType(section);
+                  const sectionKey = `section-${section.title || ""}-${sIdx}`;
+                  const sectionType =
+                    section.section_type === "tracks"
+                      ? "songs"
+                      : section.section_type === "artists"
+                        ? "artists"
+                        : section.section_type === "albums"
+                          ? "albums"
+                          : getSectionType(section);
                   const contents = section?.contents || [];
 
                   // Validar que contents sea un array y tenga elementos
                   if (!Array.isArray(contents) || !contents.length) return null;
 
-                  // 🎵 CANCIONES → Usar TrackRow
+                  // CANCIONES → Usar TrackRow
                   if (sectionType === "songs") {
                     return (
                       <View key={sectionKey} style={styles.relatedSection}>
@@ -483,11 +483,11 @@ export function PlayerTabs({
                         <FlatList
                           data={contents}
                           keyExtractor={(track: any, i: number) =>
-                            `related-song-${sIdx}-${track.videoId || track.id || i}`
+                            `related-song-${sIdx}-${track.track_id || track.id || i}`
                           }
                           renderItem={({ item: track, index: tIdx }) => (
                             <TrackRow
-                              trackId={track.videoId}
+                              trackId={track.track_id}
                               index={tIdx + 1}
                               title={track.title}
                               artist={track.artists?.map((a: any) => a.name).join(", ")}
@@ -517,18 +517,16 @@ export function PlayerTabs({
                         <HorizontalScrollSection
                           title={section.title}
                           items={contents}
-                          keyExtractor={(a: any, i: number) => `artist-${sIdx}-${a.browseId ?? i}`}
+                          keyExtractor={(a: any, i: number) => `artist-${sIdx}-${a.artist_id ?? i}`}
                           imageExtractor={(a: any) => getUpgradedThumb(a, 256)}
                           titleExtractor={(a: any) => a.title || a.name}
-                          onItemPress={(a: any) => a.browseId && onRelatedArtistPress?.(a.browseId)}
+                          onItemPress={(a: any) => a.artist_id && onRelatedArtistPress?.(a.artist_id)}
                           circularImage
                           cardWidth={120}
                           imageHeight={120}
-                          // match visual actual
                           titleStyle={styles.relatedSectionTitle}
                           contentPaddingHorizontal={12}
                           gap={16}
-                          // perf equivalente a tu uso previo (opcional)
                           initialNumToRender={4}
                           maxToRenderPerBatch={2}
                           windowSize={3}
@@ -544,20 +542,18 @@ export function PlayerTabs({
                         <HorizontalScrollSection
                           title={section.title}
                           items={contents}
-                          keyExtractor={(al: any, i: number) => `album-${sIdx}-${al.browseId ?? i}`}
+                          keyExtractor={(al: any, i: number) => `album-${sIdx}-${al.album_id ?? i}`}
                           imageExtractor={(al: any) => getUpgradedThumb(al, 512)}
                           titleExtractor={(al: any) => al.title}
                           subtitleExtractor={(al: any) =>
                             al.year || (al.artists?.map((a: any) => a.name).join(", ") || "")
                           }
-                          onItemPress={(al: any) => al.browseId && onRelatedAlbumPress?.(al.browseId)}
+                          onItemPress={(al: any) => al.album_id && onRelatedAlbumPress?.(al.album_id)}
                           cardWidth={140}
                           imageHeight={140}
-                          // match visual actual
                           titleStyle={styles.relatedSectionTitle}
                           contentPaddingHorizontal={12}
                           gap={16}
-                          // perf opcional
                           initialNumToRender={6}
                           maxToRenderPerBatch={6}
                           windowSize={5}
@@ -571,7 +567,7 @@ export function PlayerTabs({
               </View>
             )}
 
-            {!relatedLoading && !relatedError && !relatedData && (
+            {!relatedLoading && !relatedError && (!Array.isArray(relatedData) || relatedData.length === 0) && (
               <View style={styles.errorContainer}>
                 <Text style={styles.placeholderText}>No related content available</Text>
               </View>
@@ -581,7 +577,23 @@ export function PlayerTabs({
       </ProList>
     </View>
   );
-}
+}, (prevProps, nextProps) => {
+  // Solo re-renderizar si cambian datos, ignorar callbacks
+  return (
+    prevProps.initialTab === nextProps.initialTab &&
+    prevProps.coverUrl === nextProps.coverUrl &&
+    prevProps.title === nextProps.title &&
+    prevProps.artist_name === nextProps.artist_name &&
+    prevProps.isPlaying === nextProps.isPlaying &&
+    prevProps.originalQueueSize === nextProps.originalQueueSize &&
+    prevProps.lyricsText === nextProps.lyricsText &&
+    prevProps.lyricsLoading === nextProps.lyricsLoading &&
+    prevProps.upNextData === nextProps.upNextData &&
+    prevProps.upNextLoading === nextProps.upNextLoading &&
+    prevProps.relatedData === nextProps.relatedData &&
+    prevProps.relatedLoading === nextProps.relatedLoading
+  );
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -763,7 +775,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#333",
     marginBottom: 8,
   },
-  artistName: {
+  artist_name: {
     color: "#fff",
     fontSize: 13,
     fontWeight: "600",

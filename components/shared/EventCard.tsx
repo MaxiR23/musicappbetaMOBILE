@@ -5,7 +5,7 @@ import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "rea
 
 interface EventCardProps {
   event: any;
-  artistName?: string;
+  artist_name?: string;
   defaultPoster?: string;
   variant?: "compact" | "featured"; // compact para lista, featured para destacado
   onPress?: () => void;
@@ -13,7 +13,7 @@ interface EventCardProps {
 
 export default function EventCard({
   event,
-  artistName,
+  artist_name,
   defaultPoster,
   variant = "compact",
   onPress,
@@ -29,7 +29,7 @@ export default function EventCard({
 
   // Openers (attractions menos el artista principal)
   const openers = (event?.attractions || []).filter((a: any) =>
-    artistName ? (a?.name || "").toLowerCase() !== artistName.toLowerCase() : true
+    artist_name ? (a?.name || "").toLowerCase() !== artist_name.toLowerCase() : true
   );
 
   const poster = event?.image || defaultPoster || "";

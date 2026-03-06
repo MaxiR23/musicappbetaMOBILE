@@ -18,14 +18,14 @@ export default function SearchScreen() {
       const track = {
         id: item.id,
         title: item.title,
-        artistName: item.artistName ?? "",
-        artistId: item.artistId ?? null,
+        artist_name: item.artist_name ?? "",
+        artist_id: item.artist_id ?? null,
         thumbnail: item.thumbnail ?? "",
         url: "",
         duration: item.duration,
-        durationSeconds: item.durationSeconds ?? undefined,
-        albumId: item.albumId ?? null,  
-        albumName: item.albumName ?? undefined,
+        duration_seconds: item.duration_seconds ?? undefined,
+        album_id: item.album_id ?? null,  
+        album_name: item.album_name ?? undefined,
       };
       playFromSearch(track as any);
     } else if (item.type === "album") {

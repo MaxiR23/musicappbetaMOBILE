@@ -242,22 +242,22 @@ export const musicService = {
 
   // ==================== PLAY LOGS ====================
 
-  logPlayAlbum: async (albumId: string, source?: SourcePayload) => {
+  logPlayAlbum: async (album_id: string, source?: SourcePayload) => {
     const body: any = {};
     if (source?.name) body.display_name = source.name;
     if (source?.thumb) body.thumbnail_url = source.thumb;
     return authFetch(
-      `${BASE_URL}/music/plays/albums/${encodeURIComponent(albumId)}`,
+      `${BASE_URL}/music/plays/albums/${encodeURIComponent(album_id)}`,
       { method: "POST", body: JSON.stringify(body) }
     );
   },
 
-  logPlayArtist: async (artistId: string, source?: SourcePayload) => {
+  logPlayArtist: async (artist_id: string, source?: SourcePayload) => {
     const body: any = {};
     if (source?.name) body.display_name = source.name;
     if (source?.thumb) body.thumbnail_url = source.thumb;
     return authFetch(
-      `${BASE_URL}/music/plays/artists/${encodeURIComponent(artistId)}`,
+      `${BASE_URL}/music/plays/artists/${encodeURIComponent(artist_id)}`,
       { method: "POST", body: JSON.stringify(body) }
     );
   },
@@ -268,7 +268,7 @@ export const musicService = {
     artist_id?: string;
     track_name?: string;
     artist_name?: string;
-    durationSeconds?: number;
+    duration_seconds?: number;
     thumbnail_url?: string;
   }) => {
     return authFetch(
@@ -284,6 +284,32 @@ export const musicService = {
     return authFetch(
       `${BASE_URL}/music/plays/playlists/${encodeURIComponent(playlistId)}`,
       { method: "POST", body: JSON.stringify(body) }
+    );
+  },
+
+  // ==================== STATS ====================
+
+  getWeeklyStats: async (options?: {
+    include?: string;
+    limit?: number;
+  }): Promise<{
+    week_start: string;
+    artists?: any[];
+    albums?: any[];
+    tracks?: any[];
+  }> => {
+    const params = new URLSearchParams();
+    if (options?.include) params.set("include", options.include);
+    if (options?.limit) params.set("limit", String(options.limit));
+
+    const query = params.toString();
+    const url = `${BASE_URL}/stats/weekly${query ? `?${query}` : ""}`;
+    const cacheKey = `weekly-stats${query ? `:${query}` : ""}`;
+
+    return cacheWrap(
+      cacheKey,
+      () => authFetch(url),
+      { userId: 'me' }
     );
   },
 
@@ -310,7 +336,7 @@ export const musicService = {
 
     await cacheClearPrefix(`playlist:${playlistId}`);
     await cacheClearPrefix('playlists:list');
-    emitPlaylistChange(); 
+    emitPlaylistChange();
     return result;
   },
 
