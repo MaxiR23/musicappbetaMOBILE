@@ -212,9 +212,13 @@ export function MusicProvider({ children }: { children: ReactNode }) {
             logPlayAlbum(ctx.id, srcMeta).catch(() => { });
           } else if (ctx.kind === "artist") {
             logPlayArtist(ctx.id, srcMeta).catch(() => { });
-          } else if (ctx.kind === "playlist") {
+          } 
+          
+          //TODO: bug in recents screen {
+          /* else if (ctx.kind === "playlist") {
             logPlayPlaylist(ctx.id, srcMeta).catch(() => { });
-          }
+          } */
+         // }
 
           setTimeout(async () => {
             try {
