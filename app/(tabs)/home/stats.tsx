@@ -1,5 +1,6 @@
 import TrackCard from "@/components/shared/TrackCard";
 import { useContentPadding } from "@/hooks/use-content-padding";
+import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -30,6 +31,10 @@ type StatItem = {
   thumbnail_url?: string;
   play_count: number;
   artist_name?: string;
+  artist_id?: string;
+  album_id?: string;
+  album_name?: string;
+  duration_seconds?: number;
 };
 
 type StatsData = {
@@ -38,9 +43,13 @@ type StatsData = {
   tracks: StatItem[];
 };
 
-function ArtistCard({ item, index }: { item: StatItem; index: number }) {
+function ArtistCard({ item, index, onPress }: { item: StatItem; index: number; onPress?: () => void }) {
   return (
-    <View style={[styles.artistCard, { width: ARTIST_CARD_W, height: ARTIST_CARD_H }]}>
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={onPress}
+      style={[styles.artistCard, { width: ARTIST_CARD_W, height: ARTIST_CARD_H }]}
+    >
       {item.thumbnail_url ? (
         <Image
           source={{ uri: item.thumbnail_url }}
@@ -63,13 +72,13 @@ function ArtistCard({ item, index }: { item: StatItem; index: number }) {
           {item.play_count} {item.play_count === 1 ? "reproducción" : "reproducciones"}
         </Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
-function AlbumCard({ item, index }: { item: StatItem; index: number }) {
+function AlbumCard({ item, index, onPress }: { item: StatItem; index: number; onPress?: () => void }) {
   return (
-    <View style={{ width: ALBUM_CARD_W }}>
+    <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={{ width: ALBUM_CARD_W }}>
       <View style={[styles.albumCover, { width: ALBUM_CARD_W, height: ALBUM_CARD_W }]}>
         {item.thumbnail_url ? (
           <Image
@@ -93,7 +102,7 @@ function AlbumCard({ item, index }: { item: StatItem; index: number }) {
       <Text style={styles.albumPlays}>
         {item.play_count} {item.play_count === 1 ? "reproducción" : "reproducciones"}
       </Text>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -115,6 +124,7 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
 
 export default function MonthlyStatsScreen() {
   const { getMonthlyStats } = useMusicApi();
+  const { playFromList } = useMusic();
   const router = useRouter();
   const contentPadding = useContentPadding();
   const [data, setData] = useState<StatsData | null>(null);
@@ -129,7 +139,7 @@ export default function MonthlyStatsScreen() {
           tracks: res?.tracks ?? [],
         });
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -139,6 +149,21 @@ export default function MonthlyStatsScreen() {
 
   const trackChunks = useMemo(() => {
     return data?.tracks ? chunkArray(data.tracks, 4) : [];
+  }, [data?.tracks]);
+
+  const mappedTracks = useMemo(() => {
+    if (!data?.tracks) return [];
+    return data.tracks.map((t) => ({
+      id: t.entity_id,
+      title: t.display_name ?? "",
+      artist_name: t.artist_name ?? "",
+      artist_id: t.artist_id,
+      album_id: t.album_id,
+      album_name: t.album_name,
+      thumbnail: t.thumbnail_url,
+      thumbnail_url: t.thumbnail_url,
+      duration_seconds: t.duration_seconds,
+    }));
   }, [data?.tracks]);
 
   return (
@@ -180,7 +205,11 @@ export default function MonthlyStatsScreen() {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
                   renderItem={({ item, index }) => (
-                    <ArtistCard item={item} index={index} />
+                    <ArtistCard
+                      item={item}
+                      index={index}
+                      onPress={() => router.push(`/(tabs)/home/artist/${item.entity_id}`)}
+                    />
                   )}
                 />
               </View>
@@ -197,16 +226,20 @@ export default function MonthlyStatsScreen() {
                   contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
                   renderItem={({ item: chunk, index: chunkIndex }) => (
                     <View style={{ gap: 8 }}>
-                      {chunk.map((item, idx) => (
-                        <TrackCard
-                          key={item.entity_id}
-                          title={item.display_name ?? "—"}
-                          artist={item.artist_name}
-                          thumbnail={item.thumbnail_url}
-                          rank={chunkIndex * 4 + idx + 1}
-                          subtitle={`${item.play_count} ${item.play_count === 1 ? "Play" : "Plays"}`}
-                        />
-                      ))}
+                      {chunk.map((item, idx) => {
+                        const globalIndex = chunkIndex * 4 + idx;
+                        return (
+                          <TrackCard
+                            key={item.entity_id}
+                            title={item.display_name ?? "—"}
+                            artist={item.artist_name}
+                            thumbnail={item.thumbnail_url}
+                            rank={globalIndex + 1}
+                            subtitle={`${item.play_count} ${item.play_count === 1 ? "Play" : "Plays"}`}
+                            onPress={() => playFromList(mappedTracks, globalIndex, { type: "queue", name: "Top del mes" })}
+                          />
+                        );
+                      })}
                     </View>
                   )}
                 />
@@ -223,7 +256,11 @@ export default function MonthlyStatsScreen() {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={{ paddingHorizontal: 16, gap: 14 }}
                   renderItem={({ item, index }) => (
-                    <AlbumCard item={item} index={index} />
+                    <AlbumCard
+                      item={item}
+                      index={index}
+                      onPress={() => router.push(`/(tabs)/home/album/${item.entity_id}`)}
+                    />
                   )}
                 />
               </View>
