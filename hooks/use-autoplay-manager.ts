@@ -55,7 +55,7 @@ export function useAutoplayManager(params: UseAutoplayManagerParams) {
       manuallyPlayedAutoplayIds.current.clear();
       lastFetchedContextRef.current = null;
     }
-    
+
     if (currentSong?.id && contextId && contextId !== lastFetchedContextRef.current && !isFetchingUpNextRef.current) {
       lastFetchedContextRef.current = contextId;
       isFetchingUpNextRef.current = true;
@@ -91,7 +91,7 @@ export function useAutoplayManager(params: UseAutoplayManagerParams) {
       if (!autoplayEnabled) return null;
 
       const contextUpNext = upNextByContextRef.current;
-      const autoplayTracks = contextUpNext?.upNext;
+      const autoplayTracks = contextUpNext?.up_next;
 
       if (!autoplayTracks || autoplayTracks.length <= 1) return null;
 
@@ -129,8 +129,8 @@ export function useAutoplayManager(params: UseAutoplayManagerParams) {
   }, [autoplayEnabled, setAutoplayProvider, setIsAutoplayEnabledCallback]);
 
   const contextUpNext = upNextByContextRef.current;
-  const autoplayTracksAvailable = contextUpNext?.upNext && contextUpNext.upNext.length > 1
-    ? contextUpNext.upNext.length - 1
+  const autoplayTracksAvailable = contextUpNext?.up_next && contextUpNext.up_next.length > 1
+    ? contextUpNext.up_next.length - 1
     : 0;
 
   const autoplayTracksUsed = originalQueueSize - initialQueueSize;
