@@ -228,6 +228,7 @@ export default function HomeScreen() {
           title="Más escuchados · Canciones"
           items={topTracks}
           type="track"
+          variant="compact"
           feedKey="top-tracks"
           onTrackPress={(index, queueName) => {
             playFromList(mappedTopTracks, index, { type: "queue", name: queueName });
@@ -264,6 +265,7 @@ export default function HomeScreen() {
           title="Singles nuevos"
           items={newSingles}
           type="track"
+          variant="compact"
           feedKey="new-singles"
           onTrackPress={(index, queueName) => {
             playFromList(mappedNewSingles, index, { type: "queue", name: queueName });
@@ -275,6 +277,7 @@ export default function HomeScreen() {
           title="Desde tu seed"
           items={seedTracks}
           type="track"
+          variant="compact"
           feedKey="seed-tracks"
           onTrackPress={(index, queueName) => {
             playFromList(mappedSeedTracks, index, { type: "queue", name: queueName });

@@ -1,19 +1,21 @@
+import TrackCard from "@/components/shared/TrackCard";
+import { useContentPadding } from "@/hooks/use-content-padding";
 import { useMusicApi } from "@/hooks/use-music-api";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Dimensions,
-    FlatList,
-    Image,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -95,31 +97,6 @@ function AlbumCard({ item, index }: { item: StatItem; index: number }) {
   );
 }
 
-function TrackRow({ item, index }: { item: StatItem; index: number }) {
-  return (
-    <View style={styles.trackRow}>
-      <Text style={styles.trackRank}>{index + 1}</Text>
-      <View style={styles.trackThumb}>
-        {item.thumbnail_url ? (
-          <Image source={{ uri: item.thumbnail_url }} style={{ width: 44, height: 44, borderRadius: 6 }} />
-        ) : (
-          <View style={{ width: 44, height: 44, borderRadius: 6, backgroundColor: "#2a2a2a" }} />
-        )}
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.trackName} numberOfLines={1}>
-          {item.display_name ?? "—"}
-        </Text>
-        <Text style={styles.trackSub} numberOfLines={1}>
-          {[item.artist_name, `${item.play_count} ${item.play_count === 1 ? "Play" : "Plays"}`]
-            .filter(Boolean)
-            .join(" · ")}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
 function SectionHeader({ title }: { title: string }) {
   return (
     <View style={styles.sectionHeader}>
@@ -128,14 +105,23 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+}
+
 export default function MonthlyStatsScreen() {
   const { getMonthlyStats } = useMusicApi();
   const router = useRouter();
+  const contentPadding = useContentPadding();
   const [data, setData] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getMonthlyStats({ include: "artists,albums,tracks", limit: 10 })
+    getMonthlyStats({ include: "artists,albums,tracks" })
       .then((res: any) => {
         setData({
           artists: res?.artists ?? [],
@@ -150,6 +136,10 @@ export default function MonthlyStatsScreen() {
   const hasAnyData = data && (
     data.artists.length > 0 || data.albums.length > 0 || data.tracks.length > 0
   );
+
+  const trackChunks = useMemo(() => {
+    return data?.tracks ? chunkArray(data.tracks, 4) : [];
+  }, [data?.tracks]);
 
   return (
     <>
@@ -176,8 +166,10 @@ export default function MonthlyStatsScreen() {
             <Text style={styles.emptyText}>Sin datos del mes pasado</Text>
           </View>
         ) : (
-          <ScrollView showsVerticalScrollIndicator={false}>
-
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: contentPadding.paddingBottom }}
+          >
             {!!data!.artists.length && (
               <View style={styles.section}>
                 <SectionHeader title="Tus artistas del mes" />
@@ -190,7 +182,6 @@ export default function MonthlyStatsScreen() {
                   renderItem={({ item, index }) => (
                     <ArtistCard item={item} index={index} />
                   )}
-                  scrollEnabled
                 />
               </View>
             )}
@@ -198,9 +189,27 @@ export default function MonthlyStatsScreen() {
             {!!data!.tracks.length && (
               <View style={styles.section}>
                 <SectionHeader title="Tus canciones del mes" />
-                {data!.tracks.map((item, index) => (
-                  <TrackRow key={item.entity_id} item={item} index={index} />
-                ))}
+                <FlatList
+                  horizontal
+                  data={trackChunks}
+                  keyExtractor={(_, idx) => `chunk-${idx}`}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+                  renderItem={({ item: chunk, index: chunkIndex }) => (
+                    <View style={{ gap: 8 }}>
+                      {chunk.map((item, idx) => (
+                        <TrackCard
+                          key={item.entity_id}
+                          title={item.display_name ?? "—"}
+                          artist={item.artist_name}
+                          thumbnail={item.thumbnail_url}
+                          rank={chunkIndex * 4 + idx + 1}
+                          subtitle={`${item.play_count} ${item.play_count === 1 ? "Play" : "Plays"}`}
+                        />
+                      ))}
+                    </View>
+                  )}
+                />
               </View>
             )}
 
@@ -219,8 +228,6 @@ export default function MonthlyStatsScreen() {
                 />
               </View>
             )}
-
-            <View style={{ height: 60 }} />
           </ScrollView>
         )}
       </View>
@@ -341,33 +348,6 @@ const styles = StyleSheet.create({
   albumPlays: {
     color: "#666",
     fontSize: 11,
-    marginTop: 2,
-  },
-  trackRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    gap: 12,
-  },
-  trackRank: {
-    color: "#555",
-    fontSize: 14,
-    fontWeight: "700",
-    width: 20,
-    textAlign: "center",
-  },
-  trackThumb: {
-    overflow: "hidden",
-  },
-  trackName: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  trackSub: {
-    color: "#888",
-    fontSize: 12,
     marginTop: 2,
   },
 });
