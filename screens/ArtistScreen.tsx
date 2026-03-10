@@ -4,7 +4,7 @@ import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
 import { useLocalSearchParams, useRouter, useSegments } from "expo-router";
 import React, { useMemo } from "react";
-import { StatusBar, StyleSheet, Text, View } from "react-native";
+import { StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { mapArtistTopSongs } from "@/utils/song-mapper";
 
@@ -29,7 +29,7 @@ export default function ArtistScreen() {
 
   const currentTab = segments[1] as 'home' | 'search';
 
-  const { data: artist, loading } = useDetailScreen({
+  const { data: artist, loading, error } = useDetailScreen({
     id,
     fetcher: getArtist,
   });
@@ -38,7 +38,7 @@ export default function ArtistScreen() {
   const upcomingReleases = artist?.upcoming_album ? [artist.upcoming_album] : [];
 
   const mappedTop = useMemo(() => {
-    if (!artist) return [];
+    if (!artist?.top_songs) return [];
     return mapArtistTopSongs(artist.top_songs, {
       artist_id: id ?? null,
       defaultartist_name: artist.header?.name,
@@ -60,7 +60,7 @@ export default function ArtistScreen() {
         type: 'newRelease',
         data: newRelease,
       },
-      {
+      artist.top_songs?.length > 0 && {
         type: 'topSongs',
         data: artist.top_songs,
       },
@@ -83,7 +83,7 @@ export default function ArtistScreen() {
     ].filter(Boolean);
   }, [artist, upcomingReleases, newRelease, related]);
 
-  if (loading || !artist) {
+  if (loading) {
     return (
       <>
         <StatusBar barStyle="light-content" backgroundColor="#0e0e0e" />
@@ -92,6 +92,21 @@ export default function ArtistScreen() {
           rows={5}
           cards={4}
         />
+      </>
+    );
+  }
+
+  if (error || !artist) {
+    return (
+      <>
+        <StatusBar barStyle="light-content" backgroundColor="#0e0e0e" />
+        <View style={{ flex: 1, backgroundColor: '#0e0e0e', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
+          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>No se pudo cargar el artista</Text>
+          <Text style={{ color: '#aaa', fontSize: 13 }}>Intentá de nuevo más tarde</Text>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={{ color: '#1DB954', fontSize: 14, marginTop: 8 }}>Volver</Text>
+          </TouchableOpacity>
+        </View>
       </>
     );
   }
@@ -170,11 +185,11 @@ export default function ArtistScreen() {
               onPressMore={
                 artist.has_more?.albums
                   ? () =>
-                      router.push(
-                        `/(tabs)/${currentTab}/artist/${id}/releases?tab=albums&name=${encodeURIComponent(
-                          artist.header?.name || ""
-                        )}`
-                      )
+                    router.push(
+                      `/(tabs)/${currentTab}/artist/${id}/releases?tab=albums&name=${encodeURIComponent(
+                        artist.header?.name || ""
+                      )}`
+                    )
                   : undefined
               }
             />
@@ -196,11 +211,11 @@ export default function ArtistScreen() {
               onPressMore={
                 artist.has_more?.singles
                   ? () =>
-                      router.push(
-                        `/(tabs)/${currentTab}/artist/${id}/releases?tab=singles&name=${encodeURIComponent(
-                          artist.header?.name || ""
-                        )}`
-                      )
+                    router.push(
+                      `/(tabs)/${currentTab}/artist/${id}/releases?tab=singles&name=${encodeURIComponent(
+                        artist.header?.name || ""
+                      )}`
+                    )
                   : undefined
               }
             />
@@ -219,7 +234,6 @@ export default function ArtistScreen() {
             />
           </View>
         );
-
       case 'related':
         return (
           <View style={{ marginBottom: 20 }}>

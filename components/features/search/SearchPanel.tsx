@@ -64,6 +64,7 @@ export default function SearchPanel({
   const [results, setResults] = useState<ResultItem[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [recents, setRecents] = useState<string[]>([]);
+  const [serviceError, setServiceError] = useState(false);
 
   const fade = useRef(new Animated.Value(0)).current;
   const ty = useRef(new Animated.Value(6)).current;
@@ -172,12 +173,22 @@ export default function SearchPanel({
       setLoading(true);
       try {
         const res = await searchFn(q);
+
+        // Error del servicio — no cachear reciente, mostrar error
+        if (res && typeof res === 'object' && !Array.isArray(res) && (res as any).error) {
+          setResults([]);
+          setServiceError(true);
+          return;
+        }
+
+        setServiceError(false);
         const finalResults = mapResults(res);
         setResults(finalResults);
         await saveRecent(q);
       } catch (e) {
         console.error("search error", e);
         setResults([]);
+        setServiceError(true);
       } finally {
         setLoading(false);
       }
@@ -289,8 +300,8 @@ export default function SearchPanel({
             icon="search"
             iconSize={72}
             iconColor="#3a3a3a"
-            message="No hay resultados"
-            submessage="Probá con otro término"
+            message={serviceError ? "No se pudo realizar la búsqueda" : "No hay resultados"}
+            submessage={serviceError ? "Intentá de nuevo más tarde" : "Probá con otro término"}
           />
         )}
       </Animated.View>

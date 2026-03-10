@@ -5,7 +5,7 @@ import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
 import { useLocalSearchParams, useRouter, useSegments } from "expo-router";
 import React, { useMemo, useState } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { mapAlbumTracks } from "@/utils/song-mapper";
 
@@ -19,6 +19,7 @@ import { useContentPadding } from "@/hooks/use-content-padding";
 import { extractIncludedArtists } from "@/utils/data-helpers";
 import { getUpgradedThumb } from "@/utils/image-helpers";
 import { formatAlbumMeta, formatReleaseSubtitle } from "@/utils/subtitle-helpers";
+
 
 export default function AlbumScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,7 +35,7 @@ export default function AlbumScreen() {
     const [actionsOpen, setActionsOpen] = useState(false);
     const [selectedTrack, setSelectedTrack] = useState<any | null>(null);
 
-    const { data: album, loading } = useDetailScreen({
+    const { data: album, loading, error } = useDetailScreen({
         id,
         fetcher: getAlbum,
     });
@@ -109,7 +110,7 @@ export default function AlbumScreen() {
 
     const needsExtraPadding = (album?.tracks?.length || 0) <= 3;
 
-    if (loading || !album) {
+    if (loading) {
         return (
             <View style={styles.container}>
                 <AlbumSkeletonLayout
@@ -117,6 +118,18 @@ export default function AlbumScreen() {
                     tracks={6}
                     heroHeight={360}
                 />
+            </View>
+        );
+    }
+
+    if (error || !album) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', gap: 12 }]}>
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>No se pudo cargar el álbum</Text>
+                <Text style={{ color: '#aaa', fontSize: 13 }}>Intentá de nuevo más tarde</Text>
+                <TouchableOpacity onPress={() => router.back()}>
+                    <Text style={{ color: '#1DB954', fontSize: 14, marginTop: 8 }}>Volver</Text>
+                </TouchableOpacity>
             </View>
         );
     }

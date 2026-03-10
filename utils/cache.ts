@@ -18,6 +18,7 @@ export const CACHE_TTL = {
   feed: 30 * 60 * 1000,
   recent: DAY_MS * 7,
   weeklyStats: DAY_MS * 7,
+  presenting: DAY_MS,
   get monthlyStats() { return msUntilEndOfMonth(); },
   default: 5 * 60 * 1000,
 };
@@ -38,6 +39,7 @@ const k = (key: string, userId?: string | null, version?: string | null) => {
 function getTTLForKey(key: string): number {
   if (key.includes('monthly-stats')) return CACHE_TTL.monthlyStats;
   if (key.includes('weekly-stats')) return CACHE_TTL.weeklyStats;
+  if (key.includes('presenting')) return CACHE_TTL.presenting; 
   if (key.includes('artist')) return CACHE_TTL.artist;
   if (key.includes('album')) return CACHE_TTL.album;
   if (key.includes('playlist')) return CACHE_TTL.playlist;
@@ -111,27 +113,36 @@ export async function cacheSet<T>(
 export async function cacheWrap<T>(
   key: string,
   producer: () => Promise<T>,
-  opts?: { ttl?: number; userId?: string | null; skipCache?: boolean; version?: string | null }  // ← NUEVO: version
+  opts?: { ttl?: number; userId?: string | null; skipCache?: boolean; version?: string | null }
 ): Promise<T> {
   const full = k(key, opts?.userId, opts?.version);
 
   if (!opts?.skipCache) {
-    const hit = await cacheGet<T>(key, { userId: opts?.userId, version: opts?.version });  // ← pasa version
+    const hit = await cacheGet<T>(key, { userId: opts?.userId, version: opts?.version });
     if (hit !== null) return hit;
   }
 
   console.log(`[cache] MISS → fetching (${full})`);
   const data = await producer();
+
+  // No cachear si la respuesta es inválida
+  if (data === null || data === undefined) {
+    throw new Error("empty_response");
+  }
+  if (typeof data === 'object' && (data as any).error) {
+    throw new Error((data as any).error);
+  }
+
   await cacheSet(key, data, {
     ttl: opts?.ttl ?? DEFAULT_TTL,
     userId: opts?.userId,
-    version: opts?.version  // ← pasa version
+    version: opts?.version
   });
   return data;
 }
 
 /** Invalidaciones útiles */
-export async function cacheDel(key: string, userId?: string | null, version?: string | null) {  // ← NUEVO: version
+export async function cacheDel(key: string, userId?: string | null, version?: string | null) {  // version
   const full = k(key, userId, version);
   mem.delete(full);
   try { await AsyncStorage.removeItem(full); } catch { }

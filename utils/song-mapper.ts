@@ -57,6 +57,7 @@ export function mapAlbumTracks(
   tracks: any[],
   options: MapSongsOptions = {}
 ): MappedSong[] {
+  if (!Array.isArray(tracks)) return [];
   const { defaultThumbnail, album_id, album_name } = options;
 
   return tracks.map((track: any) => {
@@ -99,6 +100,7 @@ export function mapArtistTopSongs(
   topSongs: any[],
   options: MapSongsOptions = {}
 ): MappedSong[] {
+  if (!Array.isArray(topSongs)) return [];
   const { artist_id, defaultartist_name } = options;
 
   return topSongs.map((song: any) => {
@@ -143,6 +145,7 @@ export function mapArtistTopSongs(
  * @returns Array de canciones en formato estándar
  */
 export function mapPlaylistSongs(playlistSongs: any[]): MappedSong[] {
+  if (!Array.isArray(playlistSongs)) return [];
   return playlistSongs.map((song: any) => ({
     id: song.id,
     internalId: song.internalId,
@@ -153,6 +156,21 @@ export function mapPlaylistSongs(playlistSongs: any[]): MappedSong[] {
     thumbnail: song.albumCover,
     duration: song.duration,
     duration_seconds: null,
+  }));
+}
+
+export function mapPresentingTracks(tracks: any[]): MappedSong[] {
+  if (!Array.isArray(tracks)) return [];
+  return tracks.map((track: any) => ({
+    id: track.videoId,
+    title: track.title,
+    artist_name: track.artist ?? "",
+    artist_id: track.artist_id ?? null,
+    album_id: track.album_id ?? null,
+    album_name: track.album ?? null,
+    thumbnail: track.thumbnail ?? "",
+    duration: track.duration ?? null,
+    duration_seconds: track.duration_seconds ?? null,
   }));
 }
 

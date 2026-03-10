@@ -15,6 +15,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const [playSource, setPlaySource] = useState<PlaySource | null>(null);
   const [originalQueueSize, setOriginalQueueSize] = useState<number>(0);
   const [initialQueueSize, setInitialQueueSize] = useState<number>(0);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
 
   const autoplayProviderRef = useRef<(() => Song | null) | null>(null);
   const isAutoplayEnabledRef = useRef<(() => boolean) | null>(null);
@@ -885,10 +886,17 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    const subError = TrackPlayer.addEventListener(Event.PlaybackError, (error) => {
+      console.error("[playback] Error:", error);
+      setPlaybackError("No se pudo reproducir la canción");
+      setTimeout(() => setPlaybackError(null), 4000);
+    });
+
     return () => {
       subActive.remove();
       subProgress.remove();
       subEnded.remove();
+      subError.remove();
     };
   }, [queue]);
 
@@ -913,8 +921,9 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       setAutoplayProvider,
       setIsAutoplayEnabledCallback,
       isAutoplayEnabled,
+      playbackError
     }),
-    [currentSong, queue, queueIndex, playSource, originalQueueSize, initialQueueSize, isShuffled]
+    [currentSong, queue, queueIndex, playSource, originalQueueSize, initialQueueSize, isShuffled, playbackError]
   );
 
   return <MusicContext.Provider value={value}>{children}</MusicContext.Provider>;

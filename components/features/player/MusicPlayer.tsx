@@ -14,6 +14,7 @@ import { getUpgradedThumb } from "@/utils/image-helpers";
 import { mapGenericTrack } from "@/utils/song-mapper";
 import { router, usePathname } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Text, View } from "react-native";
 import { useMusic } from "../../../hooks/use-music";
 import { useMusicApi } from "../../../hooks/use-music-api";
 import { Song } from "../../../types/music";
@@ -44,6 +45,7 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
     setIsAutoplayEnabledCallback,
     shuffle,
     isShuffled,
+    playbackError,
   } = useMusic();
 
   const { likeTrack, unlikeTrack, isTrackLiked, getTrackLyrics, getTrackUpNext, getTrackRelated } =
@@ -313,6 +315,23 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
       />
 
       <TrackActionsSheet open={actionsOpen} onOpenChange={setActionsOpen} track={selectedTrack} />
+
+      {playbackError && (
+        <View style={{
+          position: "absolute",
+          bottom: 140,
+          left: 20,
+          right: 20,
+          backgroundColor: "#e74c3c",
+          borderRadius: 10,
+          padding: 14,
+          alignItems: "center",
+        }}>
+          <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
+            {playbackError}
+          </Text>
+        </View>
+      )}
     </>
   );
 }
