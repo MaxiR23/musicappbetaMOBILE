@@ -48,7 +48,7 @@ export function useAutoplayManager(params: UseAutoplayManagerParams) {
     }
 
     if (contextId && contextId !== currentPlaySourceIdRef.current) {
-      console.log('Contexto cambió, cargando nuevo autoplay:', contextId);
+      //DBG: console.log('Contexto cambió, cargando nuevo autoplay:', contextId);
       currentPlaySourceIdRef.current = contextId;
       upNextByContextRef.current = null;
       autoplayIndexRef.current = 0;
@@ -65,7 +65,7 @@ export function useAutoplayManager(params: UseAutoplayManagerParams) {
 
   useEffect(() => {
     if (upNextData && !upNextByContextRef.current) {
-      console.log('Guardando upNext para este contexto');
+      //DBG: console.log('Guardando upNext para este contexto');
       upNextByContextRef.current = upNextData;
       isFetchingUpNextRef.current = false;
     }
@@ -73,7 +73,7 @@ export function useAutoplayManager(params: UseAutoplayManagerParams) {
 
   useEffect(() => {
     if (currentSong?.id && shouldShowRelated) {
-      console.log('Canción cambió, recargando Related en background');
+      //DBG: console.log('Canción cambió, recargando Related en background');
       fetchRelated();
     }
   }, [currentSong?.id, shouldShowRelated, fetchRelated]);

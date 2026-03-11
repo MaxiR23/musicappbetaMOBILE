@@ -71,7 +71,7 @@ export function useHomeRecent(userId: string, _currentSongId?: string) {
   useEffect(() => {
     const unsubscribe = subscribeToRecentChanges(() => {
       setTimeout(() => {
-        console.log('[HOME] refetching recientes (bypass cache)...');
+        //DBG: console.log('[HOME] refetching recientes (bypass cache)...');
         fetchRecent(true);
       }, 3000);
     });

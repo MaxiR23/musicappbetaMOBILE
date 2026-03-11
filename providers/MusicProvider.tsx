@@ -168,7 +168,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           }, 2000);
 
         } else {
-          console.log("[tracklog] same context, skip log:", ctx.key);
+          //dbg: console.log("[tracklog] same context, skip log:", ctx.key);
         }
       }
     } catch (e) {
@@ -660,7 +660,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       // Si cambió de track, resetear el log para permitir nuevo conteo
       if (newTrackId && newTrackId !== prevTrackId) {
         lastLoggedTrackIdRef.current = null;
-        console.log('[tracklog] Track cambió, reseteando log para permitir nuevo conteo');
+        //DBG: console.log('[tracklog] Track cambió, reseteando log para permitir nuevo conteo');
       }
 
       setQueueIndex((prev) => (prev !== pos ? pos : prev));
@@ -671,7 +671,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         const nexts = queue.slice(pos + 1, pos + 6).map((s) => String(s.id));
         if (BASE_URL && nexts.length) {
           warmBatch(nexts, BASE_URL);
-          console.log("[prefetch] warm next batch:", nexts);
+         //DBG: console.log("[prefetch] warm next batch:", nexts);
         }
       } catch (e) {
         console.warn("[prefetch] warm next failed:", e);
@@ -715,7 +715,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         const alreadyLogged = lastLoggedTrackIdRef.current === trackId;
 
         if (!alreadyLogged) {
-          console.log(`[tracklog] 30s reales acumulados para: ${trackId}`);
+          //DBG: console.log(`[tracklog] 30s reales acumulados para: ${trackId}`);
           lastLoggedTrackIdRef.current = trackId;
 
           const trackContext = {
@@ -730,7 +730,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
           logPlayTrack(trackId, trackContext).catch(() => { });
           //DBG: CHECK TRACK console.log("[duration-check] trackToLog json =", JSON.stringify(trackToLog, null, 2));
-          console.log("[tracklog] track logged after 30s real:", trackId, trackContext);
+          //DBG: console.log("[tracklog] track logged after 30s real:", trackId, trackContext);
         }
       }
     });

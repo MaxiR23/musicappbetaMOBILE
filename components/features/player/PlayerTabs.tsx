@@ -150,7 +150,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
     const currentSongId = currentSong?.id;
 
     if (prevSongIdRef.current && currentSongId && prevSongIdRef.current !== currentSongId) {
-      console.log("Canción cambió, refrescando datos...");
+      //DBG: console.log("Canción cambió, refrescando datos...");
 
       // Refrescar según el tab activo
       if (activeTab === "lyrics") {

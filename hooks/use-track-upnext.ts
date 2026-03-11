@@ -32,7 +32,7 @@ export function useTrackUpNext({
         setUpNextData(null);
         setUpNextError("No hay cola disponible.");
       } else {
-        console.log("[Upnext] cargado:", res.up_next.length, "canciones");
+        //DBG: console.log("[Upnext] cargado:", res.up_next.length, "canciones");
         setUpNextData(res);
       }
     } catch {
