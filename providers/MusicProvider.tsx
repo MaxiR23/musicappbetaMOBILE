@@ -5,6 +5,7 @@ import TrackPlayer, { Event, RepeatMode, TrackType } from "react-native-track-pl
 import { useCacheInvalidation } from "../hooks/use-cache-invalidation";
 import { useMusicApi } from "../hooks/use-music-api";
 import { ensureTrackPlayer } from "../services/setupTrackPlayer";
+import { syncWithTrackPlayer } from '../services/syncWithTrackPlayer';
 import { MusicContext } from "./../context/MusicContext";
 import { Song } from "./../types/music";
 
@@ -99,69 +100,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     return null;
   }
 
-  async function syncWithTrackPlayer(list: Song[], startIndex: number) {
-    await ensureTrackPlayer();
-
-    const BASE_URL = getBaseUrl();
-    if (!BASE_URL || !list?.length) return;
-
-    const idx = Math.max(0, Math.min(startIndex, list.length - 1));
-
-    const currentTrack = {
-      id: String(list[idx].id),
-      url: `${BASE_URL}/music/play?id=${encodeURIComponent(list[idx].id)}&redir=2`,
-      title: (list[idx] as any).title,
-      artist: (list[idx] as any).artist_name ?? (list[idx] as any).artist ?? "",
-      artwork: (list[idx] as any).thumbnail ?? (list[idx] as any).thumbnail_url ?? undefined,
-      type: TrackType.Default,
-      headers: {
-        Range: "bytes=0-",
-        "Accept-Encoding": "identity",
-        Connection: "keep-alive",
-      },
-    } as any;
-
-    syncingRef.current = true;
-    try {
-      await TrackPlayer.reset();
-      await TrackPlayer.add(currentTrack);
-      TrackPlayer.play().catch(() => { });
-
-      setTimeout(async () => {
-        try {
-          const beforeTracks = list.slice(0, idx).map((s) => ({
-            id: String(s.id),
-            url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
-            title: (s as any).title,
-            artist: (s as any).artist_name ?? (s as any).artist ?? "",
-            artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
-            type: TrackType.Default,
-            headers: { Range: "bytes=0-", "Accept-Encoding": "identity", Connection: "keep-alive" },
-          })) as any[];
-
-          const afterTracks = list.slice(idx + 1).map((s) => ({
-            id: String(s.id),
-            url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
-            title: (s as any).title,
-            artist: (s as any).artist_name ?? (s as any).artist ?? "",
-            artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
-            type: TrackType.Default,
-            headers: { Range: "bytes=0-", "Accept-Encoding": "identity", Connection: "keep-alive" },
-          })) as any[];
-
-          if (beforeTracks.length > 0) await TrackPlayer.add(beforeTracks, 0);
-          if (afterTracks.length > 0) await TrackPlayer.add(afterTracks);
-        } catch { }
-      }, 50);
-
-    } catch (e) {
-      console.error("[sync] ERROR:", e);
-      throw e;
-    } finally {
-      syncingRef.current = false;
-    }
-  }
-
   async function playFromList(list: Song[], startIndex: number, source?: PlaySource) {
     if (switchingRef.current) return;
     switchingRef.current = true;
@@ -183,7 +121,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         await TrackPlayer.skip(startIndex);
         await TrackPlayer.play();
       } else {
-        await syncWithTrackPlayer(list, startIndex);
+        await syncWithTrackPlayer(list, startIndex, getBaseUrl()!, syncingRef);
         lastLoadedContextKeyRef.current = ctx?.key ?? null;
       }
     } catch (err) {
@@ -264,7 +202,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     try {
 
       setPlaySource({ type: "related", id: String(song.id), name: "Recommended", thumb: null });
-      await syncWithTrackPlayer(newQueue, 0);
+      await syncWithTrackPlayer(newQueue, 0, getBaseUrl()!, syncingRef);
 
       console.log('Reproducción desde Related iniciada');
     } catch (err) {
@@ -296,7 +234,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     lastLoggedContextKeyRef.current = null;
 
     try {
-      await syncWithTrackPlayer(newQueue, 0);
+      await syncWithTrackPlayer(newQueue, 0, getBaseUrl()!, syncingRef);
     } catch (err) {
       console.error("[playFromSearch] error:", err);
     } finally {
@@ -333,7 +271,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     // RE-SINCRONIZAR TrackPlayer completamente
     try {
       syncingRef.current = true;
-      await syncWithTrackPlayer(newQueue, insertPosition);
+      await syncWithTrackPlayer(newQueue, insertPosition, getBaseUrl()!, syncingRef);
       console.log('TrackPlayer re-sincronizado y reproduciendo en posición', insertPosition);
     } catch (e) {
       console.error('[addToQueueAndPlay] ERROR:', e);

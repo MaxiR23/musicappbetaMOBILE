@@ -7,6 +7,7 @@ module.exports = {
     '^react-native-get-random-values$': '<rootDir>/test/__mocks__/empty.ts',
     '^react-native-url-polyfill/auto$': '<rootDir>/test/__mocks__/empty.ts',
     '^react-native$': '<rootDir>/test/__mocks__/empty.ts',
+    '^react-native-track-player$': '<rootDir>/test/__mocks__/react-native-track-player.ts',
     '^../lib/supabase$': '<rootDir>/test/__mocks__/supabase.ts',
     '^@react-native-async-storage/async-storage$': '<rootDir>/test/__mocks__/empty.ts',
   },
