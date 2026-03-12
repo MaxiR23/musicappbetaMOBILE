@@ -6,7 +6,7 @@ import { CacheVersionsContext, type CacheVersions, type CacheVersionsContextValu
 const API_BASE =
     (Constants?.expoConfig as any)?.extra?.EXPO_PUBLIC_API_URL
     ?? process.env.EXPO_PUBLIC_API_URL
-    ?? "http://66.55.75.224:8000/api";
+    ?? "http://34.39.241.17:8000/api";
 
 const BACKEND_URL = `${API_BASE}/feed/cache/versions`;
 const VERSIONS_KEY = 'cache:backend-versions';

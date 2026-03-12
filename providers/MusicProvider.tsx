@@ -1,38 +1,192 @@
 import { useAuth } from "@/hooks/use-auth";
 import Constants from "expo-constants";
-import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import TrackPlayer, { Event, RepeatMode, TrackType } from "react-native-track-player";
 import { useCacheInvalidation } from "../hooks/use-cache-invalidation";
 import { useMusicApi } from "../hooks/use-music-api";
 import { ensureTrackPlayer } from "../services/setupTrackPlayer";
-import { syncWithTrackPlayer } from '../services/syncWithTrackPlayer';
+import { syncWithTrackPlayer } from "../services/syncWithTrackPlayer";
 import { MusicContext } from "./../context/MusicContext";
 import { Song } from "./../types/music";
 
+// ============================================================================
+// TYPES
+// ============================================================================
+
+type PlaySource =
+  | { type: "playlist"; id?: string | null; name?: string | null; thumb?: string | null }
+  | { type: "album"; id?: string | null; name?: string | null; thumb?: string | null }
+  | { type: "artist"; id?: string | null; name?: string | null; thumb?: string | null }
+  | { type: "queue"; id?: string | null; name?: string | null; thumb?: string | null }
+  | { type: "related"; id: string; name?: string | null; thumb?: string | null }
+  | { type: "search"; id: string; name?: string | null; thumb?: string | null };
+
+interface PlayerState {
+  currentSong: Song | null;
+  queue: Song[];
+  queueIndex: number;
+  playSource: PlaySource | null;
+  originalQueueSize: number;
+  initialQueueSize: number;
+  playbackError: string | null;
+  isShuffled: boolean;
+  originalQueueBeforeShuffle: Song[];
+  originalIndexBeforeShuffle: number;
+}
+
+// ============================================================================
+// REDUCER
+// ============================================================================
+
+type PlayerAction =
+  | { type: "PLAY_FROM_LIST"; payload: { queue: Song[]; index: number; source: PlaySource | null } }
+  | { type: "PLAY_SINGLE"; payload: { song: Song; source: PlaySource } }
+  | { type: "SET_INDEX"; payload: { index: number } }
+  | { type: "ADD_AND_PLAY"; payload: { song: Song; insertPosition: number } }
+  | { type: "ADD_AUTOPLAY"; payload: { song: Song } }
+  | { type: "SHUFFLE_ON"; payload: { shuffledQueue: Song[]; originalQueue: Song[]; originalIndex: number } }
+  | { type: "SHUFFLE_OFF"; payload: { originalQueue: Song[]; newIndex: number } }
+  | { type: "SET_ERROR"; payload: { error: string | null } }
+  | { type: "UPDATE_SOURCE"; payload: { source: PlaySource } };
+
+const initialState: PlayerState = {
+  currentSong: null,
+  queue: [],
+  queueIndex: -1,
+  playSource: null,
+  originalQueueSize: 0,
+  initialQueueSize: 0,
+  playbackError: null,
+  isShuffled: false,
+  originalQueueBeforeShuffle: [],
+  originalIndexBeforeShuffle: -1,
+};
+
+function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
+  switch (action.type) {
+    case "PLAY_FROM_LIST": {
+      const { queue, index, source } = action.payload;
+      return {
+        ...state,
+        queue,
+        queueIndex: index,
+        currentSong: queue[index] ?? null,
+        originalQueueSize: queue.length,
+        initialQueueSize: queue.length,
+        playSource: source ?? { type: "queue", id: null, name: null, thumb: null },
+        isShuffled: false,
+        originalQueueBeforeShuffle: [],
+        originalIndexBeforeShuffle: -1,
+      };
+    }
+
+    case "PLAY_SINGLE": {
+      const { song, source } = action.payload;
+      return {
+        ...state,
+        queue: [song],
+        queueIndex: 0,
+        currentSong: song,
+        originalQueueSize: 1,
+        initialQueueSize: 1,
+        playSource: source,
+        isShuffled: false,
+        originalQueueBeforeShuffle: [],
+        originalIndexBeforeShuffle: -1,
+      };
+    }
+
+    case "SET_INDEX": {
+      const { index } = action.payload;
+      if (index < 0 || index >= state.queue.length) return state;
+      if (index === state.queueIndex) return state;
+      return {
+        ...state,
+        queueIndex: index,
+        currentSong: state.queue[index] ?? null,
+      };
+    }
+
+    case "ADD_AND_PLAY": {
+      const { song, insertPosition } = action.payload;
+      const newQueue = [...state.queue];
+      newQueue.splice(insertPosition, 0, song);
+      return {
+        ...state,
+        queue: newQueue,
+        queueIndex: insertPosition,
+        currentSong: song,
+        originalQueueSize: state.originalQueueSize + 1,
+      };
+    }
+
+    case "ADD_AUTOPLAY": {
+      const { song } = action.payload;
+      const newQueue = [...state.queue, song];
+      const newIndex = state.queue.length;
+      return {
+        ...state,
+        queue: newQueue,
+        queueIndex: newIndex,
+        currentSong: song,
+        originalQueueSize: state.originalQueueSize + 1,
+      };
+    }
+
+    case "SHUFFLE_ON": {
+      const { shuffledQueue, originalQueue, originalIndex } = action.payload;
+      return {
+        ...state,
+        queue: shuffledQueue,
+        queueIndex: 0,
+        isShuffled: true,
+        originalQueueBeforeShuffle: originalQueue,
+        originalIndexBeforeShuffle: originalIndex,
+      };
+    }
+
+    case "SHUFFLE_OFF": {
+      const { originalQueue, newIndex } = action.payload;
+      return {
+        ...state,
+        queue: originalQueue,
+        queueIndex: newIndex,
+        isShuffled: false,
+        originalQueueBeforeShuffle: [],
+        originalIndexBeforeShuffle: -1,
+      };
+    }
+
+    case "SET_ERROR": {
+      return { ...state, playbackError: action.payload.error };
+    }
+
+    case "UPDATE_SOURCE": {
+      return { ...state, playSource: action.payload.source };
+    }
+
+    default:
+      return state;
+  }
+}
+
+// ============================================================================
+// PROVIDER
+// ============================================================================
+
 export function MusicProvider({ children }: { children: ReactNode }) {
-  const [currentSong, setCurrentSong] = useState<Song | null>(null);
-  const [queue, setQueue] = useState<Song[]>([]);
-  const [queueIndex, setQueueIndex] = useState<number>(-1);
-  const [playSource, setPlaySource] = useState<PlaySource | null>(null);
-  const [originalQueueSize, setOriginalQueueSize] = useState<number>(0);
-  const [initialQueueSize, setInitialQueueSize] = useState<number>(0);
-  const [playbackError, setPlaybackError] = useState<string | null>(null);
-
-  const autoplayProviderRef = useRef<(() => Song | null) | null>(null);
-  const isAutoplayEnabledRef = useRef<(() => boolean) | null>(null);
-  const playedAutoplayIdsRef = useRef<Set<string>>(new Set());
-
-  const lastProcessedTrackRef = useRef<string | null>(null);
-
-  const [isShuffled, setIsShuffled] = useState(false);
-  const [originalQueueBeforeShuffle, setOriginalQueueBeforeShuffle] = useState<Song[]>([]);
-  const [originalIndexBeforeShuffle, setOriginalIndexBeforeShuffle] = useState<number>(-1);
+  const [state, dispatch] = useReducer(playerReducer, initialState);
 
   const { user } = useAuth();
   const userId = user?.id ?? undefined;
-
-  const { logPlayAlbum, logPlayArtist, logPlayTrack, logPlayPlaylist } = useMusicApi();
+  const { logPlayAlbum, logPlayArtist, logPlayTrack } = useMusicApi();
   const { invalidateRecent } = useCacheInvalidation(userId);
+
+  // === REFS ===
+  const autoplayProviderRef = useRef<(() => Song | null) | null>(null);
+  const isAutoplayEnabledRef = useRef<(() => boolean) | null>(null);
+  const playedAutoplayIdsRef = useRef<Set<string>>(new Set());
+  const lastProcessedTrackRef = useRef<string | null>(null);
 
   const syncingRef = useRef(false);
   const switchingRef = useRef(false);
@@ -42,18 +196,12 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const listenTimeRef = useRef<{ trackId: string; accumulated: number; lastPosition: number } | null>(null);
   const endingRef = useRef(false);
 
-  // Refs para mantener valores actualizados en callbacks
-  const queueRef = useRef<Song[]>([]);
-  const queueIndexRef = useRef<number>(-1);
-  const originalQueueSizeRef = useRef<number>(0);
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
-  type PlaySource =
-    | { type: "playlist"; name?: string | null; thumb?: string | null }
-    | { type: "album"; name?: string | null; thumb?: string | null }
-    | { type: "artist"; name?: string | null; thumb?: string | null }
-    | { type: "queue"; name?: string | null; thumb?: string | null }
-    | { type: "related"; id: string; name?: string | null; thumb?: string | null }
-    | { type: "search"; id: string; name?: string | null; thumb?: string | null };
+  // === HELPERS ===
 
   function getBaseUrl() {
     return (
@@ -62,8 +210,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       null
     );
   }
-
-  function warmBatch(ids: string[], baseUrl: string) { return; }
 
   function majorityId<T>(list: T[], pick: (x: T) => string | null | undefined): string | null {
     const counts = new Map<string, number>();
@@ -84,13 +230,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   ): { key: string; kind: "album" | "artist" | "playlist"; id: string } | null {
     if (!source) return null;
     if (source.type === "album") {
-      const album_id =
-        majorityId(list, (s: any) => s.album_id ?? s.album_id ?? null) || null;
+      const album_id = majorityId(list, (s: any) => s.album_id ?? null) || null;
       return album_id ? { key: `album:${album_id}`, kind: "album", id: album_id } : null;
     }
     if (source.type === "artist") {
-      const artist_id =
-        majorityId(list, (s: any) => s.artist_id ?? s.artist_id ?? null) || null;
+      const artist_id = majorityId(list, (s: any) => s.artist_id ?? null) || null;
       return artist_id ? { key: `artist:${artist_id}`, kind: "artist", id: artist_id } : null;
     }
     if (source.type === "playlist") {
@@ -100,7 +244,32 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     return null;
   }
 
-  async function playFromList(list: Song[], startIndex: number, source?: PlaySource) {
+  function isAutoplayEnabled(): boolean {
+    return isAutoplayEnabledRef.current?.() ?? false;
+  }
+
+  function buildTrack(song: Song, baseUrl: string) {
+    return {
+      id: String(song.id),
+      url: `${baseUrl}/music/play?id=${encodeURIComponent(song.id)}&redir=2`,
+      title: (song as any).title,
+      artist: (song as any).artist_name ?? (song as any).artist ?? "",
+      artwork: (song as any).thumbnail ?? (song as any).thumbnail_url ?? undefined,
+      type: TrackType.Default,
+      headers: {
+        Range: "bytes=0-",
+        "Accept-Encoding": "identity",
+        Connection: "keep-alive",
+      },
+    };
+  }
+
+  // === PLAYBACK FUNCTIONS ===
+
+  const playFromList = useCallback(async (list: Song[], startIndex: number, source?: PlaySource) => {
+    const t0 = Date.now();
+    console.log("[playFromList] START");
+
     if (switchingRef.current) return;
     switchingRef.current = true;
 
@@ -109,19 +278,15 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     const ctx = resolveContextKey(list, source);
     const isSameContext = ctx != null && lastLoadedContextKeyRef.current === ctx.key;
 
-    // Actualizar refs primero (para que el listener tenga valores correctos)
-    queueRef.current = list;
-    queueIndexRef.current = startIndex;
-    originalQueueSizeRef.current = list.length;
-
-    // Reproducir
     try {
       if (isSameContext) {
         await ensureTrackPlayer();
         await TrackPlayer.skip(startIndex);
         await TrackPlayer.play();
+        console.log("[playFromList] sameContext done:", Date.now() - t0, "ms");
       } else {
         await syncWithTrackPlayer(list, startIndex, getBaseUrl()!, syncingRef);
+        console.log("[playFromList] syncWithTrackPlayer done:", Date.now() - t0, "ms");
         lastLoadedContextKeyRef.current = ctx?.key ?? null;
       }
     } catch (err) {
@@ -130,222 +295,148 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Actualizar estados (disparan efectos y re-sincronizan refs via useEffect)
-    setQueue(list);
-    setQueueIndex(startIndex);
-    setCurrentSong(list[startIndex] ?? null);
-    setOriginalQueueSize(list.length);
-    setInitialQueueSize(list.length);
+    console.log("[playFromList] before dispatch:", Date.now() - t0, "ms");
+    dispatch({
+      type: "PLAY_FROM_LIST",
+      payload: {
+        queue: list,
+        index: startIndex,
+        source: source ? { ...source, id: ctx?.id ?? null } : null,
+      },
+    });
+    console.log("[playFromList] after dispatch:", Date.now() - t0, "ms");
 
-    try {
-      setPlaySource(
-        source
-          ? { ...source, id: ctx?.id ?? null }
-          : { type: "queue", id: null, name: null, thumb: null }
-      );
-      if (ctx) {
-        if (!isSameContext) {
-          lastLoggedContextKeyRef.current = ctx.key;
-          const srcMeta = { name: source?.name ?? null, thumb: source?.thumb ?? null };
-          if (ctx.kind === "album") {
-            logPlayAlbum(ctx.id, srcMeta).catch(() => { });
-          } else if (ctx.kind === "artist") {
-            logPlayArtist(ctx.id, srcMeta).catch(() => { });
-          }
-
-          //TODO: bug in recents screen {
-          /* else if (ctx.kind === "playlist") {
-            logPlayPlaylist(ctx.id, srcMeta).catch(() => { });
-          } */
-          // }
-
-          setTimeout(async () => {
-            try {
-              await invalidateRecent();
-            } catch (e) {
-              console.warn("[cache] Error invalidando:", e);
-            }
-          }, 2000);
-
-        } else {
-          //dbg: console.log("[tracklog] same context, skip log:", ctx.key);
-        }
+    if (ctx && !isSameContext) {
+      lastLoggedContextKeyRef.current = ctx.key;
+      const srcMeta = { name: source?.name ?? null, thumb: source?.thumb ?? null };
+      if (ctx.kind === "album") {
+        logPlayAlbum(ctx.id, srcMeta).catch(() => {});
+      } else if (ctx.kind === "artist") {
+        logPlayArtist(ctx.id, srcMeta).catch(() => {});
       }
-    } catch (e) {
-      console.warn("[tracklog] logging failed:", e);
-    } finally {
-      switchingRef.current = false;
+      setTimeout(() => invalidateRecent().catch(() => {}), 2000);
     }
-  }
 
-  // Reproducir canción desde Related (borra queue y crea nueva)
-  async function playFromRelated(song: Song) {
+    switchingRef.current = false;
+    console.log("[playFromList] DONE:", Date.now() - t0, "ms");
+  }, [logPlayAlbum, logPlayArtist, invalidateRecent]);
+
+  const playFromRelated = useCallback(async (song: Song) => {
     if (switchingRef.current) return;
     switchingRef.current = true;
-    //DBG
-    //console.log('Reproduciendo desde Related:', song.title);
-    //console.log('Borrando queue anterior y creando nueva');
 
-    // Resetear autoplay reproducidos
     playedAutoplayIdsRef.current.clear();
-
-    const newQueue = [song];
-
-    setQueue(newQueue);
-    setQueueIndex(0);
-    setCurrentSong(song);
-    setOriginalQueueSize(1);
-    setInitialQueueSize(1);
-
     lastLoggedContextKeyRef.current = null;
 
     try {
-
-      setPlaySource({ type: "related", id: String(song.id), name: "Recommended", thumb: null });
-      await syncWithTrackPlayer(newQueue, 0, getBaseUrl()!, syncingRef);
-
-      console.log('Reproducción desde Related iniciada');
+      await syncWithTrackPlayer([song], 0, getBaseUrl()!, syncingRef);
     } catch (err) {
       console.error("[RNTP] error en syncWithTrackPlayer:", err);
-    } finally {
       switchingRef.current = false;
-    }
-  }
-
-  async function playFromSearch(song: Song) {
-    if (switchingRef.current) return;
-    switchingRef.current = true;
-
-    playedAutoplayIdsRef.current.clear();
-
-    const newQueue = [song];
-
-    queueRef.current = newQueue;
-    queueIndexRef.current = 0;
-    originalQueueSizeRef.current = 1;
-
-    setQueue(newQueue);
-    setQueueIndex(0);
-    setCurrentSong(song);
-    setOriginalQueueSize(1);
-    setInitialQueueSize(1);
-    setPlaySource({ type: "search", id: String(song.id), name: (song as any).title ?? null, thumb: null });
-
-    lastLoggedContextKeyRef.current = null;
-
-    try {
-      await syncWithTrackPlayer(newQueue, 0, getBaseUrl()!, syncingRef);
-    } catch (err) {
-      console.error("[playFromSearch] error:", err);
-    } finally {
-      switchingRef.current = false;
-    }
-  }
-
-  //CASO 1: Click manual en autoplay (agrega y reproduce inmediatamente)
-  async function addToQueueAndPlay(song: Song) {
-    console.log('[CASO 1] Click en autoplay:', song.title);
-
-    // Verificar si ya existe
-    const alreadyExists = queue.some(s => String(s.id) === String(song.id));
-    if (alreadyExists) {
-      console.log('Canción ya existe en cola');
       return;
     }
 
-    // Marcar como reproducida desde autoplay
+    dispatch({
+      type: "PLAY_SINGLE",
+      payload: {
+        song,
+        source: { type: "related", id: String(song.id), name: "Recommended", thumb: null },
+      },
+    });
+
+    switchingRef.current = false;
+  }, []);
+
+  const playFromSearch = useCallback(async (song: Song) => {
+    if (switchingRef.current) return;
+    switchingRef.current = true;
+
+    playedAutoplayIdsRef.current.clear();
+    lastLoggedContextKeyRef.current = null;
+
+    try {
+      await syncWithTrackPlayer([song], 0, getBaseUrl()!, syncingRef);
+    } catch (err) {
+      console.error("[playFromSearch] error:", err);
+      switchingRef.current = false;
+      return;
+    }
+
+    dispatch({
+      type: "PLAY_SINGLE",
+      payload: {
+        song,
+        source: { type: "search", id: String(song.id), name: (song as any).title ?? null, thumb: null },
+      },
+    });
+
+    switchingRef.current = false;
+  }, []);
+
+  const addToQueueAndPlay = useCallback(async (song: Song) => {
+    const { queue, originalQueueSize } = stateRef.current;
+    console.log("[CASO 1] Click en autoplay:", (song as any).title);
+
+    const alreadyExists = queue.some((s) => String(s.id) === String(song.id));
+    if (alreadyExists) {
+      console.log("Cancion ya existe en cola");
+      return;
+    }
+
     playedAutoplayIdsRef.current.add(String(song.id));
-
     const insertPosition = originalQueueSize;
-
-    // Agregar la canción en la posición correcta
     const newQueue = [...queue];
     newQueue.splice(insertPosition, 0, song);
 
-    setQueue(newQueue);
-    setOriginalQueueSize(originalQueueSize + 1);
+    dispatch({
+      type: "ADD_AND_PLAY",
+      payload: { song, insertPosition },
+    });
 
-    console.log('Nueva cola:', newQueue.map(s => (s as any).title));
-    console.log('originalQueueSize:', originalQueueSize, '→', originalQueueSize + 1);
-
-    // RE-SINCRONIZAR TrackPlayer completamente
     try {
       syncingRef.current = true;
       await syncWithTrackPlayer(newQueue, insertPosition, getBaseUrl()!, syncingRef);
-      console.log('TrackPlayer re-sincronizado y reproduciendo en posición', insertPosition);
+      console.log("TrackPlayer re-sincronizado en posicion", insertPosition);
     } catch (e) {
-      console.error('[addToQueueAndPlay] ERROR:', e);
+      console.error("[addToQueueAndPlay] ERROR:", e);
     } finally {
       syncingRef.current = false;
     }
-  }
+  }, []);
 
-  async function next() {
+  const next = useCallback(async () => {
+    const { queue, queueIndex } = stateRef.current;
     if (queueIndex < 0) return;
+
     const ni = queueIndex + 1;
 
-    // Si hay siguiente canción en el queue, reproducirla
     if (ni < queue.length) {
-      setQueueIndex(ni);
-      setCurrentSong(queue[ni]);
-
+      dispatch({ type: "SET_INDEX", payload: { index: ni } });
       try {
         await TrackPlayer.skipToNext();
-        await TrackPlayer.play();
       } catch (e) {
         console.error("[next] ERROR:", e);
       }
       return;
     }
 
-    // CASO 2: Autoplay automático al terminar la última canción
     if (isAutoplayEnabled() && autoplayProviderRef.current) {
       let nextAutoplaySong = autoplayProviderRef.current();
-
-      // Buscar una canción que no haya sido reproducida
       let attempts = 0;
       while (nextAutoplaySong && playedAutoplayIdsRef.current.has(String(nextAutoplaySong.id)) && attempts < 10) {
-        console.log('Canción ya reproducida, buscando otra...');
         nextAutoplaySong = autoplayProviderRef.current();
         attempts++;
       }
 
       if (nextAutoplaySong && !playedAutoplayIdsRef.current.has(String(nextAutoplaySong.id))) {
-        console.log('[CASO 2] Agregando autoplay automático:', nextAutoplaySong.title);
-
-        // Marcar como reproducida
+        console.log("[CASO 2] Agregando autoplay automatico:", (nextAutoplaySong as any).title);
         playedAutoplayIdsRef.current.add(String(nextAutoplaySong.id));
 
-        // Agregar AL FINAL (tanto en state como en TrackPlayer)
-        const newQueue = [...queue, nextAutoplaySong];
-        const newIndex = queue.length;
-
-        setQueue(newQueue);
-        setOriginalQueueSize(originalQueueSize + 1);
-        setQueueIndex(newIndex);
-        setCurrentSong(nextAutoplaySong);
+        dispatch({ type: "ADD_AUTOPLAY", payload: { song: nextAutoplaySong } });
 
         try {
-          // Agregar al final de TrackPlayer
-          await TrackPlayer.add({
-            id: String(nextAutoplaySong.id),
-            url: `${getBaseUrl()}/music/play?id=${encodeURIComponent(nextAutoplaySong.id)}&redir=2`,
-            title: (nextAutoplaySong as any).title,
-            artist: (nextAutoplaySong as any).artist_name ?? "",
-            artwork: (nextAutoplaySong as any).thumbnail ?? undefined,
-            type: TrackType.Default,
-            headers: {
-              Range: "bytes=0-",
-              "Accept-Encoding": "identity",
-              Connection: "keep-alive",
-            },
-          } as any);
-
-          // Ir al siguiente (que es la canción que acabamos de agregar)
+          await TrackPlayer.add(buildTrack(nextAutoplaySong, getBaseUrl()!) as any);
           await TrackPlayer.skipToNext();
-          await TrackPlayer.play();
-
-          console.log('Autoplay automático agregado en posición', newIndex);
         } catch (e) {
           console.error("[next] ERROR agregando autoplay:", e);
         }
@@ -353,51 +444,39 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    console.log('Última canción, sin autoplay');
-  }
+    console.log("Ultima cancion, sin autoplay");
+  }, []);
 
-  async function skipToIndex(index: number) {
+  const skipToIndex = useCallback(async (index: number) => {
+    const { queue } = stateRef.current;
     if (index < 0 || index >= queue.length) {
-      console.warn('[skipToIndex] índice fuera de rango:', index);
+      console.warn("[skipToIndex] indice fuera de rango:", index);
       return;
     }
 
-    setQueueIndex(index);
-    setCurrentSong(queue[index]);
+    dispatch({ type: "SET_INDEX", payload: { index } });
 
     try {
       await TrackPlayer.skip(index);
       await TrackPlayer.play();
     } catch (e) {
-      console.error('[skipToIndex] ERROR:', e);
+      console.error("[skipToIndex] ERROR:", e);
     }
-  }
+  }, []);
 
-  function setAutoplayProvider(provider: (() => Song | null) | null) {
-    autoplayProviderRef.current = provider;
-  }
-
-  function setIsAutoplayEnabledCallback(callback: (() => boolean) | null) {
-    isAutoplayEnabledRef.current = callback;
-  }
-
-  function isAutoplayEnabled(): boolean {
-    return isAutoplayEnabledRef.current?.() ?? false;
-  }
-
-  async function prev() {
+  const prev = useCallback(async () => {
+    const { queueIndex } = stateRef.current;
     if (queueIndex < 0) return;
 
     try {
       const position = await TrackPlayer.getPosition();
-
       if (position > 3) {
         await TrackPlayer.seekTo(0);
         await TrackPlayer.play();
         return;
       }
     } catch (e) {
-      console.error("[prev] ERROR obteniendo posición:", e);
+      console.error("[prev] ERROR obteniendo posicion:", e);
     }
 
     const ni = queueIndex - 1;
@@ -412,8 +491,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setQueueIndex(ni);
-    setCurrentSong(queue[ni]);
+    dispatch({ type: "SET_INDEX", payload: { index: ni } });
 
     try {
       await TrackPlayer.skipToPrevious();
@@ -421,112 +499,72 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       console.error("[prev] ERROR (skipToPrevious):", e);
     }
-  }
+  }, []);
 
-  // Dentro de MusicProvider, después de la función prev()
-  async function toggleShuffle() {
+  const toggleShuffle = useCallback(async () => {
+    const { queue, queueIndex, originalQueueSize, currentSong, isShuffled, originalQueueBeforeShuffle } = stateRef.current;
+
     if (originalQueueSize <= 1) {
-      console.log('[SHUFFLE] No hay suficientes temas para shuffle');
+      console.log("[SHUFFLE] No hay suficientes temas para shuffle");
       return;
     }
 
     const currentSongId = currentSong?.id;
     if (!currentSongId) {
-      console.warn('[SHUFFLE] No hay canción actual');
+      console.warn("[SHUFFLE] No hay cancion actual");
       return;
     }
 
-    // ======== DESACTIVAR SHUFFLE ========
+    const BASE_URL = getBaseUrl();
+    if (!BASE_URL) return;
+
     if (isShuffled) {
-      console.log('[SHUFFLE OFF] Restaurando orden original...');
+      console.log("[SHUFFLE OFF] Restaurando orden original...");
 
-      // Encontrar la canción actual en la queue original
-      const currentSongIndexInOriginal = originalQueueBeforeShuffle.findIndex(
-        (s) => s.id === currentSongId
-      );
-
+      const currentSongIndexInOriginal = originalQueueBeforeShuffle.findIndex((s) => s.id === currentSongId);
       if (currentSongIndexInOriginal === -1) {
-        console.warn('[SHUFFLE OFF] No se encontró la canción en la queue original');
+        console.warn("[SHUFFLE OFF] No se encontro la cancion en la queue original");
         return;
       }
 
-      console.log('[SHUFFLE OFF] Canción actual está en posición original:', currentSongIndexInOriginal);
+      dispatch({
+        type: "SHUFFLE_OFF",
+        payload: { originalQueue: originalQueueBeforeShuffle, newIndex: currentSongIndexInOriginal },
+      });
 
-      // Restaurar estados
-      setQueue(originalQueueBeforeShuffle);
-      setQueueIndex(currentSongIndexInOriginal);
-      setIsShuffled(false);
-
-      // Sincronizar TrackPlayer sin cortes
       try {
         switchingRef.current = true;
-        await ensureTrackPlayer();
-        const BASE_URL = getBaseUrl();
-        if (!BASE_URL) return;
-
         syncingRef.current = true;
+        await ensureTrackPlayer();
 
-        // Obtener índice actual
         const currentTrackIndex = await TrackPlayer.getActiveTrackIndex();
-
-        // Remover todas las pistas excepto la actual
         const allTracks = await TrackPlayer.getQueue();
-        const indicesToRemove = allTracks
-          .map((_, idx) => idx)
-          .filter(idx => idx !== currentTrackIndex);
+        const indicesToRemove = allTracks.map((_, idx) => idx).filter((idx) => idx !== currentTrackIndex);
 
         for (let i = indicesToRemove.length - 1; i >= 0; i--) {
           await TrackPlayer.remove(indicesToRemove[i]);
         }
 
-        // Agregar pistas ANTES de la actual (en orden inverso)
         const tracksBeforeCurrent = originalQueueBeforeShuffle
           .slice(0, currentSongIndexInOriginal)
-          .reverse() // Invertir para agregar de atrás hacia adelante
-          .map((s) => ({
-            id: String(s.id),
-            url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
-            title: (s as any).title,
-            artist: (s as any).artist_name ?? (s as any).artist ?? "",
-            artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
-            type: TrackType.Default,
-            headers: {
-              Range: "bytes=0-",
-              "Accept-Encoding": "identity",
-              Connection: "keep-alive",
-            },
-          })) as any[];
+          .reverse()
+          .map((s) => buildTrack(s, BASE_URL));
 
-        // Agregar ANTES de la actual (índice 0 = antes de la pista actual)
         for (const track of tracksBeforeCurrent) {
-          await TrackPlayer.add(track, 0);
+          await TrackPlayer.add(track as any, 0);
         }
 
-        // Agregar pistas DESPUÉS de la actual
         const tracksAfterCurrent = originalQueueBeforeShuffle
           .slice(currentSongIndexInOriginal + 1)
-          .map((s) => ({
-            id: String(s.id),
-            url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
-            title: (s as any).title,
-            artist: (s as any).artist_name ?? (s as any).artist ?? "",
-            artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
-            type: TrackType.Default,
-            headers: {
-              Range: "bytes=0-",
-              "Accept-Encoding": "identity",
-              Connection: "keep-alive",
-            },
-          })) as any[];
+          .map((s) => buildTrack(s, BASE_URL));
 
-        // Agregar DESPUÉS de la actual
         if (tracksAfterCurrent.length > 0) {
-          await TrackPlayer.add(tracksAfterCurrent);
+          await TrackPlayer.add(tracksAfterCurrent as any);
         }
 
-        console.log('[SHUFFLE OFF] Orden original restaurado');
+        console.log("[SHUFFLE OFF] Orden original restaurado");
       } catch (e) {
-        console.error('[SHUFFLE OFF] Error:', e);
+        console.error("[SHUFFLE OFF] Error:", e);
       } finally {
         syncingRef.current = false;
         switchingRef.current = false;
@@ -535,19 +573,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // ======== ACTIVAR SHUFFLE ========
-    console.log('[SHUFFLE ON] Mezclando temas originales...');
-    console.log('[SHUFFLE ON] Original size:', originalQueueSize, 'Total:', queue.length);
+    console.log("[SHUFFLE ON] Mezclando temas originales...");
 
-    // Guardar estado original ANTES de mezclar
-    setOriginalQueueBeforeShuffle([...queue]);
-    setOriginalIndexBeforeShuffle(queueIndex);
-
-    // Separar originales y autoplay
     const originalTracks = queue.slice(0, originalQueueSize);
     const autoplayTracks = queue.slice(originalQueueSize);
-
-    // Mezclar solo originales (sin la actual)
     const otherOriginalTracks = originalTracks.filter((s) => s.id !== currentSongId);
 
     for (let i = otherOriginalTracks.length - 1; i > 0; i--) {
@@ -555,73 +584,59 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       [otherOriginalTracks[i], otherOriginalTracks[j]] = [otherOriginalTracks[j], otherOriginalTracks[i]];
     }
 
-    // Nueva queue: actual + mezclados + autoplay
-    const shuffledQueue = [currentSong, ...otherOriginalTracks, ...autoplayTracks];
+    const shuffledQueue = [currentSong!, ...otherOriginalTracks, ...autoplayTracks];
 
-    setQueue(shuffledQueue);
-    setQueueIndex(0);
-    setIsShuffled(true);
+    dispatch({
+      type: "SHUFFLE_ON",
+      payload: { shuffledQueue, originalQueue: [...queue], originalIndex: queueIndex },
+    });
 
-    // Sincronizar TrackPlayer sin cortes
     try {
       switchingRef.current = true;
-      await ensureTrackPlayer();
-      const BASE_URL = getBaseUrl();
-      if (!BASE_URL) return;
-
       syncingRef.current = true;
+      await ensureTrackPlayer();
 
       const currentTrackIndex = await TrackPlayer.getActiveTrackIndex();
       const allTracks = await TrackPlayer.getQueue();
-      const indicesToRemove = allTracks
-        .map((_, idx) => idx)
-        .filter(idx => idx !== currentTrackIndex);
+      const indicesToRemove = allTracks.map((_, idx) => idx).filter((idx) => idx !== currentTrackIndex);
 
       for (let i = indicesToRemove.length - 1; i >= 0; i--) {
         await TrackPlayer.remove(indicesToRemove[i]);
       }
 
-      const tracksToAdd = shuffledQueue
-        .slice(1)
-        .map((s) => ({
-          id: String(s.id),
-          url: `${BASE_URL}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
-          title: (s as any).title,
-          artist: (s as any).artist_name ?? (s as any).artist ?? "",
-          artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
-          type: TrackType.Default,
-          headers: {
-            Range: "bytes=0-",
-            "Accept-Encoding": "identity",
-            Connection: "keep-alive",
-          },
-        })) as any[];
+      const tracksToAdd = shuffledQueue.slice(1).map((s) => buildTrack(s, BASE_URL));
 
       if (tracksToAdd.length > 0) {
-        await TrackPlayer.add(tracksToAdd);
+        await TrackPlayer.add(tracksToAdd as any);
       }
 
-      console.log('[SHUFFLE ON] Queue mezclada');
+      console.log("[SHUFFLE ON] Queue mezclada");
     } catch (e) {
-      console.error('[SHUFFLE ON] Error:', e);
+      console.error("[SHUFFLE ON] Error:", e);
     } finally {
       syncingRef.current = false;
       switchingRef.current = false;
     }
-  }
+  }, []);
 
-  // Sincronizar refs con estados
-  useEffect(() => {
-    queueRef.current = queue;
-  }, [queue]);
+  const setAutoplayProvider = useCallback((provider: (() => Song | null) | null) => {
+    autoplayProviderRef.current = provider;
+  }, []);
 
-  useEffect(() => {
-    queueIndexRef.current = queueIndex;
-  }, [queueIndex]);
+  const setIsAutoplayEnabledCallback = useCallback((callback: (() => boolean) | null) => {
+    isAutoplayEnabledRef.current = callback;
+  }, []);
 
-  useEffect(() => {
-    originalQueueSizeRef.current = originalQueueSize;
-  }, [originalQueueSize]);
+  const setCurrentSong = useCallback((song: Song | null) => {
+    if (!song) return;
+    const { queue } = stateRef.current;
+    const index = queue.findIndex((s) => s.id === song.id);
+    if (index >= 0) {
+      dispatch({ type: "SET_INDEX", payload: { index } });
+    }
+  }, []);
+
+  // === TRACK PLAYER LISTENERS ===
 
   useEffect(() => {
     const findActiveIndex = async (): Promise<number | null> => {
@@ -639,6 +654,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         }
         const activeId = active?.id ?? null;
         if (!activeId) return null;
+        const { queue } = stateRef.current;
         const pos = queue.findIndex((s) => String(s.id) === String(activeId));
         return pos >= 0 ? pos : null;
       } catch {
@@ -648,74 +664,54 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
     const onActiveChanged = async () => {
       if (syncingRef.current) return;
+      if (switchingRef.current) return;
+
       const pos = await findActiveIndex();
       if (pos == null) return;
 
+      const { queue, currentSong, queueIndex } = stateRef.current;
       const newTrackId = queue[pos] ? String(queue[pos].id) : null;
       const prevTrackId = currentSong ? String(currentSong.id) : null;
 
-      // DEBOUNCE: Si es el mismo track que acabamos de procesar, skip
       if (newTrackId === lastProcessedTrackRef.current) return;
 
-      // Si cambió de track, resetear el log para permitir nuevo conteo
       if (newTrackId && newTrackId !== prevTrackId) {
         lastLoggedTrackIdRef.current = null;
-        //DBG: console.log('[tracklog] Track cambió, reseteando log para permitir nuevo conteo');
       }
 
-      setQueueIndex((prev) => (prev !== pos ? pos : prev));
-      setCurrentSong((prev) => (queue[pos] && prev?.id !== queue[pos].id ? queue[pos] : prev));
+      if (pos === queueIndex) return;
 
-      try {
-        const BASE_URL = getBaseUrl();
-        const nexts = queue.slice(pos + 1, pos + 6).map((s) => String(s.id));
-        if (BASE_URL && nexts.length) {
-          warmBatch(nexts, BASE_URL);
-         //DBG: console.log("[prefetch] warm next batch:", nexts);
-        }
-      } catch (e) {
-        console.warn("[prefetch] warm next failed:", e);
-      }
+      dispatch({ type: "SET_INDEX", payload: { index: pos } });
     };
 
-    const subActive = TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, onActiveChanged);
+    const onProgress = async (progress: { position: number }) => {
+      const { queue, queueIndex } = stateRef.current;
+      if (queueIndex < 0) return;
 
-    // Listener para tracking de tiempo de reproducción REAL (30 segundos acumulados)
-    const subProgress = TrackPlayer.addEventListener(Event.PlaybackProgressUpdated, async (progress) => {
-      const pos = queueIndexRef.current;
-      if (pos < 0) return;
-
-      const trackToLog = queueRef.current[pos];
+      const trackToLog = queue[queueIndex];
       if (!trackToLog) return;
 
       const trackId = String(trackToLog.id);
       const currentPosition = progress.position;
 
-      // Si cambió de canción, reiniciar acumulador
       if (!listenTimeRef.current || listenTimeRef.current.trackId !== trackId) {
         listenTimeRef.current = { trackId, accumulated: 0, lastPosition: currentPosition };
         return;
       }
 
       const delta = currentPosition - listenTimeRef.current.lastPosition;
-
-      // Solo acumular si el delta es de reproducción normal (entre 0 y ~3s)
       const isNormalPlayback = delta > 0 && delta < 3;
 
       if (isNormalPlayback) {
         listenTimeRef.current.accumulated += delta;
-      } else {
-        console.log(`[tracklog] Seek detectado (delta: ${delta.toFixed(2)}s), no se acumula`);
       }
 
       listenTimeRef.current.lastPosition = currentPosition;
 
-      // Verificar si acumuló 30 segundos REALES
       if (listenTimeRef.current.accumulated >= 30) {
         const alreadyLogged = lastLoggedTrackIdRef.current === trackId;
 
         if (!alreadyLogged) {
-          //DBG: console.log(`[tracklog] 30s reales acumulados para: ${trackId}`);
           lastLoggedTrackIdRef.current = trackId;
 
           const trackContext = {
@@ -728,107 +724,76 @@ export function MusicProvider({ children }: { children: ReactNode }) {
             thumbnail_url: (trackToLog as any).thumbnail ?? (trackToLog as any).thumbnail_url ?? null,
           };
 
-          logPlayTrack(trackId, trackContext).catch(() => { });
-          //DBG: CHECK TRACK console.log("[duration-check] trackToLog json =", JSON.stringify(trackToLog, null, 2));
-          //DBG: console.log("[tracklog] track logged after 30s real:", trackId, trackContext);
+          logPlayTrack(trackId, trackContext).catch(() => {});
         }
       }
-    });
+    };
 
-    // CASO 2: Evento cuando termina la cola
-    const subEnded = TrackPlayer.addEventListener(Event.PlaybackQueueEnded, async () => {
+    const onQueueEnded = async () => {
       if (syncingRef.current) return;
       if (endingRef.current) return;
       endingRef.current = true;
 
       try {
-        console.log('PlaybackQueueEnded disparado - verificando autoplay...');
+        console.log("PlaybackQueueEnded disparado - verificando autoplay...");
 
-        // Verificar si hay autoplay disponible
         if (isAutoplayEnabledRef.current && autoplayProviderRef.current) {
           const isEnabled = isAutoplayEnabledRef.current();
 
           if (isEnabled) {
             let nextAutoplaySong = autoplayProviderRef.current();
-
-            // Buscar una canción que no haya sido reproducida
             let attempts = 0;
             while (nextAutoplaySong && playedAutoplayIdsRef.current.has(String(nextAutoplaySong.id)) && attempts < 10) {
-              console.log('Canción ya reproducida, buscando otra...');
               nextAutoplaySong = autoplayProviderRef.current();
               attempts++;
             }
 
             if (nextAutoplaySong && !playedAutoplayIdsRef.current.has(String(nextAutoplaySong.id))) {
-              console.log('[CASO 2] Agregando siguiente autoplay:', nextAutoplaySong.title);
-
-              // Marcar como reproducida
+              console.log("[CASO 2] Agregando siguiente autoplay:", (nextAutoplaySong as any).title);
               playedAutoplayIdsRef.current.add(String(nextAutoplaySong.id));
 
-              // Usar refs para valores actuales
-              const currentQueue = queueRef.current;
-              const currentOriginalSize = originalQueueSizeRef.current;
-
-              // Agregar AL FINAL en TrackPlayer
-              await TrackPlayer.add({
-                id: String(nextAutoplaySong.id),
-                url: `${getBaseUrl()}/music/play?id=${encodeURIComponent(nextAutoplaySong.id)}&redir=2`,
-                title: (nextAutoplaySong as any).title,
-                artist: (nextAutoplaySong as any).artist_name ?? "",
-                artwork: (nextAutoplaySong as any).thumbnail ?? undefined,
-                type: TrackType.Default,
-                headers: {
-                  Range: "bytes=0-",
-                  "Accept-Encoding": "identity",
-                  Connection: "keep-alive",
-                },
-              } as any);
-
-              // Agregar AL FINAL en state
-              const newQueue = [...currentQueue, nextAutoplaySong];
-              const newIndex = currentQueue.length;
-
-              setQueue(newQueue);
-              setOriginalQueueSize(currentOriginalSize + 1);
-              setQueueIndex(newIndex);
-              setCurrentSong(nextAutoplaySong);
-
-              // Reproducir la nueva canción
+              await TrackPlayer.add(buildTrack(nextAutoplaySong, getBaseUrl()!) as any);
+              dispatch({ type: "ADD_AUTOPLAY", payload: { song: nextAutoplaySong } });
               await TrackPlayer.skipToNext();
-              await TrackPlayer.play();
 
-              console.log('Autoplay agregado y reproduciendo en posición', newIndex);
               endingRef.current = false;
               return;
             }
           }
         }
 
-        // Si NO hay autoplay, pausar al final
-        console.log('No hay más autoplay, pausando al final');
+        console.log("No hay mas autoplay, pausando al final");
+        const { queue } = stateRef.current;
         const lastIdx = Math.max(0, queue.length - 1);
         const lastSong = queue[lastIdx];
-        if (!lastSong) { endingRef.current = false; return; }
+        if (!lastSong) {
+          endingRef.current = false;
+          return;
+        }
 
-        await TrackPlayer.setRepeatMode(RepeatMode.Off).catch(() => { });
-        await TrackPlayer.skip(lastIdx).catch(() => { });
-        await TrackPlayer.pause().catch(() => { });
-        await TrackPlayer.seekTo(0).catch(() => { });
+        await TrackPlayer.setRepeatMode(RepeatMode.Off).catch(() => {});
+        await TrackPlayer.skip(lastIdx).catch(() => {});
+        await TrackPlayer.pause().catch(() => {});
+        await TrackPlayer.seekTo(0).catch(() => {});
 
-        setQueueIndex(lastIdx);
-        setCurrentSong(lastSong);
+        dispatch({ type: "SET_INDEX", payload: { index: lastIdx } });
       } catch (e) {
         console.warn("[ended] Error:", e);
       } finally {
         endingRef.current = false;
       }
-    });
+    };
 
-    const subError = TrackPlayer.addEventListener(Event.PlaybackError, (error) => {
-      console.error("[playback] Error:", error);
-      setPlaybackError("No se pudo reproducir la canción");
-      setTimeout(() => setPlaybackError(null), 4000);
-    });
+    const onError = (error: any) => {
+      console.warn("[playback] Error:", error);
+      dispatch({ type: "SET_ERROR", payload: { error: "No se pudo reproducir la cancion" } });
+      setTimeout(() => dispatch({ type: "SET_ERROR", payload: { error: null } }), 4000);
+    };
+
+    const subActive = TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, onActiveChanged);
+    const subProgress = TrackPlayer.addEventListener(Event.PlaybackProgressUpdated, onProgress);
+    const subEnded = TrackPlayer.addEventListener(Event.PlaybackQueueEnded, onQueueEnded);
+    const subError = TrackPlayer.addEventListener(Event.PlaybackError, onError);
 
     return () => {
       subActive.remove();
@@ -836,14 +801,16 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       subEnded.remove();
       subError.remove();
     };
-  }, [queue]);
+  }, [logPlayTrack]);
+
+  // === CONTEXT VALUE ===
 
   const value = useMemo(
     () => ({
-      currentSong,
+      currentSong: state.currentSong,
       setCurrentSong,
-      queue,
-      queueIndex,
+      queue: state.queue,
+      queueIndex: state.queueIndex,
       playFromList,
       playFromRelated,
       playFromSearch,
@@ -851,17 +818,37 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       skipToIndex,
       prev,
       shuffle: toggleShuffle,
-      isShuffled,
-      playSource,
-      originalQueueSize,
-      initialQueueSize,
+      isShuffled: state.isShuffled,
+      playSource: state.playSource,
+      originalQueueSize: state.originalQueueSize,
+      initialQueueSize: state.initialQueueSize,
       addToQueueAndPlay,
       setAutoplayProvider,
       setIsAutoplayEnabledCallback,
       isAutoplayEnabled,
-      playbackError
+      playbackError: state.playbackError,
     }),
-    [currentSong, queue, queueIndex, playSource, originalQueueSize, initialQueueSize, isShuffled, playbackError]
+    [
+      state.currentSong,
+      state.queue,
+      state.queueIndex,
+      state.playSource,
+      state.originalQueueSize,
+      state.initialQueueSize,
+      state.isShuffled,
+      state.playbackError,
+      setCurrentSong,
+      playFromList,
+      playFromRelated,
+      playFromSearch,
+      next,
+      skipToIndex,
+      prev,
+      toggleShuffle,
+      addToQueueAndPlay,
+      setAutoplayProvider,
+      setIsAutoplayEnabledCallback,
+    ]
   );
 
   return <MusicContext.Provider value={value}>{children}</MusicContext.Provider>;

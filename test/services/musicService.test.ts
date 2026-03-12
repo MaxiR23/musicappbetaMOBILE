@@ -29,7 +29,7 @@ jest.mock('@/utils/playlist-events', () => ({
 jest.mock('expo-constants', () => ({
   expoConfig: {
     extra: {
-      EXPO_PUBLIC_API_URL: 'http://66.55.75.224:8000/api',
+      EXPO_PUBLIC_API_URL: 'http://34.39.241.17:8000/api',
     },
   },
 }));
@@ -44,7 +44,7 @@ describe('musicService.getArtist()', () => {
     'Drake': 'UCU6cE7pdJPc6DU2jSrKEsdQ',
   };
 
-  const BASE_URL = 'http://66.55.75.224:8000/api';
+  const BASE_URL = 'http://34.39.241.17:8000/api';
   const versions = { artist: 'v-20260309' };
 
   beforeEach(() => {

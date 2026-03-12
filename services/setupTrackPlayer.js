@@ -21,15 +21,11 @@ export async function ensureTrackPlayer() {
 
   try {
     await TrackPlayer.setupPlayer({
-      waitForBuffer: false,
-      minBuffer: 2,
-      maxBuffer: 12,
-      playBuffer: 0.5,
+      minBuffer: 15,
+      maxBuffer: 50,
+      playBuffer: 2,
       backBuffer: 0,
-      maxCacheSize: 64 * 1024 * 1024, 
-
-      bufferForPlaybackMs: 0,
-      bufferForPlaybackAfterRebufferMs: 250,
+      maxCacheSize: 64 * 1024, 
 
       iosCategory: 'playback',
       iosCategoryMode: 'default',

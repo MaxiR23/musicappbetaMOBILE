@@ -4,7 +4,7 @@ import Constants from "expo-constants";
 const BASE_URL =
   (Constants?.expoConfig?.extra?.EXPO_PUBLIC_API_URL)
   ?? (process?.env?.EXPO_PUBLIC_API_URL)
-  ?? "http://66.55.75.224:8000/api";
+  ?? "http://34.39.241.17:8000/api";
 
 async function authFetch<T = any>(url: string, init: RequestInit = {}): Promise<T> {
   const { data } = await supabase.auth.getSession();

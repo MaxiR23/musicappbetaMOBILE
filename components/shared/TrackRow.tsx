@@ -2,11 +2,11 @@ import { useIsTrackPlaying } from "@/hooks/use-is-track-playing";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import PlayingIndicator from "./PlayingIndicator";
 
@@ -25,6 +25,7 @@ import PlayingIndicator from "./PlayingIndicator";
  * - showDuration: Mostrar duración (default: false).
  * - showIndex: Mostrar índice (opcional; si no se pasa, depende del componente).
  * - trackId: ID del track (para animación/estado de reproducción).
+ * - disabled?: boolean; cuando un ID es deshabilitado. 
  */
 interface TrackRowProps {
   index: number;
@@ -41,7 +42,8 @@ interface TrackRowProps {
   showDuration?: boolean;
   showIndex?: boolean;
 
-  trackId: string | number;
+  trackId: string | number
+  disabled?: boolean;
 }
 
 /**
@@ -61,6 +63,7 @@ export default function TrackRow({
   showDuration = false,
   showIndex = true, //por defecto mostrar indice.
   trackId,
+  disabled,
 }: TrackRowProps) {
 
   const { isCurrentTrack, isPlaying } = useIsTrackPlaying(trackId);
@@ -114,11 +117,13 @@ export default function TrackRow({
         style={styles.infoContainer}
         onPress={onPress}
         activeOpacity={0.85}
+        disabled={disabled}
       >
         <Text
           style={[
             styles.title,
-            isCurrentTrack && styles.titlePlaying
+            isCurrentTrack && styles.titlePlaying,
+            disabled && styles.titleDisabled
           ]}
           numberOfLines={1}
         >
@@ -223,5 +228,8 @@ const styles = StyleSheet.create({
   moreButton: {
     marginLeft: 6,
     padding: 4,
+  },
+  titleDisabled: {
+    color: "#555",
   },
 });

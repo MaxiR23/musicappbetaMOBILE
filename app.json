@@ -59,7 +59,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "EXPO_PUBLIC_API_URL": "http://192.168.1.7:8001/api",
+      "EXPO_PUBLIC_API_URL": "http://34.39.241.17:8080/api",
       "EXPO_PUBLIC_SUPABASE_URL": "https://lhcwugikmhjpcfxxatgc.supabase.co",
       "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxoY3d1Z2lrbWhqcGNmeHhhdGdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4MDY2NzQsImV4cCI6MjA3MTM4MjY3NH0.NLF3JnkW7Z0xazot_lKN8RaLXxaWEnGfVpLYjhSZ9zo",
       "router": {},

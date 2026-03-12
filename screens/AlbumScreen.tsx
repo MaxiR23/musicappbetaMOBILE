@@ -184,6 +184,7 @@ export default function AlbumScreen() {
                                     artist={song.artists?.map((a: any) => a.name).join(", ")}
                                     showThumbnail={false}
                                     trackId={song.track_id}
+                                    disabled={!song.track_id}
                                     onPress={() =>
                                         playFromList(mappedSongs, index, {
                                             type: "album",
@@ -230,7 +231,7 @@ export default function AlbumScreen() {
                         imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
                         titleExtractor={(it) => it.title}
                         subtitleExtractor={(it) => formatReleaseSubtitle(it)}
-                        onItemPress={(it) => router.push(`/(tabs)/${currentTab}/album/${it.browseId}`)}
+                        onItemPress={(it) => router.push(`/(tabs)/${currentTab}/album/${it.id}`)}
                     />
                 );
 
@@ -257,10 +258,9 @@ export default function AlbumScreen() {
                         titleExtractor={(it) => it.title}
                         subtitleExtractor={(it) => formatReleaseSubtitle({ ...it, type: it.type || "Release" })}
                         onItemPress={(it) => {
-                            const route =
-                                (it.type || "").toLowerCase() === "playlist"
-                                    ? `/(tabs)/library/playlist/${it.browseId}`
-                                    : `/(tabs)/${currentTab}/album/${it.browseId}`;
+                            const route = (it.type || "").toLowerCase() === "playlist"
+                                ? `/(tabs)/library/playlist/${it.id}`
+                                : `/(tabs)/${currentTab}/album/${it.id}`;
                             router.push(route);
                         }}
                     />

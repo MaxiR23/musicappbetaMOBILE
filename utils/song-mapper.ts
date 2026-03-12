@@ -60,33 +60,35 @@ export function mapAlbumTracks(
   if (!Array.isArray(tracks)) return [];
   const { defaultThumbnail, album_id, album_name } = options;
 
-  return tracks.map((track: any) => {
-    const artists = Array.isArray(track.artists) ? track.artists : [];
-    const primary = artists[0] || null;
+  return tracks
+    .filter((track: any) => !!(track.track_id || track.id))
+    .map((track: any) => {
+      const artists = Array.isArray(track.artists) ? track.artists : [];
+      const primary = artists[0] || null;
 
-    const artist_name =
-      track.artist_name ??
-      (artists.length ? artists.map((a: any) => a.name).join(", ") : "");
+      const artist_name =
+        track.artist_name ??
+        (artists.length ? artists.map((a: any) => a.name).join(", ") : "");
 
-    const artist_id =
-      track.artist_id ??
-      (primary && primary.id ? primary.id : null);
+      const artist_id =
+        track.artist_id ??
+        (primary && primary.id ? primary.id : null);
 
-    const trackId = track.track_id || track.id;
+      const trackId = track.track_id || track.id;
 
-    return {
-      id: trackId,
-      title: track.title,
-      artist_name,
-      artist_id,
-      artists,
-      album_id: track.album_id ?? album_id ?? null,
-      album_name: track.album_name ?? album_name ?? null,
-      duration: track.duration || null,
-      duration_seconds: track.duration_seconds || null,
-      thumbnail: defaultThumbnail || "",
-    };
-  });
+      return {
+        id: trackId,
+        title: track.title,
+        artist_name,
+        artist_id,
+        artists,
+        album_id: track.album_id ?? album_id ?? null,
+        album_name: track.album_name ?? album_name ?? null,
+        duration: track.duration || null,
+        duration_seconds: track.duration_seconds || null,
+        thumbnail: defaultThumbnail || "",
+      };
+    });
 }
 
 /**

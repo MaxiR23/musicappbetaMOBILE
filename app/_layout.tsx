@@ -2,7 +2,7 @@ import { DarkTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import TrackPlayer, { State as TPState } from "react-native-track-player";
+import TrackPlayer, { Event, State as TPState } from "react-native-track-player";
 
 import AuthContainer from "@/components/features/auth/AuthContainer";
 import { useAuth } from "@/hooks/use-auth";
@@ -79,18 +79,14 @@ function InnerLayout() {
   }, [queueIndex, queue, prefetchSongs]);
 
   useEffect(() => {
-    let mounted = true;
-    const id = setInterval(async () => {
-      try {
-        const state = await TrackPlayer.getState();
-        if (!mounted) return;
-        setIsPlaying(state === TPState.Playing);
-      } catch {}
-    }, 500);
-    return () => {
-      mounted = false;
-      clearInterval(id);
-    };
+    const sub = TrackPlayer.addEventListener(Event.PlaybackState, (e) => {
+      if (e.state === TPState.Playing) {
+        setIsPlaying(true);
+      } else if (e.state === TPState.Paused || e.state === TPState.Stopped) {
+        setIsPlaying(false);
+      }
+    });
+    return () => sub.remove();
   }, []);
 
   const togglePlay = useCallback(async () => {
@@ -98,10 +94,10 @@ function InnerLayout() {
     if (!currentSong || queue.length === 0) return;
     const s = await TrackPlayer.getState().catch(() => null);
     if (s === TPState.Playing) {
-      await TrackPlayer.pause().catch(() => {});
+      await TrackPlayer.pause().catch(() => { });
       setIsPlaying(false);
     } else {
-      await TrackPlayer.play().catch(() => {});
+      await TrackPlayer.play().catch(() => { });
       setIsPlaying(true);
     }
   }, [currentSong, queue]);
