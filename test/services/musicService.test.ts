@@ -29,7 +29,7 @@ jest.mock('@/utils/playlist-events', () => ({
 jest.mock('expo-constants', () => ({
   expoConfig: {
     extra: {
-      EXPO_PUBLIC_API_URL: 'http://34.39.241.17:8000/api',
+      EXPO_PUBLIC_API_URL: 'http://192.168.1.7:8001/api',
     },
   },
 }));

@@ -1,5 +1,5 @@
+import { API_URL } from "@/constants/config";
 import { useAuth } from "@/hooks/use-auth";
-import Constants from "expo-constants";
 import { ReactNode, useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import TrackPlayer, { Event, RepeatMode, TrackType } from "react-native-track-player";
 import { useCacheInvalidation } from "../hooks/use-cache-invalidation";
@@ -202,13 +202,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   }, [state]);
 
   // === HELPERS ===
-
   function getBaseUrl() {
-    return (
-      (process.env.EXPO_PUBLIC_API_URL as string | undefined) ??
-      ((Constants?.expoConfig as any)?.extra?.EXPO_PUBLIC_API_URL as string | undefined) ??
-      null
-    );
+    return API_URL ?? null;
   }
 
   function majorityId<T>(list: T[], pick: (x: T) => string | null | undefined): string | null {
@@ -310,11 +305,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       lastLoggedContextKeyRef.current = ctx.key;
       const srcMeta = { name: source?.name ?? null, thumb: source?.thumb ?? null };
       if (ctx.kind === "album") {
-        logPlayAlbum(ctx.id, srcMeta).catch(() => {});
+        logPlayAlbum(ctx.id, srcMeta).catch(() => { });
       } else if (ctx.kind === "artist") {
-        logPlayArtist(ctx.id, srcMeta).catch(() => {});
+        logPlayArtist(ctx.id, srcMeta).catch(() => { });
       }
-      setTimeout(() => invalidateRecent().catch(() => {}), 2000);
+      setTimeout(() => invalidateRecent().catch(() => { }), 2000);
     }
 
     switchingRef.current = false;
@@ -724,7 +719,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
             thumbnail_url: (trackToLog as any).thumbnail ?? (trackToLog as any).thumbnail_url ?? null,
           };
 
-          logPlayTrack(trackId, trackContext).catch(() => {});
+          logPlayTrack(trackId, trackContext).catch(() => { });
         }
       }
     };
@@ -771,10 +766,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        await TrackPlayer.setRepeatMode(RepeatMode.Off).catch(() => {});
-        await TrackPlayer.skip(lastIdx).catch(() => {});
-        await TrackPlayer.pause().catch(() => {});
-        await TrackPlayer.seekTo(0).catch(() => {});
+        await TrackPlayer.setRepeatMode(RepeatMode.Off).catch(() => { });
+        await TrackPlayer.skip(lastIdx).catch(() => { });
+        await TrackPlayer.pause().catch(() => { });
+        await TrackPlayer.seekTo(0).catch(() => { });
 
         dispatch({ type: "SET_INDEX", payload: { index: lastIdx } });
       } catch (e) {

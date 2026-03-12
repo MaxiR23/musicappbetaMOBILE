@@ -1,10 +1,5 @@
+import { API_URL } from "@/constants/config";
 import { supabase } from "@/lib/supabase";
-import Constants from "expo-constants";
-
-const BASE_URL =
-  (Constants?.expoConfig?.extra?.EXPO_PUBLIC_API_URL)
-  ?? (process?.env?.EXPO_PUBLIC_API_URL)
-  ?? "http://34.39.241.17:8000/api";
 
 async function authFetch<T = any>(url: string, init: RequestInit = {}): Promise<T> {
   const { data } = await supabase.auth.getSession();
@@ -54,8 +49,8 @@ export type UserRecommendations = {
 
 export async function fetchRecommendations(bucket?: string): Promise<UserRecommendations> {
   const url = bucket 
-    ? `${BASE_URL}/feed/recommendations/me?bucket=${encodeURIComponent(bucket)}`
-    : `${BASE_URL}/feed/recommendations/me`;
+    ? `${API_URL}/feed/recommendations/me?bucket=${encodeURIComponent(bucket)}`
+    : `${API_URL}/feed/recommendations/me`;
 
   const json = await authFetch(url);
 

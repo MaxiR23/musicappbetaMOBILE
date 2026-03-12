@@ -1,20 +1,15 @@
+import { API_URL } from "@/constants/config";
 import { supabase } from "@/lib/supabase";
-import Constants from "expo-constants";
-
-const BASE_URL =
-  (Constants?.expoConfig?.extra?.EXPO_PUBLIC_API_URL)
-  ?? (process?.env?.EXPO_PUBLIC_API_URL)
-  ?? "http://34.39.241.17:8000/api";
 
 export async function fetchFeed({ kind = "most_played", type = "album", store = "AR", limit = 25 } = {}) {
   const url =
     kind === "new_releases"
-      ? `${BASE_URL}/feed/db/new-releases?limit=${encodeURIComponent(limit)}`
+      ? `${API_URL}/feed/db/new-releases?limit=${encodeURIComponent(limit)}`
       : kind === "new_singles"
-        ? `${BASE_URL}/feed/db/new-singles?limit=${encodeURIComponent(limit)}`
+        ? `${API_URL}/feed/db/new-singles?limit=${encodeURIComponent(limit)}`
         : kind === "seed_tracks"
-          ? `${BASE_URL}/feed/db/seed-tracks?limit=${encodeURIComponent(limit)}`
-          : `${BASE_URL}/feed/most-played?limit=${encodeURIComponent(limit)}`;
+          ? `${API_URL}/feed/db/seed-tracks?limit=${encodeURIComponent(limit)}`
+          : `${API_URL}/feed/most-played?limit=${encodeURIComponent(limit)}`;
   console.log("[feed] GET", url);
 
   // auth como en authFetch

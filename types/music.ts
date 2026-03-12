@@ -1,4 +1,3 @@
-import Constants from "expo-constants";
 export interface Artist {
   header: {
     name: string;
@@ -88,10 +87,7 @@ export interface NewRelease {
   url?: string;
 }
 
-const BASE_URL =
-  (Constants?.expoConfig as any)?.extra?.EXPO_PUBLIC_API_URL
-  ?? process.env.EXPO_PUBLIC_API_URL
-  ?? "http://34.39.241.17:8000/api";
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 // === Públicos (no requieren auth) ===
 export async function searchSongs(fetchFn: typeof fetch, query: string): Promise<Song[]> {

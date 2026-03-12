@@ -1,14 +1,9 @@
+import { API_URL } from "@/constants/config";
 import { cacheClearPrefix, cacheWrap } from "@/utils/cache";
 import { toTrackPayload } from "@/utils/music-helpers";
 import { emitPlaylistChange } from "@/utils/playlist-events";
-import Constants from "expo-constants";
 import { supabase } from "../lib/supabase";
 import { AlbumDetails, Artist, Song } from "../types/music";
-
-const BASE_URL =
-  (Constants?.expoConfig as any)?.extra?.EXPO_PUBLIC_API_URL
-  ?? process.env.EXPO_PUBLIC_API_URL
-  ?? "http://34.39.241.17:8000/api";
 
 async function publicFetch<T = any>(url: string, options: RequestInit = {}): Promise<T> {
   const headers = {
@@ -57,30 +52,30 @@ type CacheVersions = Record<string, string>;
 
 export const musicService = {
   searchSongs: async (query: string): Promise<Song[]> => {
-    return authFetch(`${BASE_URL}/music/search?q=${encodeURIComponent(query)}`);
+    return authFetch(`${API_URL}/music/search?q=${encodeURIComponent(query)}`);
   },
 
   playSongUrl: (id: string): string => {
-    return `${BASE_URL}/music/play?id=${encodeURIComponent(id)}&redir=1`;
+    return `${API_URL}/music/play?id=${encodeURIComponent(id)}&redir=1`;
   },
 
   prefetchSongs: async (ids: string[]): Promise<void> => {
     if (!ids?.length) return;
-    return authFetch(`${BASE_URL}/music/prefetch`, {
+    return authFetch(`${API_URL}/music/prefetch`, {
       method: "POST",
       body: JSON.stringify({ ids }),
     });
   },
 
   getReleases: async (): Promise<Song[]> => {
-    return authFetch(`${BASE_URL}/music/releases`);
+    return authFetch(`${API_URL}/music/releases`);
   },
 
   getArtist: async (id: string, versions: CacheVersions): Promise<Artist> => {
     return cacheWrap(
       `artist:${id}`,
       async () => {
-        const data = await authFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}`);
+        const data = await authFetch(`${API_URL}/music/artist/${encodeURIComponent(id)}`);
         if (!data?.header) throw new Error("artist_incomplete");
         return data;
       },
@@ -92,7 +87,7 @@ export const musicService = {
     return cacheWrap(
       `album:${id}`,
       async () => {
-        const data = await authFetch(`${BASE_URL}/music/album/${encodeURIComponent(id)}`);
+        const data = await authFetch(`${API_URL}/music/album/${encodeURIComponent(id)}`);
         if (!data?.tracks?.length) throw new Error("album_incomplete");
         return data;
       },
@@ -104,7 +99,7 @@ export const musicService = {
     return cacheWrap(
       `artist:${id}:albums_all`,
       async () => {
-        const data = await authFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}/albums`);
+        const data = await authFetch(`${API_URL}/music/artist/${encodeURIComponent(id)}/albums`);
         if (!data?.albums?.length) throw new Error("artist_albums_incomplete");
         return data;
       },
@@ -116,7 +111,7 @@ export const musicService = {
     return cacheWrap(
       `artist:${id}:singles_all`,
       async () => {
-        const data = await authFetch(`${BASE_URL}/music/artist/${encodeURIComponent(id)}/singles`);
+        const data = await authFetch(`${API_URL}/music/artist/${encodeURIComponent(id)}/singles`);
         if (!data?.singles?.length) throw new Error("artist_singles_incomplete");
         return data;
       },
@@ -129,7 +124,7 @@ export const musicService = {
     return cacheWrap(
       'genres:list',
       async () => {
-        const data = await authFetch(`${BASE_URL}/genres`);
+        const data = await authFetch(`${API_URL}/genres`);
         if (!data?.genres?.length) throw new Error("genres_incomplete");
         return data;
       },
@@ -139,8 +134,8 @@ export const musicService = {
 
   getGenrePlaylists: async (slug: string, versions: CacheVersions, category?: string): Promise<{ ok: boolean; genre: any; playlists: any[] }> => {
     const url = category
-      ? `${BASE_URL}/genres/${encodeURIComponent(slug)}/playlists?category=${encodeURIComponent(category)}`
-      : `${BASE_URL}/genres/${encodeURIComponent(slug)}/playlists`;
+      ? `${API_URL}/genres/${encodeURIComponent(slug)}/playlists?category=${encodeURIComponent(category)}`
+      : `${API_URL}/genres/${encodeURIComponent(slug)}/playlists`;
 
     return cacheWrap(
       `genre:${slug}:playlists${category ? `:${category}` : ''}`,
@@ -157,7 +152,7 @@ export const musicService = {
     return cacheWrap(
       `genre:${slug}:categories`,
       async () => {
-        const data = await authFetch(`${BASE_URL}/genres/${encodeURIComponent(slug)}/categories`);
+        const data = await authFetch(`${API_URL}/genres/${encodeURIComponent(slug)}/categories`);
         if (!data?.categories?.length) throw new Error("genre_categories_incomplete");
         return data;
       },
@@ -167,8 +162,8 @@ export const musicService = {
 
   getGenrePlaylistTracks: async (playlistId: string, versions: CacheVersions, limit?: number): Promise<{ ok: boolean; playlist: any; tracks: any[] }> => {
     const url = limit
-      ? `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/tracks?limit=${limit}`
-      : `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/tracks`;
+      ? `${API_URL}/playlists/${encodeURIComponent(playlistId)}/tracks?limit=${limit}`
+      : `${API_URL}/playlists/${encodeURIComponent(playlistId)}/tracks`;
 
     return cacheWrap(
       `genre-playlist:${playlistId}:tracks`,
@@ -185,7 +180,7 @@ export const musicService = {
     return cacheWrap(
       'playlists:list',
       async () => {
-        const data = await authFetch(`${BASE_URL}/playlists/`);
+        const data = await authFetch(`${API_URL}/playlists/`);
         return data;
       },
       { version: versions['user-playlists'] }
@@ -196,7 +191,7 @@ export const musicService = {
     return cacheWrap(
       `playlist:${id}`,
       async () => {
-        const data = await authFetch(`${BASE_URL}/playlists/${encodeURIComponent(id)}`);
+        const data = await authFetch(`${API_URL}/playlists/${encodeURIComponent(id)}`);
         if (!data?.id) throw new Error("playlist_incomplete");
         return data;
       },
@@ -205,7 +200,7 @@ export const musicService = {
   },
 
   createPlaylist: async (title: string, description?: string, is_public?: boolean) => {
-    const result = await authFetch(`${BASE_URL}/playlists`, {
+    const result = await authFetch(`${API_URL}/playlists`, {
       method: "POST",
       body: JSON.stringify({
         title,
@@ -221,7 +216,7 @@ export const musicService = {
   addTrackToPlaylist: async (playlistId: string, song: Song) => {
     const payload = toTrackPayload(song as any);
     const result = await authFetch(
-      `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/tracks`,
+      `${API_URL}/playlists/${encodeURIComponent(playlistId)}/tracks`,
       {
         method: "POST",
         body: JSON.stringify(payload),
@@ -235,7 +230,7 @@ export const musicService = {
 
   deletePlaylist: async (playlistId: string) => {
     const result = await authFetch(
-      `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}`,
+      `${API_URL}/playlists/${encodeURIComponent(playlistId)}`,
       { method: "DELETE" }
     );
     await cacheClearPrefix(`playlist:${playlistId}`);
@@ -246,7 +241,7 @@ export const musicService = {
 
   removeTrackFromPlaylist: async (playlistId: string, trackId: string) => {
     const result = await authFetch(
-      `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/tracks/${encodeURIComponent(trackId)}`,
+      `${API_URL}/playlists/${encodeURIComponent(playlistId)}/tracks/${encodeURIComponent(trackId)}`,
       { method: "DELETE" }
     );
     await cacheClearPrefix(`playlist:${playlistId}`);
@@ -260,7 +255,7 @@ export const musicService = {
     if (source?.name) body.display_name = source.name;
     if (source?.thumb) body.thumbnail_url = source.thumb;
     return authFetch(
-      `${BASE_URL}/music/plays/albums/${encodeURIComponent(album_id)}`,
+      `${API_URL}/music/plays/albums/${encodeURIComponent(album_id)}`,
       { method: "POST", body: JSON.stringify(body) }
     );
   },
@@ -270,7 +265,7 @@ export const musicService = {
     if (source?.name) body.display_name = source.name;
     if (source?.thumb) body.thumbnail_url = source.thumb;
     return authFetch(
-      `${BASE_URL}/music/plays/artists/${encodeURIComponent(artist_id)}`,
+      `${API_URL}/music/plays/artists/${encodeURIComponent(artist_id)}`,
       { method: "POST", body: JSON.stringify(body) }
     );
   },
@@ -285,7 +280,7 @@ export const musicService = {
     thumbnail_url?: string;
   }) => {
     return authFetch(
-      `${BASE_URL}/music/plays/tracks/${encodeURIComponent(trackId)}`,
+      `${API_URL}/music/plays/tracks/${encodeURIComponent(trackId)}`,
       { method: "POST", body: JSON.stringify(context ?? {}) }
     );
   },
@@ -295,7 +290,7 @@ export const musicService = {
     if (source?.name) body.display_name = source.name;
     if (source?.thumb) body.thumbnail_url = source.thumb;
     return authFetch(
-      `${BASE_URL}/music/plays/playlists/${encodeURIComponent(playlistId)}`,
+      `${API_URL}/music/plays/playlists/${encodeURIComponent(playlistId)}`,
       { method: "POST", body: JSON.stringify(body) }
     );
   },
@@ -313,7 +308,7 @@ export const musicService = {
     if (options?.include) params.set("include", options.include);
     if (options?.limit) params.set("limit", String(options.limit));
     const query = params.toString();
-    const url = `${BASE_URL}/stats/weekly${query ? `?${query}` : ""}`;
+    const url = `${API_URL}/stats/weekly${query ? `?${query}` : ""}`;
     const cacheKey = `weekly-stats${query ? `:${query}` : ""}`;
     return cacheWrap(cacheKey, () => authFetch(url), { userId: 'me' });
   },
@@ -331,21 +326,21 @@ export const musicService = {
     if (options?.include) params.set("include", options.include);
     if (options?.limit) params.set("limit", String(options.limit));
     const query = params.toString();
-    const url = `${BASE_URL}/stats/monthly${query ? `?${query}` : ""}`;
+    const url = `${API_URL}/stats/monthly${query ? `?${query}` : ""}`;
     const cacheKey = `monthly-stats${query ? `:${query}` : ""}`;
     return cacheWrap(cacheKey, () => authFetch(url), { userId: 'me' });
   },
 
   getRecentPlays: async (limit = 20): Promise<{ items: RecentItem[] }> => {
     return authFetch(
-      `${BASE_URL}/music/me/recent?limit=${encodeURIComponent(limit)}`,
+      `${API_URL}/music/me/recent?limit=${encodeURIComponent(limit)}`,
       { method: "GET" }
     );
   },
 
   moveTrackInPlaylist: async (playlistId: string, oldPosition: number, newPosition: number) => {
     const result = await authFetch(
-      `${BASE_URL}/playlists/${encodeURIComponent(playlistId)}/move-track`,
+      `${API_URL}/playlists/${encodeURIComponent(playlistId)}/move-track`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -359,7 +354,7 @@ export const musicService = {
   },
 
   getTrackLyrics: async (trackId: string): Promise<{ ok: boolean; lyrics?: string | null; source?: string | null }> => {
-    return authFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/lyrics`, {
+    return authFetch(`${API_URL}/music/tracks/${encodeURIComponent(trackId)}/lyrics`, {
       method: "GET",
     });
   },
@@ -370,7 +365,7 @@ export const musicService = {
     upNext?: any[];
     autoplay?: any;
   }> => {
-    return authFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/upnext`, {
+    return authFetch(`${API_URL}/music/tracks/${encodeURIComponent(trackId)}/upnext`, {
       method: "GET",
     });
   },
@@ -379,7 +374,7 @@ export const musicService = {
     ok: boolean;
     related?: any[];
   }> => {
-    return authFetch(`${BASE_URL}/music/tracks/${encodeURIComponent(trackId)}/related`, {
+    return authFetch(`${API_URL}/music/tracks/${encodeURIComponent(trackId)}/related`, {
       method: "GET",
     });
   },

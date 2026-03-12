@@ -1,14 +1,9 @@
+import { API_URL } from "@/constants/config";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from "expo-constants";
 import { PropsWithChildren, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CacheVersionsContext, type CacheVersions, type CacheVersionsContextValue } from "../context/CacheVersionsContext";
 
-const API_BASE =
-    (Constants?.expoConfig as any)?.extra?.EXPO_PUBLIC_API_URL
-    ?? process.env.EXPO_PUBLIC_API_URL
-    ?? "http://34.39.241.17:8000/api";
-
-const BACKEND_URL = `${API_BASE}/feed/cache/versions`;
+const BACKEND_URL = `${API_URL}/feed/cache/versions`;
 const VERSIONS_KEY = 'cache:backend-versions';
 
 export default function CacheVersionsProvider({ children }: PropsWithChildren) {
