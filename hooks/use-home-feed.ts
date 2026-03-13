@@ -1,5 +1,5 @@
 import { fetchFeed } from '@/services/feedService';
-import { fetchRecommendations } from '@/services/recommendService';
+// import { fetchRecommendations } from '@/services/recommendService'; // TODO: fix 502
 import { cacheWrap, DAY_MS } from '@/utils/cache';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from './use-auth';
@@ -87,21 +87,22 @@ export function useHomeFeed(userId: string) {
     }
   }, [userId, versions]);
 
-  const refreshRecommendations = useCallback(async () => {
-    try {
-      const data = await cacheWrap(
-        `home:recommendations:v1`,
-        () => fetchRecommendations(),
-        { userId, ttl: DAY_MS, version: versions['user-recommendations'] }
-      );
-      setRecoArtists(Array.isArray(data.artists) ? data.artists : []);
-      setRecoAlbums(Array.isArray(data.albums) ? data.albums : []);
-    } catch (e: any) {
-      console.warn("[API] recommendations error:", e?.message || e);
-      setRecoArtists([]);
-      setRecoAlbums([]);
-    }
-  }, [userId, versions]);
+  // TODO: fix 502 — deshabilitado temporalmente
+  // const refreshRecommendations = useCallback(async () => {
+  //   try {
+  //     const data = await cacheWrap(
+  //       `home:recommendations:v1`,
+  //       () => fetchRecommendations(),
+  //       { userId, ttl: DAY_MS, version: versions['user-recommendations'] }
+  //     );
+  //     setRecoArtists(Array.isArray(data.artists) ? data.artists : []);
+  //     setRecoAlbums(Array.isArray(data.albums) ? data.albums : []);
+  //   } catch (e: any) {
+  //     console.warn("[API] recommendations error:", e?.message || e);
+  //     setRecoArtists([]);
+  //     setRecoAlbums([]);
+  //   }
+  // }, [userId, versions]);
 
   const recoBySeed = useMemo(() => {
     const map = new Map<string, any[]>();
@@ -124,11 +125,11 @@ export function useHomeFeed(userId: string) {
       refreshTopTracks();
       refreshNewSingles();
       refreshSeedTracks();
-      refreshRecommendations();
+      // refreshRecommendations(); // TODO: fix 502
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [ready, refreshNewReleases, refreshTopAlbums, refreshTopTracks, refreshNewSingles, refreshSeedTracks, refreshRecommendations]);
+  }, [ready, refreshNewReleases, refreshTopAlbums, refreshTopTracks, refreshNewSingles, refreshSeedTracks]);
 
   return {
     newReleases,
