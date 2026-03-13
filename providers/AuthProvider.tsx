@@ -42,7 +42,10 @@ export default function AuthProvider({ children }: PropsWithChildren) {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: metadata?.display_name, ...metadata } },
+      options: {
+        data: { display_name: metadata?.display_name, ...metadata },
+        emailRedirectTo: "beatly://auth/callback",
+      },
     });
     if (error) throw error;
   }, []);
