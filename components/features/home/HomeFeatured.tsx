@@ -1,0 +1,193 @@
+import { useMusicApi } from "@/hooks/use-music-api";
+import { useReplay } from "@/hooks/use-replay";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+function StatsCard() {
+  const router = useRouter();
+  const { getMonthlyStats } = useMusicApi();
+  const [artists, setArtists] = useState<any[]>([]);
+
+  useEffect(() => {
+    getMonthlyStats({ include: "artists", limit: 3 })
+      .then((data) => setArtists(data?.artists ?? []))
+      .catch(() => { });
+  }, [getMonthlyStats]);
+
+  if (!artists.length) return null;
+
+  const artistNames = artists
+    .map((a) => a?.display_name ?? a?.name ?? "")
+    .filter(Boolean)
+    .join(", ");
+
+  const thumb = (a: any) => a?.thumbnail_url ?? a?.thumbnail ?? null;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={() => router.push("/(tabs)/home/stats")}
+      style={styles.card}
+    >
+      <LinearGradient
+        colors={["#2a2a3e", "#1a1a2e", "#111120"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.cardGradient}
+      >
+        <View style={[styles.circle, styles.circleLarge, { top: 6, left: 8 }]}>
+          {thumb(artists[0]) && (
+            <Image source={{ uri: thumb(artists[0]) }} style={styles.circleLargeImg} />
+          )}
+        </View>
+        <View style={[styles.circle, styles.circleMedium, { top: 84, right: 16 }]}>
+          {thumb(artists[1]) && (
+            <Image source={{ uri: thumb(artists[1]) }} style={styles.circleMediumImg} />
+          )}
+        </View>
+        <View style={[styles.circle, styles.circleSmall, { top: 132, left: 40 }]}>
+          {thumb(artists[2]) && (
+            <Image source={{ uri: thumb(artists[2]) }} style={styles.circleSmallImg} />
+          )}
+        </View>
+        <View style={styles.cardFooter}>
+          <Text style={styles.cardSubtitle} numberOfLines={2}>{artistNames}</Text>
+          <Text style={styles.cardTitle}>Tu mes{"\n"}en música</Text>
+        </View>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+}
+
+function ReplayCard() {
+  const router = useRouter();
+  const { songs } = useReplay();
+
+  const topSongs = songs.slice(0, 5);
+  const trackNames = topSongs
+    .map((s) => s.title ?? "")
+    .filter(Boolean)
+    .join(", ");
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={() => router.push("/(tabs)/home/replay")}
+      style={styles.card}
+    >
+      <LinearGradient
+        colors={["#00b894", "#00cec9", "#007a6e"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.cardGradient}
+      >
+        <View style={styles.replayContent}>
+          <Text style={styles.replayLabel}>Replay</Text>
+          <Text style={styles.replayTitle}>Mix</Text>
+        </View>
+        <View style={styles.cardFooter}>
+          <Text style={styles.cardSubtitle} numberOfLines={1}>
+            Tus canciones más repetidas
+          </Text>
+          <Text style={styles.replayTrackNames} numberOfLines={2}>
+            {trackNames}
+          </Text>
+        </View>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+}
+
+export default function HomeFeatured() {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.scroll}
+      style={styles.container}
+    >
+      <StatsCard />
+      <ReplayCard />
+    </ScrollView>
+  );
+}
+
+const CARD_WIDTH = 175;
+const CARD_HEIGHT = 280;
+
+const styles = StyleSheet.create({
+  container: { marginVertical: 12 },
+  scroll: { paddingHorizontal: 10, gap: 12 },
+  card: {
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    borderRadius: 18,
+    overflow: "hidden",
+  },
+  cardGradient: {
+    flex: 1,
+    padding: 14,
+  },
+  // Stats circles
+  circle: {
+    position: "absolute",
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "#333",
+  },
+  circleLarge: { width: 100, height: 100, borderRadius: 50 },
+  circleLargeImg: { width: 100, height: 100, borderRadius: 50 },
+  circleMedium: { width: 72, height: 72, borderRadius: 36 },
+  circleMediumImg: { width: 72, height: 72, borderRadius: 36 },
+  circleSmall: { width: 58, height: 58, borderRadius: 29 },
+  circleSmallImg: { width: 58, height: 58, borderRadius: 29 },
+  cardFooter: {
+    position: "absolute",
+    bottom: 14,
+    left: 14,
+    right: 14,
+    gap: 2,
+  },
+  cardSubtitle: {
+    color: "rgba(255,255,255,0.55)",
+    fontSize: 10,
+    fontWeight: "500",
+  },
+  cardTitle: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+    lineHeight: 20,
+  },
+  // Replay
+  replayContent: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  replayLabel: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  replayTitle: {
+    color: "#fff",
+    fontSize: 42,
+    fontWeight: "800",
+    lineHeight: 48,
+  },
+  replayTrackNames: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 10,
+    fontWeight: "400",
+  },
+});

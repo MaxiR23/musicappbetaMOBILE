@@ -23,21 +23,18 @@ import { supabase } from "@/lib/supabase";
 import HorizontalScrollSection from "@/components/shared/HorizontalScrollSection";
 
 import FeedSection from "@/components/features/home/FeedSection";
+import HomeFeatured from "@/components/features/home/HomeFeatured";
 import SimilarToHeader from "@/components/shared/SimilarToHeader";
 import { useContentPadding } from "@/hooks/use-content-padding";
 import { useHomeFeed } from "@/hooks/use-home-feed";
 import { useHomeRecent } from "@/hooks/use-home-recent";
 import { useUserProfile } from "@/hooks/use-user-profile";
 
-import MonthlyStatsCard from "@/components/features/home/MonthlyStatsCard";
-import { useMusicApi } from "@/hooks/use-music-api";
-
 export default function HomeScreen() {
   const router = useRouter();
   const { playFromList, currentSong } = useMusic();
   const contentPadding = useContentPadding();
 
-  const [createOpen, setCreateOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
 
   const { userName, userEmail, userId, initials, gradient } = useUserProfile();
@@ -75,12 +72,6 @@ export default function HomeScreen() {
     return () => task.cancel();
   }, []);
 
-  useEffect(() => {
-    getMonthlyStats({ include: "artists", limit: 3 }).then((data) => {
-      setMonthlyArtists(data?.artists ?? []);
-    }).catch(() => { });
-  }, []);
-
   const mapTracksForPlayer = useCallback((arr: any[]) => {
     return arr.map((t: any) => ({
       id: String(t.id),
@@ -101,9 +92,6 @@ export default function HomeScreen() {
   const mappedTopTracks = useMemo(() => mapTracksForPlayer(topTracks), [topTracks, mapTracksForPlayer]);
   const mappedNewSingles = useMemo(() => mapTracksForPlayer(newSingles), [newSingles, mapTracksForPlayer]);
   const mappedSeedTracks = useMemo(() => mapTracksForPlayer(seedTracks), [seedTracks, mapTracksForPlayer]);
-
-  const { getMonthlyStats } = useMusicApi();
-  const [monthlyArtists, setMonthlyArtists] = useState<any[]>([]);
 
   // ── tomar 2 seeds para ubicar bloques ──
   const items1 = useMemo(() => (recoBySeed[0]?.[1] || []), [recoBySeed]);
@@ -170,7 +158,7 @@ export default function HomeScreen() {
       >
         {/* banner */}
         <HomeBanner />
-        <MonthlyStatsCard artists={monthlyArtists} />
+        <HomeFeatured />
 
         {/* TODO: CHECK OLD CODE BELOW, if decided to be unused archived or delete PlaylistSection { */}
 

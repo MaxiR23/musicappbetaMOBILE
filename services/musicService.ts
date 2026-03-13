@@ -2,6 +2,7 @@ import { API_URL } from "@/constants/config";
 import { cacheClearPrefix, cacheWrap } from "@/utils/cache";
 import { toTrackPayload } from "@/utils/music-helpers";
 import { emitPlaylistChange } from "@/utils/playlist-events";
+import { MappedSong, mapGenericTrack } from "@/utils/song-mapper";
 import { supabase } from "../lib/supabase";
 import { AlbumDetails, Artist, Song } from "../types/music";
 
@@ -335,6 +336,25 @@ export const musicService = {
     return authFetch(
       `${API_URL}/music/me/recent?limit=${encodeURIComponent(limit)}`,
       { method: "GET" }
+    );
+  },
+
+  getReplaySongs: async (): Promise<MappedSong[]> => {
+    return cacheWrap(
+      "feed:replay",
+      async () => {
+        const raw = await authFetch<any[]>(`${API_URL}/feed/replay`);
+        return (raw || []).map((song) => mapGenericTrack({
+          id: song.track_id,
+          title: song.track_name,
+          artist_name: song.artist_name,
+          artist_id: song.artist_id,
+          album_id: song.album_id,
+          album_name: song.album_name,
+          thumbnail: song.thumbnail_url,
+          duration_seconds: song.duration_seconds,
+        }));
+      }
     );
   },
 
