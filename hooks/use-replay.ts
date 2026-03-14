@@ -14,5 +14,7 @@ export function useReplay() {
       .finally(() => setLoading(false));
   }, [getReplaySongs]);
 
-  return { songs, loading };
+  const hasEnoughData = !loading && songs.length > 0;
+
+  return { songs, loading, hasEnoughData };
 }

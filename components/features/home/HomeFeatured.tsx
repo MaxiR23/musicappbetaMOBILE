@@ -70,7 +70,9 @@ function StatsCard() {
 
 function ReplayCard() {
   const router = useRouter();
-  const { songs } = useReplay();
+  const { songs, loading, hasEnoughData } = useReplay();
+
+  if (loading || !hasEnoughData) return null; 
 
   const topSongs = songs.slice(0, 5);
   const trackNames = topSongs
