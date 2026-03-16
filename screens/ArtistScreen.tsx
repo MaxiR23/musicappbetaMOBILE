@@ -21,7 +21,7 @@ import { formatReleaseSubtitle } from "@/utils/subtitle-helpers";
 export default function ArtistScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const { currentSong, playFromList } = useMusic();
+  const { currentSong, playList } = useMusic();
   const { getArtist } = useMusicApi();
   const router = useRouter();
   const segments = useSegments();
@@ -159,7 +159,7 @@ export default function ArtistScreen() {
                 showMoreButton={false}
                 trackId={song.id}
                 onPress={() =>
-                  playFromList(mappedTop, index, {
+                  playList(mappedTop, index, {
                     type: "artist",
                     name: artist.header?.name,
                     thumb: heroUrl,

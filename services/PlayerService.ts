@@ -1,69 +1,31 @@
 /**
  * PlayerService.ts
- * Servicio centralizado para react-native-track-player
- * 
- * REGLAS:
- * 1. TODA operacion de TrackPlayer pasa por aca
- * 2. NO llamar TrackPlayer directamente desde MusicProvider
- * 3. Metodos atomicos: cada uno hace UNA cosa bien
+ * Unica interfaz con TrackPlayer.
+ * TP maneja maximo 2 tracks: el actual + preloaded.
+ * React (MusicProvider) es la fuente de verdad de la cola.
  */
+
+import trackPlayerService from "./trackPlayerService";
 
 import TrackPlayer, {
   AppKilledPlaybackBehavior,
   Capability,
+  Event,
   RepeatMode,
   State,
   TrackType,
-} from 'react-native-track-player';
+} from "react-native-track-player";
 
-// Estado global del servicio
 const g = globalThis as any;
-g.__PlayerService__ = g.__PlayerService__ || {
-  initialized: false,
-  serviceRegistered: false,
-};
+g.__tp_init__ = g.__tp_init__ || { ready: false, registered: false };
 
-export interface TrackData {
-  id: string;
-  title: string;
-  artist_name?: string;
-  artist?: string;
-  thumbnail?: string;
-  thumbnail_url?: string;
-  // Otros campos que puedas necesitar
-  [key: string]: any;
-}
-
-function buildTrack(song: TrackData, baseUrl: string) {
-  return {
-    id: String(song.id),
-    url: (song as any).url || '', // TODO RESOLVE: `${baseUrl}/music/play?id=${encodeURIComponent(song.id)}&redir=2`
-    title: song.title,
-    artist: song.artist_name ?? song.artist ?? '',
-    artwork: song.thumbnail ?? song.thumbnail_url ?? undefined,
-    type: TrackType.Default,
-    headers: {
-      Range: 'bytes=0-',
-      'Accept-Encoding': 'identity',
-      Connection: 'keep-alive',
-    },
-  };
-}
-
-// Inicializa el player (idempotente)
-export async function initPlayer(): Promise<void> {
-  // Registrar servicio una sola vez
-  if (!g.__PlayerService__.serviceRegistered) {
-    try {
-      const service = require('./trackPlayerService').default;
-      TrackPlayer.registerPlaybackService(() => service);
-      g.__PlayerService__.serviceRegistered = true;
-    } catch (e) {
-      console.warn('[PlayerService] service registration failed', e);
-    }
+async function init(): Promise<void> {
+  if (!g.__tp_init__.registered) {
+    TrackPlayer.registerPlaybackService(() => trackPlayerService);
+    g.__tp_init__.registered = true;
   }
 
-  if (g.__PlayerService__.initialized) return;
+  if (g.__tp_init__.ready) return;
 
   try {
     await TrackPlayer.setupPlayer({
@@ -75,14 +37,8 @@ export async function initPlayer(): Promise<void> {
       maxCacheSize: 64 * 1024 * 1024,
     });
   } catch (e: any) {
-    // Si ya esta inicializado, no es error
-    if (!e?.message?.includes('already been initialized')) {
-      console.log('[PlayerService] setupPlayer fallback:', e?.message);
-      try {
-        await TrackPlayer.setupPlayer();
-      } catch {
-        // Ya inicializado
-      }
+    if (!e?.message?.includes("already been initialized")) {
+      throw e;
     }
   }
 
@@ -105,186 +61,170 @@ export async function initPlayer(): Promise<void> {
     progressUpdateEventInterval: 0.3,
   });
 
-  g.__PlayerService__.initialized = true;
+  g.__tp_init__.ready = true;
 }
 
-/**
- * Carga una lista de canciones y reproduce desde un indice.
- * Metodo ATOMICO: reset + add + skip + play en secuencia optima.
- */
-export async function loadQueueAndPlay(
-  songs: TrackData[],
-  startIndex: number,
-  baseUrl: string
-): Promise<void> {
-  await initPlayer();
+export interface TrackInput {
+  id: string;
+  url?: string;
+  title?: string;
+  artist_name?: string;
+  artist?: string;
+  thumbnail?: string;
+  thumbnail_url?: string;
+  [key: string]: any;
+}
 
-  if (!songs.length || !baseUrl) return;
+/** Construye el objeto track que TP necesita a partir de la metadata de la Song */
+function buildTrack(song: TrackInput) {
+  return {
+    id: String(song.id),
+    url: song.url || "",
+    title: song.title || "",
+    artist: song.artist_name ?? song.artist ?? "",
+    artwork: song.thumbnail ?? song.thumbnail_url ?? undefined,
+    type: TrackType.Default,
+    headers: {
+      Range: "bytes=0-",
+      "Accept-Encoding": "identity",
+      Connection: "keep-alive",
+    },
+  };
+}
 
-  const idx = Math.max(0, Math.min(startIndex, songs.length - 1));
-  const tracks = songs.map((s) => buildTrack(s, baseUrl));
+let preloadedId: string | null = null;
 
-  // Secuencia optima: reset -> add all -> skip -> play
-  // Esto evita el problema de load() + manipular cola
-  await TrackPlayer.reset();
-  await TrackPlayer.add(tracks);
+/** Limpia todos los tracks de TP excepto el activo */
+async function cleanupOldTracks(): Promise<void> {
+  const q = await TrackPlayer.getQueue();
+  if (q.length <= 1) return;
 
-  if (idx > 0) {
-    await TrackPlayer.skip(idx);
+  const active = (await TrackPlayer.getActiveTrackIndex()) ?? 0;
+  const toRemove = q
+    .map((_, i) => i)
+    .filter((i) => i !== active)
+    .reverse();
+
+  for (const i of toRemove) {
+    await TrackPlayer.remove(i);
   }
+}
 
-  // play() inmediato despues de skip, sin await intermedio
+/** Carga UN track y lo reproduce. Mata todo lo anterior. */
+export async function playTrack(song: TrackInput): Promise<void> {
+  await init();
+  preloadedId = null;
+
+  const track = buildTrack(song);
+  await TrackPlayer.setQueue([track]);
   await TrackPlayer.play();
 }
 
-/**
- * Salta al indice especificado.
- * NO llama play() si ya esta reproduciendo.
- */
-export async function skipTo(index: number): Promise<void> {
-  await initPlayer();
+/** Cambia de track sin cortar el audio. Para next/prev/skipTo. */
+export async function switchTrack(song: TrackInput): Promise<void> {
+  await init();
 
-  const queue = await TrackPlayer.getQueue();
-  if (index < 0 || index >= queue.length) {
-    console.warn('[PlayerService] skipTo: index out of range', index);
-    return;
-  }
+  const track = buildTrack(song);
+  await TrackPlayer.add(track);
+  await TrackPlayer.skipToNext();
+  preloadedId = null;
 
-  const state = await TrackPlayer.getPlaybackState();
-  const wasPlaying = state.state === State.Playing;
-
-  await TrackPlayer.skip(index);
-
-  // Solo llamar play() si NO estaba reproduciendo
-  // (skip() mantiene el estado de reproduccion)
-  if (!wasPlaying) {
-    await TrackPlayer.play();
-  }
+  await cleanupOldTracks();
 }
 
-/**
- * Siguiente cancion.
- * Retorna true si avanzo, false si estaba en la ultima.
- */
-export async function next(): Promise<boolean> {
-  await initPlayer();
+/** Precarga el siguiente track en posicion 1 de TP. Si ya hay uno, lo reemplaza. */
+export async function preloadNext(song: TrackInput): Promise<void> {
+  await init();
+
+  const nextId = String(song.id);
+  if (preloadedId === nextId) return;
+
+  await cleanupOldTracks();
+
+  const track = buildTrack(song);
+  await TrackPlayer.add(track);
+  preloadedId = nextId;
+}
+
+/** Salta al track preloaded. Retorna true si habia preload. */
+export async function skipToPreloaded(): Promise<boolean> {
+  if (!preloadedId) return false;
 
   const queue = await TrackPlayer.getQueue();
-  const currentIndex = await TrackPlayer.getActiveTrackIndex();
-
-  if (currentIndex === null || currentIndex >= queue.length - 1) {
-    return false; // No hay siguiente
+  if (queue.length < 2) {
+    preloadedId = null;
+    return false;
   }
 
   await TrackPlayer.skipToNext();
+  await cleanupOldTracks();
+
+  preloadedId = null;
   return true;
 }
 
-/**
- * Cancion anterior o reinicia si position > 3s.
- */
-export async function prev(): Promise<void> {
-  await initPlayer();
-
-  const position = await TrackPlayer.getPosition();
-
-  if (position > 3) {
-    await TrackPlayer.seekTo(0);
-    return;
-  }
-
-  const currentIndex = await TrackPlayer.getActiveTrackIndex();
-  if (currentIndex === null || currentIndex <= 0) {
-    await TrackPlayer.seekTo(0);
-    return;
-  }
-
-  await TrackPlayer.skipToPrevious();
-}
-
-/**
- * Agrega una cancion al final de la cola.
- * Retorna el indice donde se agrego.
- */
-export async function appendTrack(
-  song: TrackData,
-  baseUrl: string
-): Promise<number> {
-  await initPlayer();
-
-  const track = buildTrack(song, baseUrl);
-  const queue = await TrackPlayer.getQueue();
-  const insertIndex = queue.length;
-
-  await TrackPlayer.add(track);
-  return insertIndex;
-}
-
-/**
- * Agrega una cancion y salta a ella inmediatamente.
- */
-export async function appendAndPlay(
-  song: TrackData,
-  baseUrl: string
-): Promise<void> {
-  const insertIndex = await appendTrack(song, baseUrl);
-  await skipTo(insertIndex);
-}
-
-/**
- * Reordena la cola manteniendo la cancion actual.
- * Usado para shuffle on/off.
- */
-export async function reorderQueue(
-  newOrder: TrackData[],
-  currentSongId: string,
-  baseUrl: string
-): Promise<number> {
-  await initPlayer();
-
-  // Encontrar el nuevo indice de la cancion actual
-  const newIndex = newOrder.findIndex((s) => String(s.id) === currentSongId);
-  if (newIndex === -1) {
-    console.warn('[PlayerService] reorderQueue: current song not found');
-    return -1;
-  }
-
-  // Obtener posicion actual para no perder el progreso
-  const position = await TrackPlayer.getPosition();
-  const state = await TrackPlayer.getPlaybackState();
-  const wasPlaying = state.state === State.Playing;
-
-  // Rebuild completo de la cola
-  const tracks = newOrder.map((s) => buildTrack(s, baseUrl));
-
-  await TrackPlayer.reset();
-  await TrackPlayer.add(tracks);
-  await TrackPlayer.skip(newIndex);
-  await TrackPlayer.seekTo(position);
-
-  if (wasPlaying) {
-    await TrackPlayer.play();
-  }
-
-  return newIndex;
-}
-
-/**
- * Pausa en el final de la cola (para cuando no hay autoplay).
- */
-export async function pauseAtEnd(): Promise<void> {
-  await initPlayer();
-
-  const queue = await TrackPlayer.getQueue();
-  if (!queue.length) return;
-
-  const lastIndex = queue.length - 1;
-
-  await TrackPlayer.setRepeatMode(RepeatMode.Off);
-  await TrackPlayer.skip(lastIndex);
+export async function pause(): Promise<void> {
   await TrackPlayer.pause();
-  await TrackPlayer.seekTo(0);
 }
 
-// Re-exportar para conveniencia
-export { RepeatMode, State, TrackPlayer };
+export async function resume(): Promise<void> {
+  await TrackPlayer.play();
+}
+
+export async function seekTo(seconds: number): Promise<void> {
+  await TrackPlayer.seekTo(seconds);
+}
+
+export async function getPosition(): Promise<number> {
+  return TrackPlayer.getPosition();
+}
+
+export async function getPlaybackState(): Promise<State> {
+  const ps = await TrackPlayer.getPlaybackState();
+  return ps.state;
+}
+
+export async function setRepeatMode(mode: RepeatMode): Promise<void> {
+  await TrackPlayer.setRepeatMode(mode);
+}
+
+export async function getRepeatMode(): Promise<RepeatMode> {
+  return TrackPlayer.getRepeatMode();
+}
+
+/** Alterna play/pause. Retorna true si queda playing, false si paused. */
+export async function togglePlayPause(): Promise<boolean> {
+  const state = await getPlaybackState();
+  if (state === State.Playing) {
+    await TrackPlayer.pause();
+    return false;
+  }
+  await TrackPlayer.play();
+  return true;
+}
+
+export function onTrackEnd(cb: () => void) {
+  return TrackPlayer.addEventListener(Event.PlaybackQueueEnded, cb);
+}
+
+export function onProgress(cb: (data: { position: number; duration: number }) => void) {
+  return TrackPlayer.addEventListener(Event.PlaybackProgressUpdated, cb as any);
+}
+
+export function onError(cb: (error: any) => void) {
+  return TrackPlayer.addEventListener(Event.PlaybackError, cb);
+}
+
+export function onPlaybackState(cb: (state: State) => void) {
+  return TrackPlayer.addEventListener(Event.PlaybackState, (e: any) => cb(e.state));
+}
+
+export function onRemoteNext(cb: () => void) {
+  return TrackPlayer.addEventListener(Event.RemoteNext, cb);
+}
+
+export function onRemotePrev(cb: () => void) {
+  return TrackPlayer.addEventListener(Event.RemotePrevious, cb);
+}
+
+export { RepeatMode, State };

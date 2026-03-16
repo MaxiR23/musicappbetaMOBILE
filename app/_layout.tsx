@@ -2,7 +2,6 @@ import { DarkTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import TrackPlayer, { Event, State as TPState } from "react-native-track-player";
 
 import AuthContainer from "@/components/features/auth/AuthContainer";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,7 +10,7 @@ import CacheVersionsProvider from "@/providers/CacheVersionsProvider";
 
 import MusicPlayer from "@/components/features/player/MusicPlayer";
 import { MusicProvider } from "@/providers/MusicProvider";
-import { ensureTrackPlayer } from "@/services/setupTrackPlayer";
+import * as PlayerService from "@/services/PlayerService";
 
 import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
@@ -49,10 +48,6 @@ function Gate() {
 }
 
 function AuthedApp() {
-  useEffect(() => {
-    ensureTrackPlayer().catch((e) => console.warn("TrackPlayer setup error", e));
-  }, []);
-
   return (
     <MusicProvider>
       <InnerLayout />
@@ -79,10 +74,10 @@ function InnerLayout() {
   }, [queueIndex, queue, prefetchSongs]);
 
   useEffect(() => {
-    const sub = TrackPlayer.addEventListener(Event.PlaybackState, (e) => {
-      if (e.state === TPState.Playing) {
+    const sub = PlayerService.onPlaybackState((state) => {
+      if (state === PlayerService.State.Playing) {
         setIsPlaying(true);
-      } else if (e.state === TPState.Paused || e.state === TPState.Stopped) {
+      } else if (state === PlayerService.State.Paused || state === PlayerService.State.Stopped) {
         setIsPlaying(false);
       }
     });
@@ -90,16 +85,9 @@ function InnerLayout() {
   }, []);
 
   const togglePlay = useCallback(async () => {
-    await ensureTrackPlayer();
     if (!currentSong || queue.length === 0) return;
-    const s = await TrackPlayer.getState().catch(() => null);
-    if (s === TPState.Playing) {
-      await TrackPlayer.pause().catch(() => { });
-      setIsPlaying(false);
-    } else {
-      await TrackPlayer.play().catch(() => { });
-      setIsPlaying(true);
-    }
+    const playing = await PlayerService.togglePlayPause();
+    setIsPlaying(playing);
   }, [currentSong, queue]);
 
   const handleNext = useCallback(() => nextRef.current?.(), []);

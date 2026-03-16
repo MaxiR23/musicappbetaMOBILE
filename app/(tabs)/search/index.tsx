@@ -2,6 +2,7 @@ import EmptyState from "@/components/shared/EmptyState";
 import { useContentPadding } from "@/hooks/use-content-padding";
 import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
+import { Song } from "@/types/music";
 import { getUpgradedThumb } from "@/utils/image-helpers";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -44,7 +45,7 @@ const RECENTS_KEY = "search.recents.v1";
 export default function SearchScreen() {
   const router = useRouter();
   const { searchSongs } = useMusicApi();
-  const { playFromSearch } = useMusic();
+  const { playSingle } = useMusic();
   const contentPadding = useContentPadding();
 
   const [query, setQuery] = useState("");
@@ -69,7 +70,7 @@ export default function SearchScreen() {
       try {
         const raw = await AsyncStorage.getItem(RECENTS_KEY);
         setRecents(raw ? JSON.parse(raw) : []);
-      } catch {}
+      } catch { }
     })();
   }, []);
 
@@ -142,14 +143,14 @@ export default function SearchScreen() {
     setRecents(next);
     try {
       await AsyncStorage.setItem(RECENTS_KEY, JSON.stringify(next));
-    } catch {}
+    } catch { }
   }, [recents]);
 
   const clearRecents = useCallback(async () => {
     setRecents([]);
     try {
       await AsyncStorage.removeItem(RECENTS_KEY);
-    } catch {}
+    } catch { }
   }, []);
 
   const doSearch = useCallback(async (forceQ?: string) => {
@@ -178,18 +179,26 @@ export default function SearchScreen() {
 
   const onSelect = (item: ResultItem) => {
     if (item.type === "song") {
-      playFromSearch({
-        id: item.id,
-        title: item.title,
-        artist_name: item.artist_name ?? "",
-        artist_id: item.artist_id ?? null,
-        thumbnail: item.thumbnail ?? "",
-        url: "",
-        duration: item.duration,
-        duration_seconds: item.duration_seconds ?? undefined,
-        album_id: item.album_id ?? null,
-        album_name: item.album_name ?? undefined,
-      } as any);
+      playSingle(
+        {
+          id: item.id,
+          title: item.title,
+          artist_name: item.artist_name ?? "",
+          artist_id: item.artist_id ?? undefined,
+          thumbnail: item.thumbnail ?? "",
+          url: "",
+          duration: item.duration,
+          duration_seconds: item.duration_seconds ?? undefined,
+          album_id: item.album_id ?? undefined,
+          album_name: item.album_name ?? undefined,
+        } as Song,
+        {
+          type: "search",
+          id: item.id,
+          name: item.title,
+          thumb: item.thumbnail ?? "",
+        },
+      );
     } else if (item.type === "album") {
       router.push(`/(tabs)/search/album/${item.id}`);
     } else {

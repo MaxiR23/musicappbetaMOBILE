@@ -4,11 +4,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  InteractionManager,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    InteractionManager,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -32,7 +32,7 @@ import { useUserProfile } from "@/hooks/use-user-profile";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { playFromList, currentSong } = useMusic();
+  const { playList, currentSong } = useMusic();
   const contentPadding = useContentPadding();
 
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
@@ -221,7 +221,7 @@ export default function HomeScreen() {
           variant="compact"
           feedKey="top-tracks"
           onTrackPress={(index, queueName) => {
-            playFromList(mappedTopTracks, index, { type: "queue", name: queueName });
+            playList(mappedTopTracks, index, { type: "queue", name: queueName });
           }}
         />
 
@@ -258,7 +258,7 @@ export default function HomeScreen() {
           variant="compact"
           feedKey="new-singles"
           onTrackPress={(index, queueName) => {
-            playFromList(mappedNewSingles, index, { type: "queue", name: queueName });
+            playList(mappedNewSingles, index, { type: "queue", name: queueName });
           }}
         />
 
@@ -270,7 +270,7 @@ export default function HomeScreen() {
           variant="compact"
           feedKey="seed-tracks"
           onTrackPress={(index, queueName) => {
-            playFromList(mappedSeedTracks, index, { type: "queue", name: queueName });
+            playList(mappedSeedTracks, index, { type: "queue", name: queueName });
           }}
         />
 

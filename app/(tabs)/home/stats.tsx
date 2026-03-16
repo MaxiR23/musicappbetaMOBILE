@@ -7,16 +7,16 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Dimensions,
-  FlatList,
-  Image,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    FlatList,
+    Image,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -124,7 +124,7 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
 
 export default function MonthlyStatsScreen() {
   const { getMonthlyStats } = useMusicApi();
-  const { playFromList } = useMusic();
+  const { playList } = useMusic();
   const router = useRouter();
   const contentPadding = useContentPadding();
   const [data, setData] = useState<StatsData | null>(null);
@@ -236,7 +236,7 @@ export default function MonthlyStatsScreen() {
                             thumbnail={item.thumbnail_url}
                             rank={globalIndex + 1}
                             subtitle={`${item.play_count} ${item.play_count === 1 ? "Play" : "Plays"}`}
-                            onPress={() => playFromList(mappedTracks, globalIndex, { type: "queue", name: "Top del mes" })}
+                            onPress={() => playList(mappedTracks, globalIndex, { type: "queue", name: "Top del mes" })}
                           />
                         );
                       })}

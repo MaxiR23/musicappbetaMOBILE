@@ -13,7 +13,7 @@ import { useTrackUpNext } from "@/hooks/use-track-upnext";
 import { getUpgradedThumb } from "@/utils/image-helpers";
 import { mapGenericTrack } from "@/utils/song-mapper";
 import { router, usePathname } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import { useMusic } from "../../../hooks/use-music";
 import { useMusicApi } from "../../../hooks/use-music-api";
@@ -36,14 +36,13 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
     queue,
     queueIndex,
     playSource,
-    originalQueueSize,
-    initialQueueSize,
-    playFromRelated,
-    skipToIndex,
+    autoplayStartIndex,
+    playSingle,
+    skipTo,
     addToQueueAndPlay,
     setAutoplayProvider,
-    setIsAutoplayEnabledCallback,
-    shuffle,
+    setAutoplayEnabled: setAutoplayEnabledCtx,
+    toggleShuffle,
     isShuffled,
     playbackError,
   } = useMusic();
@@ -54,7 +53,7 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
   const [actionsOpen, setActionsOpen] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<any | null>(null);
   const [activePlayerTab, setActivePlayerTab] = useState<"upnext" | "lyrics" | "related" | null>(null);
-  const [autoplayEnabled, setAutoplayEnabled] = useState(true);
+  const [autoplayEnabled, setAutoplayToggle] = useState(true);
 
   const { isExpanded, isExpandedRef, slideAnim, expand, collapse } = usePlayerExpansion({
     activePlayerTab,
@@ -99,6 +98,8 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
   const { gradient } = usePlayerTheme(rawThumb);
   const { coverScale } = useCoverAnimation(isPlaying);
 
+  const queueIds = useMemo(() => new Set(queue.map((s) => String(s.id))), [queue]);
+
   const { hasMoreAutoplay, markAsManuallyPlayed, resetAutoplay } = useAutoplayManager({
     currentSong,
     playSource,
@@ -108,19 +109,19 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
     fetchUpNext,
     fetchRelated,
     setAutoplayProvider,
-    setIsAutoplayEnabledCallback,
-    originalQueueSize,
-    initialQueueSize,
+    setAutoplayEnabled: setAutoplayEnabledCtx,
+    autoplayStartIndex,
+    queueLength: queue.length,
+    queueIds,
   });
 
   const skipTabCloseOnNextSongChange = useRef(false);
   const pathname = usePathname();
   const navigatingRef = useRef(false);
 
-  const isInOriginalQueue = queueIndex < originalQueueSize;
   const hasNext =
     (queueIndex >= 0 && queueIndex < queue.length - 1) ||
-    (isInOriginalQueue && queueIndex === originalQueueSize - 1 && autoplayEnabled && hasMoreAutoplay);
+    (autoplayEnabled && hasMoreAutoplay);
   const hasPrev = queueIndex > 0;
 
   const goToArtist = useCallback(
@@ -199,10 +200,10 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
 
       const targetIndex = track.__queueIndex;
       if (typeof targetIndex === "number" && targetIndex >= 0 && targetIndex < queue.length) {
-        await skipToIndex(targetIndex);
+        await skipTo(targetIndex);
       }
     },
-    [markAsManuallyPlayed, addToQueueAndPlay, queue, skipToIndex]
+    [markAsManuallyPlayed, addToQueueAndPlay, queue, skipTo]
   );
 
   const handleRelatedTrackPress = useCallback(
@@ -216,9 +217,14 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
       } as Song;
 
       resetAutoplay();
-      await playFromRelated(newSong);
+      await playSingle(newSong, {
+        type: "related",
+        id: String(newSong.id),
+        name: "Recommended",
+        thumb: newSong.thumbnail ?? "",
+      });
     },
-    [resetAutoplay, playFromRelated]
+    [resetAutoplay, playSingle]
   );
 
   const handleTabChange = useCallback((tab: "upnext" | "lyrics" | "related" | null) => {
@@ -272,7 +278,7 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
         artist_name={artist_name}
         artist_id={artist_id}
         playSource={playSource}
-        originalQueueSize={originalQueueSize}
+        autoplayStartIndex={autoplayStartIndex}
         isPlaying={isPlaying}
         hasPrev={hasPrev}
         hasNext={hasNext}
@@ -290,7 +296,7 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
         upNextError={upNextError}
         shouldShowUpNext={shouldShowUpNext}
         autoplayEnabled={autoplayEnabled}
-        onAutoplayToggle={setAutoplayEnabled}
+        onAutoplayToggle={setAutoplayToggle}
         relatedData={relatedData}
         relatedLoading={relatedLoading}
         relatedError={relatedError}
@@ -306,7 +312,7 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
         onPrev={onPrev}
         onNext={onNext}
         onToggleRepeat={toggleRepeatOne}
-        onToggleShuffle={shuffle}
+        onToggleShuffle={toggleShuffle}
         shuffled={isShuffled}
         onRelatedArtistPress={goToArtist}
         onRelatedAlbumPress={goToAlbum}

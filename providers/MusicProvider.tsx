@@ -1,103 +1,85 @@
-import { API_URL } from "@/constants/config";
 import { useAuth } from "@/hooks/use-auth";
+import { resolveAudioStream } from "@/services/audioStreamService";
 import { ReactNode, useCallback, useEffect, useMemo, useReducer, useRef } from "react";
-import TrackPlayer, { Event, RepeatMode, TrackType } from "react-native-track-player";
 import { useCacheInvalidation } from "../hooks/use-cache-invalidation";
 import { useMusicApi } from "../hooks/use-music-api";
-import { ensureTrackPlayer } from "../services/setupTrackPlayer";
-import { syncWithTrackPlayer } from "../services/syncWithTrackPlayer";
-import { MusicContext } from "./../context/MusicContext";
+import * as PlayerService from "../services/PlayerService";
+import { MusicContext, PlaySource } from "./../context/MusicContext";
 import { Song } from "./../types/music";
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
-type PlaySource =
-  | { type: "playlist"; id?: string | null; name?: string | null; thumb?: string | null }
-  | { type: "album"; id?: string | null; name?: string | null; thumb?: string | null }
-  | { type: "artist"; id?: string | null; name?: string | null; thumb?: string | null }
-  | { type: "queue"; id?: string | null; name?: string | null; thumb?: string | null }
-  | { type: "related"; id: string; name?: string | null; thumb?: string | null }
-  | { type: "search"; id: string; name?: string | null; thumb?: string | null };
+// STATE
 
 interface PlayerState {
   currentSong: Song | null;
   queue: Song[];
   queueIndex: number;
   playSource: PlaySource | null;
-  originalQueueSize: number;
-  initialQueueSize: number;
+  autoplayStartIndex: number;
   playbackError: string | null;
   isShuffled: boolean;
-  originalQueueBeforeShuffle: Song[];
-  originalIndexBeforeShuffle: number;
+  queueBeforeShuffle: Song[];
+  indexBeforeShuffle: number;
 }
-
-// ============================================================================
-// REDUCER
-// ============================================================================
-
-type PlayerAction =
-  | { type: "PLAY_FROM_LIST"; payload: { queue: Song[]; index: number; source: PlaySource | null } }
-  | { type: "PLAY_SINGLE"; payload: { song: Song; source: PlaySource } }
-  | { type: "SET_INDEX"; payload: { index: number } }
-  | { type: "ADD_AND_PLAY"; payload: { song: Song; insertPosition: number } }
-  | { type: "ADD_AUTOPLAY"; payload: { song: Song } }
-  | { type: "SHUFFLE_ON"; payload: { shuffledQueue: Song[]; originalQueue: Song[]; originalIndex: number } }
-  | { type: "SHUFFLE_OFF"; payload: { originalQueue: Song[]; newIndex: number } }
-  | { type: "SET_ERROR"; payload: { error: string | null } }
-  | { type: "UPDATE_SOURCE"; payload: { source: PlaySource } };
 
 const initialState: PlayerState = {
   currentSong: null,
   queue: [],
   queueIndex: -1,
   playSource: null,
-  originalQueueSize: 0,
-  initialQueueSize: 0,
+  autoplayStartIndex: 0,
   playbackError: null,
   isShuffled: false,
-  originalQueueBeforeShuffle: [],
-  originalIndexBeforeShuffle: -1,
+  queueBeforeShuffle: [],
+  indexBeforeShuffle: -1,
 };
+
+// REDUCER
+
+type PlayerAction =
+  | { type: "PLAY_LIST"; queue: Song[]; index: number; source: PlaySource | null }
+  | { type: "PLAY_SINGLE"; song: Song; source: PlaySource }
+  | { type: "SET_INDEX"; index: number }
+  | { type: "ADD_AUTOPLAY"; song: Song }
+  | { type: "SHUFFLE_ON"; shuffled: Song[]; backup: Song[]; backupIndex: number }
+  | { type: "SHUFFLE_OFF" }
+  | { type: "SET_ERROR"; error: string | null };
 
 function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
   switch (action.type) {
-    case "PLAY_FROM_LIST": {
-      const { queue, index, source } = action.payload;
+    case "PLAY_LIST": {
+      const { queue, index, source } = action;
       return {
         ...state,
         queue,
         queueIndex: index,
         currentSong: queue[index] ?? null,
-        originalQueueSize: queue.length,
-        initialQueueSize: queue.length,
         playSource: source ?? { type: "queue", id: null, name: null, thumb: null },
+        autoplayStartIndex: queue.length,
+        playbackError: null,
         isShuffled: false,
-        originalQueueBeforeShuffle: [],
-        originalIndexBeforeShuffle: -1,
+        queueBeforeShuffle: [],
+        indexBeforeShuffle: -1,
       };
     }
 
     case "PLAY_SINGLE": {
-      const { song, source } = action.payload;
+      const { song, source } = action;
       return {
         ...state,
         queue: [song],
         queueIndex: 0,
         currentSong: song,
-        originalQueueSize: 1,
-        initialQueueSize: 1,
         playSource: source,
+        autoplayStartIndex: 1,
+        playbackError: null,
         isShuffled: false,
-        originalQueueBeforeShuffle: [],
-        originalIndexBeforeShuffle: -1,
+        queueBeforeShuffle: [],
+        indexBeforeShuffle: -1,
       };
     }
 
     case "SET_INDEX": {
-      const { index } = action.payload;
+      const { index } = action;
       if (index < 0 || index >= state.queue.length) return state;
       if (index === state.queueIndex) return state;
       return {
@@ -107,62 +89,48 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
       };
     }
 
-    case "ADD_AND_PLAY": {
-      const { song, insertPosition } = action.payload;
-      const newQueue = [...state.queue];
-      newQueue.splice(insertPosition, 0, song);
-      return {
-        ...state,
-        queue: newQueue,
-        queueIndex: insertPosition,
-        currentSong: song,
-        originalQueueSize: state.originalQueueSize + 1,
-      };
-    }
-
     case "ADD_AUTOPLAY": {
-      const { song } = action.payload;
-      const newQueue = [...state.queue, song];
-      const newIndex = state.queue.length;
+      const newQueue = [...state.queue, action.song];
       return {
         ...state,
         queue: newQueue,
-        queueIndex: newIndex,
-        currentSong: song,
-        originalQueueSize: state.originalQueueSize + 1,
+        queueIndex: newQueue.length - 1,
+        currentSong: action.song,
       };
     }
 
     case "SHUFFLE_ON": {
-      const { shuffledQueue, originalQueue, originalIndex } = action.payload;
       return {
         ...state,
-        queue: shuffledQueue,
+        queue: action.shuffled,
         queueIndex: 0,
         isShuffled: true,
-        originalQueueBeforeShuffle: originalQueue,
-        originalIndexBeforeShuffle: originalIndex,
+        queueBeforeShuffle: action.backup,
+        indexBeforeShuffle: action.backupIndex,
       };
     }
 
     case "SHUFFLE_OFF": {
-      const { originalQueue, newIndex } = action.payload;
+      const { queueBeforeShuffle, currentSong } = state;
+      if (!queueBeforeShuffle.length) return state;
+
+      const restoredIndex = currentSong
+        ? queueBeforeShuffle.findIndex((s) => s.id === currentSong.id)
+        : state.indexBeforeShuffle;
+
       return {
         ...state,
-        queue: originalQueue,
-        queueIndex: newIndex,
+        queue: queueBeforeShuffle,
+        queueIndex: restoredIndex >= 0 ? restoredIndex : 0,
+        currentSong: restoredIndex >= 0 ? queueBeforeShuffle[restoredIndex] : state.currentSong,
         isShuffled: false,
-        originalQueueBeforeShuffle: [],
-        originalIndexBeforeShuffle: -1,
+        queueBeforeShuffle: [],
+        indexBeforeShuffle: -1,
       };
     }
 
     case "SET_ERROR": {
-      return { ...state, playbackError: action.payload.error };
-    }
-
-    case "UPDATE_SOURCE": {
-      return { ...state, playSource: action.payload.source };
+      return { ...state, playbackError: action.error };
     }
 
     default:
@@ -170,9 +138,61 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
   }
 }
 
-// ============================================================================
-// PROVIDER
-// ============================================================================
+//TODO MOVE {
+// hELPERS
+function majorityId<T>(list: T[], pick: (x: T) => string | null | undefined): string | null {
+  const counts = new Map<string, number>();
+  for (const item of list) {
+    const v = pick(item);
+    if (!v) continue;
+    counts.set(v, (counts.get(v) || 0) + 1);
+  }
+  let best: string | null = null;
+  let bestN = 0;
+  for (const [k, n] of counts) {
+    if (n > bestN) { best = k; bestN = n; }
+  }
+  return best;
+}
+
+function resolveContextKey(list: Song[], source?: PlaySource | null) {
+  if (!source) return null;
+  if (source.type === "album") {
+    const id = majorityId(list, (s) => s.album_id ?? null) || null;
+    return id ? { key: `album:${id}`, kind: "album" as const, id } : null;
+  }
+  if (source.type === "artist") {
+    const id = majorityId(list, (s) => s.artist_id ?? null) || null;
+    return id ? { key: `artist:${id}`, kind: "artist" as const, id } : null;
+  }
+  if (source.type === "playlist") {
+    const pid = source.id;
+    return pid ? { key: `playlist:${pid}`, kind: "playlist" as const, id: pid } : null;
+  }
+  return null;
+}
+
+async function resolveUrl(songId: string): Promise<string | null> {
+  try {
+    const result = await resolveAudioStream(songId);
+    return result?.stream?.url ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Construye el track con URL resuelta para PlayerService */
+function toTrackInput(song: Song, url?: string | null): PlayerService.TrackInput {
+  return {
+    id: song.id,
+    url: url ?? song.url,
+    title: song.title,
+    artist_name: song.artist_name ?? undefined,
+    thumbnail: song.thumbnail,
+  };
+}
+
+//TODO MOVE }
 
 export function MusicProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(playerReducer, initialState);
@@ -182,719 +202,363 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const { logPlayAlbum, logPlayArtist, logPlayTrack } = useMusicApi();
   const { invalidateRecent } = useCacheInvalidation(userId);
 
-  // === REFS ===
   const autoplayProviderRef = useRef<(() => Song | null) | null>(null);
-  const isAutoplayEnabledRef = useRef<(() => boolean) | null>(null);
+  const autoplayEnabledRef = useRef<(() => boolean) | null>(null);
   const playedAutoplayIdsRef = useRef<Set<string>>(new Set());
-  const lastProcessedTrackRef = useRef<string | null>(null);
-
-  const syncingRef = useRef(false);
-  const switchingRef = useRef(false);
-  const lastLoggedContextKeyRef = useRef<string | null>(null);
-  const lastLoadedContextKeyRef = useRef<string | null>(null);
   const lastLoggedTrackIdRef = useRef<string | null>(null);
-  const listenTimeRef = useRef<{ trackId: string; accumulated: number; lastPosition: number } | null>(null);
-  const endingRef = useRef(false);
-  const preloadedTrackIdRef = useRef<string | null>(null);
+  const listenTimeRef = useRef<{
+    trackId: string;
+    accumulated: number;
+    lastPosition: number;
+  } | null>(null);
+  const switchingRef = useRef(false);
 
   const stateRef = useRef(state);
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
 
-  // === HELPERS ===
-  function getBaseUrl() {
-    return API_URL ?? null;
-  }
+  // PLAYBACK
 
-  function majorityId<T>(list: T[], pick: (x: T) => string | null | undefined): string | null {
-    const counts = new Map<string, number>();
-    for (const item of list) {
-      const v = pick(item);
-      if (!v) continue;
-      counts.set(v, (counts.get(v) || 0) + 1);
-    }
-    let best: string | null = null;
-    let bestN = 0;
-    for (const [k, n] of counts) if (n > bestN) { best = k; bestN = n; }
-    return best;
-  }
+  const playList = useCallback(
+    async (list: Song[], startIndex: number, source?: PlaySource) => {
+      if (switchingRef.current) return;
+      switchingRef.current = true;
+      playedAutoplayIdsRef.current.clear();
+      lastLoggedTrackIdRef.current = null;
 
-  function resolveContextKey(
-    list: Song[],
-    source?: PlaySource | null
-  ): { key: string; kind: "album" | "artist" | "playlist"; id: string } | null {
-    if (!source) return null;
-    if (source.type === "album") {
-      const album_id = majorityId(list, (s: any) => s.album_id ?? null) || null;
-      return album_id ? { key: `album:${album_id}`, kind: "album", id: album_id } : null;
-    }
-    if (source.type === "artist") {
-      const artist_id = majorityId(list, (s: any) => s.artist_id ?? null) || null;
-      return artist_id ? { key: `artist:${artist_id}`, kind: "artist", id: artist_id } : null;
-    }
-    if (source.type === "playlist") {
-      const pid = (source as any).id;
-      return pid ? { key: `playlist:${pid}`, kind: "playlist", id: pid } : null;
-    }
-    return null;
-  }
+      try {
+        const song = list[startIndex];
+        const url = await resolveUrl(String(song.id));
+        await PlayerService.playTrack(toTrackInput(song, url));
 
-  function isAutoplayEnabled(): boolean {
-    return isAutoplayEnabledRef.current?.() ?? false;
-  }
+        const ctx = resolveContextKey(list, source);
 
-  function buildTrack(song: Song, baseUrl: string) {
-    return {
-      id: String(song.id),
-      url: (song as any).url || '', // TODO RESOLVE: `${baseUrl}/music/play?id=${encodeURIComponent(song.id)}&redir=2`
-      title: (song as any).title,
-      artist: (song as any).artist_name ?? (song as any).artist ?? "",
-      artwork: (song as any).thumbnail ?? (song as any).thumbnail_url ?? undefined,
-      type: TrackType.Default,
-      headers: {
-        Range: "bytes=0-",
-        "Accept-Encoding": "identity",
-        Connection: "keep-alive",
-      },
-    };
-  }
+        dispatch({
+          type: "PLAY_LIST",
+          queue: list,
+          index: startIndex,
+          source: source
+            ? { ...source, id: ctx?.id ?? source.id ?? "" }
+            : null,
+        });
 
-  // === PLAYBACK FUNCTIONS ===
+        if (ctx) {
+          const meta = { name: source?.name ?? null, thumb: source?.thumb ?? null };
+          if (ctx.kind === "album") logPlayAlbum(ctx.id, meta).catch(() => { });
+          else if (ctx.kind === "artist") logPlayArtist(ctx.id, meta).catch(() => { });
+          setTimeout(() => invalidateRecent().catch(() => { }), 2000);
+        }
+      } catch (err) {
+        console.error("[playList] error:", err);
+      } finally {
+        switchingRef.current = false;
+      }
+    },
+    [logPlayAlbum, logPlayArtist, invalidateRecent],
+  );
 
-  const playFromList = useCallback(async (list: Song[], startIndex: number, source?: PlaySource) => {
-    if (switchingRef.current) return;
-    switchingRef.current = true;
+  const playSingle = useCallback(
+    async (song: Song, source: PlaySource) => {
+      if (switchingRef.current) return;
+      switchingRef.current = true;
+      playedAutoplayIdsRef.current.clear();
+      lastLoggedTrackIdRef.current = null;
 
-    playedAutoplayIdsRef.current.clear();
-
-    const ctx = resolveContextKey(list, source);
-
-    try {
-      const { resolveAudioStream } = await import("@/services/audioStreamService");
-      const result = await resolveAudioStream(String(list[startIndex].id)).catch(() => null);
-      const resolvedSong = result?.stream?.url
-        ? { ...list[startIndex], url: result.stream.url }
-        : list[startIndex];
-
-      await syncWithTrackPlayer([resolvedSong], 0, getBaseUrl()!, syncingRef);
-      lastLoadedContextKeyRef.current = ctx?.key ?? null;
-    } catch (err) {
-      console.error("[RNTP] error:", err);
-      switchingRef.current = false;
-      return;
-    }
-
-    dispatch({
-      type: "PLAY_FROM_LIST",
-      payload: {
-        queue: list,
-        index: startIndex,
-        source: source ? { ...source, id: ctx?.id ?? null } : null,
-      },
-    });
-
-    if (ctx) {
-      lastLoggedContextKeyRef.current = ctx.key;
-      const srcMeta = { name: source?.name ?? null, thumb: source?.thumb ?? null };
-      if (ctx.kind === "album") logPlayAlbum(ctx.id, srcMeta).catch(() => { });
-      else if (ctx.kind === "artist") logPlayArtist(ctx.id, srcMeta).catch(() => { });
-      setTimeout(() => invalidateRecent().catch(() => { }), 2000);
-    }
-
-    switchingRef.current = false;
-  }, [logPlayAlbum, logPlayArtist, invalidateRecent]);
-
-  const playFromRelated = useCallback(async (song: Song) => {
-    if (switchingRef.current) return;
-    switchingRef.current = true;
-
-    playedAutoplayIdsRef.current.clear();
-    lastLoggedContextKeyRef.current = null;
-
-    try {
-      const { resolveAudioStream } = await import("@/services/audioStreamService");
-      const result = await resolveAudioStream(String(song.id)).catch(() => null);
-      const resolvedSong = result ? { ...song, url: result.stream.url } : song;
-
-      await syncWithTrackPlayer([resolvedSong], 0, getBaseUrl()!, syncingRef);
-    } catch (err) {
-      console.error("[RNTP] error en syncWithTrackPlayer:", err);
-      switchingRef.current = false;
-      return;
-    }
-
-    dispatch({
-      type: "PLAY_SINGLE",
-      payload: {
-        song,
-        source: { type: "related", id: String(song.id), name: "Recommended", thumb: null },
-      },
-    });
-
-    switchingRef.current = false;
-  }, []);
-
-  const playFromSearch = useCallback(async (song: Song) => {
-    if (switchingRef.current) return;
-    switchingRef.current = true;
-
-    playedAutoplayIdsRef.current.clear();
-    lastLoggedContextKeyRef.current = null;
-
-    try {
-      const { resolveAudioStream } = await import("@/services/audioStreamService");
-      const result = await resolveAudioStream(String(song.id)).catch(() => null);
-      const resolvedSong = result ? { ...song, url: result.stream.url } : song;
-
-      await syncWithTrackPlayer([resolvedSong], 0, getBaseUrl()!, syncingRef);
-    } catch (err) {
-      console.error("[playFromSearch] error:", err);
-      switchingRef.current = false;
-      return;
-    }
-
-    dispatch({
-      type: "PLAY_SINGLE",
-      payload: {
-        song,
-        source: { type: "search", id: String(song.id), name: (song as any).title ?? null, thumb: null },
-      },
-    });
-
-    switchingRef.current = false;
-  }, []);
-
-  const addToQueueAndPlay = useCallback(async (song: Song) => {
-    const { queue, originalQueueSize } = stateRef.current;
-    console.log("[CASO 1] Click en autoplay:", (song as any).title);
-
-    const alreadyExists = queue.some((s) => String(s.id) === String(song.id));
-    if (alreadyExists) {
-      console.log("Cancion ya existe en cola");
-      return;
-    }
-
-    playedAutoplayIdsRef.current.add(String(song.id));
-    const insertPosition = originalQueueSize;
-    const newQueue = [...queue];
-    newQueue.splice(insertPosition, 0, song);
-
-    dispatch({
-      type: "ADD_AND_PLAY",
-      payload: { song, insertPosition },
-    });
-
-    try {
-      syncingRef.current = true;
-      await syncWithTrackPlayer(newQueue, insertPosition, getBaseUrl()!, syncingRef);
-      console.log("TrackPlayer re-sincronizado en posicion", insertPosition);
-    } catch (e) {
-      console.error("[addToQueueAndPlay] ERROR:", e);
-    } finally {
-      syncingRef.current = false;
-    }
-  }, []);
+      try {
+        const url = await resolveUrl(String(song.id));
+        await PlayerService.playTrack(toTrackInput(song, url));
+        dispatch({ type: "PLAY_SINGLE", song, source });
+      } catch (err) {
+        console.error("[playSingle] error:", err);
+      } finally {
+        switchingRef.current = false;
+      }
+    },
+    [],
+  );
 
   const next = useCallback(async () => {
     const { queue, queueIndex } = stateRef.current;
-    if (queueIndex < 0) return;
-
     const ni = queueIndex + 1;
 
     if (ni < queue.length) {
-      try {
-        const nextId = String(queue[ni].id);
-        if (preloadedTrackIdRef.current !== nextId) {
-          const { resolveAudioStream } = await import("@/services/audioStreamService");
-          const result = await resolveAudioStream(nextId).catch(() => null);
-          if (result?.stream?.url) {
-            const track = { ...buildTrack(queue[ni], getBaseUrl()!), url: result.stream.url };
-            await TrackPlayer.add(track as any);
-          }
-          preloadedTrackIdRef.current = nextId;
-        }
-        dispatch({ type: "SET_INDEX", payload: { index: ni } });
-        await TrackPlayer.skipToNext();
-      } catch (e) {
-        console.error("[next] ERROR:", e);
-      }
+      const song = queue[ni];
+      const url = await resolveUrl(String(song.id));
+      await PlayerService.switchTrack(toTrackInput(song, url));
+      dispatch({ type: "SET_INDEX", index: ni });
+      lastLoggedTrackIdRef.current = null;
       return;
     }
 
-    if (isAutoplayEnabled() && autoplayProviderRef.current) {
-      let nextAutoplaySong = autoplayProviderRef.current();
+    if (autoplayEnabledRef.current?.() && autoplayProviderRef.current) {
+      let nextSong: Song | null = null;
       let attempts = 0;
-      while (nextAutoplaySong && playedAutoplayIdsRef.current.has(String(nextAutoplaySong.id)) && attempts < 10) {
-        nextAutoplaySong = autoplayProviderRef.current();
+      while (attempts < 10) {
+        nextSong = autoplayProviderRef.current();
+        if (!nextSong || !playedAutoplayIdsRef.current.has(String(nextSong.id))) break;
         attempts++;
       }
 
-      if (nextAutoplaySong && !playedAutoplayIdsRef.current.has(String(nextAutoplaySong.id))) {
-        console.log("[CASO 2] Agregando autoplay automatico:", (nextAutoplaySong as any).title);
-        playedAutoplayIdsRef.current.add(String(nextAutoplaySong.id));
-
-        dispatch({ type: "ADD_AUTOPLAY", payload: { song: nextAutoplaySong } });
-
-        try {
-          const { resolveAudioStream } = await import("@/services/audioStreamService");
-          const result = await resolveAudioStream(String(nextAutoplaySong.id)).catch(() => null);
-          const track = result?.stream?.url
-            ? { ...buildTrack(nextAutoplaySong, getBaseUrl()!), url: result.stream.url }
-            : buildTrack(nextAutoplaySong, getBaseUrl()!);
-          await TrackPlayer.add(track as any);
-          await TrackPlayer.skipToNext();
-        } catch (e) {
-          console.error("[next] ERROR agregando autoplay:", e);
-        }
+      if (nextSong && !playedAutoplayIdsRef.current.has(String(nextSong.id))) {
+        playedAutoplayIdsRef.current.add(String(nextSong.id));
+        const url = await resolveUrl(String(nextSong.id));
+        await PlayerService.switchTrack(toTrackInput(nextSong, url));
+        dispatch({ type: "ADD_AUTOPLAY", song: nextSong });
+        lastLoggedTrackIdRef.current = null;
         return;
       }
-    }
-
-    console.log("Ultima cancion, sin autoplay");
-  }, []);
-
-  const skipToIndex = useCallback(async (index: number) => {
-    const { queue } = stateRef.current;
-    if (index < 0 || index >= queue.length) {
-      console.warn("[skipToIndex] indice fuera de rango:", index);
-      return;
-    }
-
-    try {
-      const { resolveAudioStream } = await import("@/services/audioStreamService");
-      const result = await resolveAudioStream(String(queue[index].id)).catch(() => null);
-
-      if (result?.stream?.url) {
-        await TrackPlayer.remove(index);
-        await TrackPlayer.add(
-          { ...buildTrack(queue[index], getBaseUrl()!), url: result.stream.url } as any,
-          index
-        );
-      }
-
-      dispatch({ type: "SET_INDEX", payload: { index } });
-      await TrackPlayer.skip(index);
-      await TrackPlayer.play();
-    } catch (e) {
-      console.error("[skipToIndex] ERROR:", e);
     }
   }, []);
 
   const prev = useCallback(async () => {
     const { queue, queueIndex } = stateRef.current;
-    if (queueIndex < 0) return;
 
     try {
-      const position = await TrackPlayer.getPosition();
+      const position = await PlayerService.getPosition();
       if (position > 3) {
-        await TrackPlayer.seekTo(0);
-        await TrackPlayer.play();
+        await PlayerService.seekTo(0);
         return;
       }
-    } catch (e) {
-      console.error("[prev] ERROR obteniendo posicion:", e);
-    }
+    } catch { }
 
     const ni = queueIndex - 1;
-
     if (ni < 0) {
-      try {
-        await TrackPlayer.seekTo(0);
-        await TrackPlayer.play();
-      } catch (e) {
-        console.error("[prev] ERROR (seekTo 0):", e);
-      }
+      await PlayerService.seekTo(0);
       return;
     }
 
-    try {
-      const { resolveAudioStream } = await import("@/services/audioStreamService");
-      const result = await resolveAudioStream(String(queue[ni].id)).catch(() => null);
+    const song = queue[ni];
+    dispatch({ type: "SET_INDEX", index: ni });
+    lastLoggedTrackIdRef.current = null;
 
-      if (result?.stream?.url) {
-        await TrackPlayer.remove(ni);
-        await TrackPlayer.add(
-          { ...buildTrack(queue[ni], getBaseUrl()!), url: result.stream.url } as any,
-          ni
-        );
-      }
-
-      dispatch({ type: "SET_INDEX", payload: { index: ni } });
-      await TrackPlayer.skipToPrevious();
-      await TrackPlayer.play();
-    } catch (e) {
-      console.error("[prev] ERROR:", e);
-    }
+    const url = await resolveUrl(String(song.id));
+    await PlayerService.switchTrack(toTrackInput(song, url));
   }, []);
 
-  const toggleShuffle = useCallback(async () => {
-    const { queue, queueIndex, originalQueueSize, currentSong, isShuffled, originalQueueBeforeShuffle } = stateRef.current;
+  const skipTo = useCallback(async (index: number) => {
+    const { queue } = stateRef.current;
+    if (index < 0 || index >= queue.length) return;
 
-    if (originalQueueSize <= 1) {
-      console.log("[SHUFFLE] No hay suficientes temas para shuffle");
-      return;
-    }
+    const song = queue[index];
 
-    const currentSongId = currentSong?.id;
-    if (!currentSongId) {
-      console.warn("[SHUFFLE] No hay cancion actual");
-      return;
-    }
+    dispatch({ type: "SET_INDEX", index });
+    lastLoggedTrackIdRef.current = null;
 
-    const BASE_URL = getBaseUrl();
-    if (!BASE_URL) return;
+    const url = await resolveUrl(String(song.id));
+    await PlayerService.switchTrack(toTrackInput(song, url));
+  }, []);
+
+  const addToQueueAndPlay = useCallback(async (song: Song) => {
+    const { queue } = stateRef.current;
+    if (queue.some((s) => String(s.id) === String(song.id))) return;
+
+    playedAutoplayIdsRef.current.add(String(song.id));
+    dispatch({ type: "ADD_AUTOPLAY", song });
+    lastLoggedTrackIdRef.current = null;
+
+    const url = await resolveUrl(String(song.id));
+    await PlayerService.switchTrack(toTrackInput(song, url));
+  }, []);
+
+  // SHUFFLE
+
+  const toggleShuffle = useCallback(() => {
+    const { queue, queueIndex, currentSong, isShuffled, autoplayStartIndex } =
+      stateRef.current;
+    if (autoplayStartIndex <= 1) return;
+    if (!currentSong) return;
 
     if (isShuffled) {
-      console.log("[SHUFFLE OFF] Restaurando orden original...");
-
-      const currentSongIndexInOriginal = originalQueueBeforeShuffle.findIndex((s) => s.id === currentSongId);
-      if (currentSongIndexInOriginal === -1) {
-        console.warn("[SHUFFLE OFF] No se encontro la cancion en la queue original");
-        return;
-      }
-
-      dispatch({
-        type: "SHUFFLE_OFF",
-        payload: { originalQueue: originalQueueBeforeShuffle, newIndex: currentSongIndexInOriginal },
-      });
-
-      try {
-        switchingRef.current = true;
-        syncingRef.current = true;
-        await ensureTrackPlayer();
-
-        const currentTrackIndex = await TrackPlayer.getActiveTrackIndex();
-        const allTracks = await TrackPlayer.getQueue();
-        const indicesToRemove = allTracks.map((_, idx) => idx).filter((idx) => idx !== currentTrackIndex);
-
-        for (let i = indicesToRemove.length - 1; i >= 0; i--) {
-          await TrackPlayer.remove(indicesToRemove[i]);
-        }
-
-        const tracksBeforeCurrent = originalQueueBeforeShuffle
-          .slice(0, currentSongIndexInOriginal)
-          .reverse()
-          .map((s) => buildTrack(s, BASE_URL));
-
-        for (const track of tracksBeforeCurrent) {
-          await TrackPlayer.add(track as any, 0);
-        }
-
-        const tracksAfterCurrent = originalQueueBeforeShuffle
-          .slice(currentSongIndexInOriginal + 1)
-          .map((s) => buildTrack(s, BASE_URL));
-
-        if (tracksAfterCurrent.length > 0) {
-          await TrackPlayer.add(tracksAfterCurrent as any);
-        }
-
-        console.log("[SHUFFLE OFF] Orden original restaurado");
-      } catch (e) {
-        console.error("[SHUFFLE OFF] Error:", e);
-      } finally {
-        syncingRef.current = false;
-        switchingRef.current = false;
-      }
-
+      dispatch({ type: "SHUFFLE_OFF" });
       return;
     }
 
-    console.log("[SHUFFLE ON] Mezclando temas originales...");
+    const original = queue.slice(0, autoplayStartIndex);
+    const autoplay = queue.slice(autoplayStartIndex);
+    const others = original.filter((s) => s.id !== currentSong.id);
 
-    const originalTracks = queue.slice(0, originalQueueSize);
-    const autoplayTracks = queue.slice(originalQueueSize);
-    const otherOriginalTracks = originalTracks.filter((s) => s.id !== currentSongId);
-
-    for (let i = otherOriginalTracks.length - 1; i > 0; i--) {
+    for (let i = others.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [otherOriginalTracks[i], otherOriginalTracks[j]] = [otherOriginalTracks[j], otherOriginalTracks[i]];
+      [others[i], others[j]] = [others[j], others[i]];
     }
 
-    const shuffledQueue = [currentSong!, ...otherOriginalTracks, ...autoplayTracks];
+    const shuffled = [currentSong, ...others, ...autoplay];
 
     dispatch({
       type: "SHUFFLE_ON",
-      payload: { shuffledQueue, originalQueue: [...queue], originalIndex: queueIndex },
+      shuffled,
+      backup: [...queue],
+      backupIndex: queueIndex,
     });
-
-    try {
-      switchingRef.current = true;
-      syncingRef.current = true;
-      await ensureTrackPlayer();
-
-      const currentTrackIndex = await TrackPlayer.getActiveTrackIndex();
-      const allTracks = await TrackPlayer.getQueue();
-      const indicesToRemove = allTracks.map((_, idx) => idx).filter((idx) => idx !== currentTrackIndex);
-
-      for (let i = indicesToRemove.length - 1; i >= 0; i--) {
-        await TrackPlayer.remove(indicesToRemove[i]);
-      }
-
-      const tracksToAdd = shuffledQueue.slice(1).map((s) => buildTrack(s, BASE_URL));
-
-      if (tracksToAdd.length > 0) {
-        await TrackPlayer.add(tracksToAdd as any);
-      }
-
-      console.log("[SHUFFLE ON] Queue mezclada");
-    } catch (e) {
-      console.error("[SHUFFLE ON] Error:", e);
-    } finally {
-      syncingRef.current = false;
-      switchingRef.current = false;
-    }
   }, []);
 
-  const setAutoplayProvider = useCallback((provider: (() => Song | null) | null) => {
-    autoplayProviderRef.current = provider;
-  }, []);
+  // AUTOPLAY SETUP
 
-  const setIsAutoplayEnabledCallback = useCallback((callback: (() => boolean) | null) => {
-    isAutoplayEnabledRef.current = callback;
-  }, []);
+  const setAutoplayProvider = useCallback(
+    (fn: (() => Song | null) | null) => {
+      autoplayProviderRef.current = fn;
+    },
+    [],
+  );
 
-  const setCurrentSong = useCallback((song: Song | null) => {
-    if (!song) return;
-    const { queue } = stateRef.current;
-    const index = queue.findIndex((s) => s.id === song.id);
-    if (index >= 0) {
-      dispatch({ type: "SET_INDEX", payload: { index } });
-    }
-  }, []);
+  const setAutoplayEnabled = useCallback(
+    (fn: (() => boolean) | null) => {
+      autoplayEnabledRef.current = fn;
+    },
+    [],
+  );
 
-  // === TRACK PLAYER LISTENERS ===
+  // LISTENERS
 
   useEffect(() => {
-    const findActiveIndex = async (): Promise<number | null> => {
-      try {
-        const getActiveTrack = (TrackPlayer as any).getActiveTrack?.bind(TrackPlayer);
-        const getCurrentTrack = (TrackPlayer as any).getCurrentTrack?.bind(TrackPlayer);
-        const getTrack = (TrackPlayer as any).getTrack?.bind(TrackPlayer);
+    const subProgress = PlayerService.onProgress(
+      async ({ position, duration }) => {
+        const { queue, queueIndex } = stateRef.current;
+        const track = queue[queueIndex];
+        if (!track) return;
 
-        let active: any = getActiveTrack ? await getActiveTrack() : null;
-        if (!active && getCurrentTrack) {
-          const idx = await getCurrentTrack();
-          if (typeof idx === "number" && idx >= 0 && getTrack) {
-            active = await getTrack(idx);
-          }
-        }
-        const activeId = active?.id ?? null;
-        if (!activeId) return null;
-        const { queue } = stateRef.current;
-        const pos = queue.findIndex((s) => String(s.id) === String(activeId));
-        return pos >= 0 ? pos : null;
-      } catch {
-        return null;
-      }
-    };
+        const trackId = String(track.id);
 
-    const onActiveChanged = async () => {
-      if (syncingRef.current) return;
-      if (switchingRef.current) return;
-
-      const pos = await findActiveIndex();
-      if (pos == null) return;
-
-      const { queue, currentSong, queueIndex } = stateRef.current;
-      const newTrackId = queue[pos] ? String(queue[pos].id) : null;
-      const prevTrackId = currentSong ? String(currentSong.id) : null;
-
-      if (newTrackId === lastProcessedTrackRef.current) return;
-
-      if (newTrackId && newTrackId !== prevTrackId) {
-        lastLoggedTrackIdRef.current = null;
-      }
-
-      if (pos === queueIndex) return;
-
-      dispatch({ type: "SET_INDEX", payload: { index: pos } });
-    };
-
-    const onProgress = async (progress: { position: number }) => {
-      const { queue, queueIndex } = stateRef.current;
-      if (queueIndex < 0) return;
-
-      const trackToLog = queue[queueIndex];
-      if (!trackToLog) return;
-
-      const trackId = String(trackToLog.id);
-      const currentPosition = progress.position;
-
-      if (!listenTimeRef.current || listenTimeRef.current.trackId !== trackId) {
-        listenTimeRef.current = { trackId, accumulated: 0, lastPosition: currentPosition };
-        return;
-      }
-
-      const delta = currentPosition - listenTimeRef.current.lastPosition;
-      const isNormalPlayback = delta > 0 && delta < 3;
-
-      if (isNormalPlayback) {
-        listenTimeRef.current.accumulated += delta;
-      }
-
-      listenTimeRef.current.lastPosition = currentPosition;
-
-      if (listenTimeRef.current.accumulated >= 30) {
-        const alreadyLogged = lastLoggedTrackIdRef.current === trackId;
-
-        if (!alreadyLogged) {
-          lastLoggedTrackIdRef.current = trackId;
-
-          const trackContext = {
-            album_id: (trackToLog as any).album_id,
-            album_name: (trackToLog as any).album_name,
-            artist_id: (trackToLog as any).artist_id,
-            artist_name: (trackToLog as any).artist_name,
-            track_name: (trackToLog as any).title,
-            duration_seconds: (trackToLog as any).duration_seconds,
-            thumbnail_url: (trackToLog as any).thumbnail ?? (trackToLog as any).thumbnail_url ?? null,
-          };
-
-          logPlayTrack(trackId, trackContext).catch(() => { });
-        }
-      }
-
-      const duration = (progress as any).duration;
-      if (duration && duration > 0 && duration - currentPosition <= 15) {
-        const nextIndex = queueIndex + 1;
-        if (nextIndex < queue.length) {
-          const nextSong = queue[nextIndex];
-          const nextId = String(nextSong.id);
-          if (preloadedTrackIdRef.current !== nextId) {
-            preloadedTrackIdRef.current = nextId;
-            const { resolveAudioStream } = await import("@/services/audioStreamService");
-            resolveAudioStream(nextId).then(async (result) => {
-              if (!result?.stream?.url) return;
-              const track = { ...buildTrack(nextSong, getBaseUrl()!), url: result.stream.url };
-              await TrackPlayer.add(track as any).catch(() => { });
-            }).catch(() => { });
-          }
-        }
-      }
-    };
-
-    const onQueueEnded = async () => {
-      if (syncingRef.current) return;
-      if (endingRef.current) return;
-      endingRef.current = true;
-
-      try {
-        console.log("PlaybackQueueEnded disparado - verificando autoplay...");
-
-        if (isAutoplayEnabledRef.current && autoplayProviderRef.current) {
-          const isEnabled = isAutoplayEnabledRef.current();
-
-          if (isEnabled) {
-            let nextAutoplaySong = autoplayProviderRef.current();
-            let attempts = 0;
-            while (nextAutoplaySong && playedAutoplayIdsRef.current.has(String(nextAutoplaySong.id)) && attempts < 10) {
-              nextAutoplaySong = autoplayProviderRef.current();
-              attempts++;
-            }
-
-            if (nextAutoplaySong && !playedAutoplayIdsRef.current.has(String(nextAutoplaySong.id))) {
-              console.log("[CASO 2] Agregando siguiente autoplay:", (nextAutoplaySong as any).title);
-              playedAutoplayIdsRef.current.add(String(nextAutoplaySong.id));
-
-              await TrackPlayer.add(buildTrack(nextAutoplaySong, getBaseUrl()!) as any);
-              dispatch({ type: "ADD_AUTOPLAY", payload: { song: nextAutoplaySong } });
-              await TrackPlayer.skipToNext();
-
-              endingRef.current = false;
-              return;
-            }
-          }
-        }
-
-        console.log("No hay mas autoplay, pausando al final");
-        const { queue } = stateRef.current;
-        const lastIdx = Math.max(0, queue.length - 1);
-        const lastSong = queue[lastIdx];
-        if (!lastSong) {
-          endingRef.current = false;
+        // Acumular tiempo de escucha
+        if (!listenTimeRef.current || listenTimeRef.current.trackId !== trackId) {
+          listenTimeRef.current = { trackId, accumulated: 0, lastPosition: position };
           return;
         }
 
-        await TrackPlayer.setRepeatMode(RepeatMode.Off).catch(() => { });
-        await TrackPlayer.skip(lastIdx).catch(() => { });
-        await TrackPlayer.pause().catch(() => { });
-        await TrackPlayer.seekTo(0).catch(() => { });
+        const delta = position - listenTimeRef.current.lastPosition;
+        if (delta > 0 && delta < 3) {
+          listenTimeRef.current.accumulated += delta;
+        }
+        listenTimeRef.current.lastPosition = position;
 
-        dispatch({ type: "SET_INDEX", payload: { index: lastIdx } });
-      } catch (e) {
-        console.warn("[ended] Error:", e);
-      } finally {
-        endingRef.current = false;
+        // Log a los 30s
+        if (listenTimeRef.current.accumulated >= 30 && lastLoggedTrackIdRef.current !== trackId) {
+          lastLoggedTrackIdRef.current = trackId;
+          logPlayTrack(trackId, {
+            album_id: track.album_id ?? undefined,
+            album_name: track.album_name,
+            artist_id: track.artist_id ?? undefined,
+            artist_name: track.artist_name ?? undefined,
+            track_name: track.title,
+            duration_seconds: track.duration_seconds,
+            thumbnail_url: track.thumbnail,
+          }).catch(() => { });
+        }
+
+        // Preload a 15s del final
+        if (duration > 0 && duration - position <= 15) {
+          const nextIndex = queueIndex + 1;
+          if (nextIndex < queue.length) {
+            const nextSong = queue[nextIndex];
+            const url = await resolveUrl(String(nextSong.id));
+            if (url) {
+              await PlayerService.preloadNext(toTrackInput(nextSong, url));
+            }
+          }
+        }
+      },
+    );
+
+    const subEnded = PlayerService.onTrackEnd(async () => {
+      const { queue, queueIndex } = stateRef.current;
+      const ni = queueIndex + 1;
+
+      if (ni < queue.length) {
+        const skipped = await PlayerService.skipToPreloaded();
+        if (skipped) {
+          dispatch({ type: "SET_INDEX", index: ni });
+          lastLoggedTrackIdRef.current = null;
+          return;
+        }
+        const song = queue[ni];
+        const url = await resolveUrl(String(song.id));
+        await PlayerService.switchTrack(toTrackInput(song, url));
+        dispatch({ type: "SET_INDEX", index: ni });
+        lastLoggedTrackIdRef.current = null;
+        return;
       }
-    };
 
-    const onError = (error: any) => {
-      console.warn("[playback] Error:", error);
-      dispatch({ type: "SET_ERROR", payload: { error: "No se pudo reproducir la cancion" } });
-      setTimeout(() => dispatch({ type: "SET_ERROR", payload: { error: null } }), 4000);
-    };
+      if (autoplayEnabledRef.current?.() && autoplayProviderRef.current) {
+        let nextSong: Song | null = null;
+        let attempts = 0;
+        while (attempts < 10) {
+          nextSong = autoplayProviderRef.current();
+          if (!nextSong || !playedAutoplayIdsRef.current.has(String(nextSong.id))) break;
+          attempts++;
+        }
 
-    const subActive = TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, onActiveChanged);
-    const subProgress = TrackPlayer.addEventListener(Event.PlaybackProgressUpdated, onProgress);
-    const subEnded = TrackPlayer.addEventListener(Event.PlaybackQueueEnded, onQueueEnded);
-    const subError = TrackPlayer.addEventListener(Event.PlaybackError, onError);
+        if (nextSong && !playedAutoplayIdsRef.current.has(String(nextSong.id))) {
+          playedAutoplayIdsRef.current.add(String(nextSong.id));
+          const url = await resolveUrl(String(nextSong.id));
+          await PlayerService.switchTrack(toTrackInput(nextSong, url));
+          dispatch({ type: "ADD_AUTOPLAY", song: nextSong });
+          lastLoggedTrackIdRef.current = null;
+          return;
+        }
+      }
+
+      await PlayerService.pause();
+    });
+
+    const subError = PlayerService.onError((err: unknown) => {
+      console.warn("[playback] Error:", err);
+      dispatch({ type: "SET_ERROR", error: "No se pudo reproducir la cancion" });
+      setTimeout(() => dispatch({ type: "SET_ERROR", error: null }), 4000);
+    });
+
+    const subRemoteNext = PlayerService.onRemoteNext(() => { next(); });
+    const subRemotePrev = PlayerService.onRemotePrev(() => { prev(); });
 
     return () => {
-      subActive.remove();
       subProgress.remove();
       subEnded.remove();
       subError.remove();
+      subRemoteNext.remove();
+      subRemotePrev.remove();
     };
-  }, [logPlayTrack]);
-
-  // === CONTEXT VALUE ===
+  }, [logPlayTrack, next, prev]);
 
   const value = useMemo(
     () => ({
       currentSong: state.currentSong,
-      setCurrentSong,
       queue: state.queue,
       queueIndex: state.queueIndex,
-      playFromList,
-      playFromRelated,
-      playFromSearch,
-      next,
-      skipToIndex,
-      prev,
-      shuffle: toggleShuffle,
-      isShuffled: state.isShuffled,
       playSource: state.playSource,
-      originalQueueSize: state.originalQueueSize,
-      initialQueueSize: state.initialQueueSize,
+      isShuffled: state.isShuffled,
+      autoplayStartIndex: state.autoplayStartIndex,
+      playbackError: state.playbackError,
+      playList,
+      playSingle,
+      next,
+      prev,
+      skipTo,
+      toggleShuffle,
       addToQueueAndPlay,
       setAutoplayProvider,
-      setIsAutoplayEnabledCallback,
-      isAutoplayEnabled,
-      playbackError: state.playbackError,
+      setAutoplayEnabled,
     }),
     [
       state.currentSong,
       state.queue,
       state.queueIndex,
       state.playSource,
-      state.originalQueueSize,
-      state.initialQueueSize,
       state.isShuffled,
+      state.autoplayStartIndex,
       state.playbackError,
-      setCurrentSong,
-      playFromList,
-      playFromRelated,
-      playFromSearch,
+      playList,
+      playSingle,
       next,
-      skipToIndex,
       prev,
+      skipTo,
       toggleShuffle,
       addToQueueAndPlay,
       setAutoplayProvider,
-      setIsAutoplayEnabledCallback,
-    ]
+      setAutoplayEnabled,
+    ],
   );
 
-  return <MusicContext.Provider value={value}>{children}</MusicContext.Provider>;
+  return (
+    <MusicContext.Provider value={value}>{children}</MusicContext.Provider>
+  );
 }

@@ -50,12 +50,12 @@ export interface Song {
   artist_name?: string | null;
   artist_id?: string;
   album_id?: string | null;
+  album_name?: string;
   duration?: string;
   duration_seconds?: number;
   thumbnail: string; 
   url: string;
 }
-
 export interface AlbumDetails {
   id: string;
   info: {

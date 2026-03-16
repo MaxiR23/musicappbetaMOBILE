@@ -54,7 +54,7 @@ interface ExpandedPlayerProps {
   relatedLoading: boolean;
   relatedError: string | null;
   shouldShowRelated: boolean;
-  originalQueueSize: number;
+  autoplayStartIndex: number;
   activePlayerTab: "upnext" | "lyrics" | "related" | null;
   onCollapse: () => void;
   onToggleLike: () => void;
@@ -111,7 +111,7 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
   relatedError,
   shouldShowRelated,
   activePlayerTab,
-  originalQueueSize,
+  autoplayStartIndex,
   onTabChange,
   onCollapse,
   onToggleLike,
@@ -323,7 +323,7 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
             title={title}
             artist_name={artist_name}
             isPlaying={isPlaying}
-            originalQueueSize={originalQueueSize}
+            autoplayStartIndex={autoplayStartIndex}
             lyricsText={lyricsText}
             lyricsLoading={lyricsLoading}
             lyricsError={lyricsError}
@@ -375,7 +375,7 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
   prev.relatedData === next.relatedData &&
   prev.relatedLoading === next.relatedLoading &&
   prev.relatedError === next.relatedError &&
-  prev.originalQueueSize === next.originalQueueSize &&
+  prev.autoplayStartIndex === next.autoplayStartIndex &&
   prev.playSource === next.playSource
 );
 

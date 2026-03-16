@@ -24,7 +24,7 @@ import { formatAlbumMeta, formatReleaseSubtitle } from "@/utils/subtitle-helpers
 export default function AlbumScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
 
-    const { playFromList } = useMusic();
+    const { playList } = useMusic();
     const { getAlbum } = useMusicApi();
     const router = useRouter();
     const segments = useSegments();
@@ -152,7 +152,7 @@ export default function AlbumScreen() {
                 return (
                     <PlaybackButtons
                         onPlay={() =>
-                            playFromList(mappedSongs, 0, {
+                            playList(mappedSongs, 0, {
                                 type: "album",
                                 name: album.info?.title,
                                 thumb: coverUrl,
@@ -160,7 +160,7 @@ export default function AlbumScreen() {
                         }
                         onShuffle={() => {
                             const randomIndex = Math.floor(Math.random() * mappedSongs.length);
-                            playFromList(mappedSongs, randomIndex, {
+                            playList(mappedSongs, randomIndex, {
                                 type: "album",
                                 name: album.info?.title,
                                 thumb: coverUrl,
@@ -186,7 +186,7 @@ export default function AlbumScreen() {
                                     trackId={song.track_id}
                                     disabled={!song.track_id}
                                     onPress={() =>
-                                        playFromList(mappedSongs, index, {
+                                        playList(mappedSongs, index, {
                                             type: "album",
                                             name: album.info?.title,
                                             thumb: coverUrl,

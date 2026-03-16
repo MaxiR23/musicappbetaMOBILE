@@ -1,36 +1,36 @@
 import { createContext } from "react";
 import { Song } from "./../types/music";
 
-type PlaySource =
-  | { type: "playlist"; id?: string | null; name?: string | null }
-  | { type: "album";    id?: string | null; name?: string | null }
-  | { type: "artist";   id?: string | null; name?: string | null }
-  | { type: "queue";    id?: string | null; name?: string | null }
-  | { type: "related";  id: string;         name?: string | null }
-  | { type: "search";   id: string;         name?: string | null };
+export type PlaySource =
+  | { type: "playlist"; id?: string | null; name?: string | null; thumb?: string | null }
+  | { type: "album";    id?: string | null; name?: string | null; thumb?: string | null }
+  | { type: "artist";   id?: string | null; name?: string | null; thumb?: string | null }
+  | { type: "queue";    id?: string | null; name?: string | null; thumb?: string | null }
+  | { type: "related";  id: string;         name?: string | null; thumb?: string | null }
+  | { type: "search";   id: string;         name?: string | null; thumb?: string | null };
 export interface MusicContextType {
   currentSong: Song | null;
-  setCurrentSong: (song: Song | null) => void;
-
   queue: Song[];
   queueIndex: number;
-  playFromList: (list: Song[], startIndex: number, source?: PlaySource) => void;
-  playFromRelated: (song: Song) => Promise<void>;
-  playFromSearch: (song: Song) => Promise<void>;
-  next: () => void;
-  prev: () => void;
-  skipToIndex: (index: number) => Promise<void>;
-  shuffle: () => Promise<void>;
-  isShuffled: boolean;
   playSource: PlaySource | null;
+  isShuffled: boolean;
+  autoplayStartIndex: number;
+  playbackError: string | null;
 
-  originalQueueSize: number;
-  initialQueueSize: number;
+  // playback
+  playList: (list: Song[], index: number, source?: PlaySource) => Promise<void>;
+  playSingle: (song: Song, source: PlaySource) => Promise<void>;
+  next: () => Promise<void>;
+  prev: () => Promise<void>;
+  skipTo: (index: number) => Promise<void>;
+
+  // queue 
+  toggleShuffle: () => void;
   addToQueueAndPlay: (song: Song) => Promise<void>;
 
-  setAutoplayProvider: (provider: (() => Song | null) | null) => void;
-  setIsAutoplayEnabledCallback: (callback: (() => boolean) | null) => void;
-  isAutoplayEnabled: () => boolean;
+  // autoplay INFO: solo lo usa useAutoplayManager
+  setAutoplayProvider: (fn: (() => Song | null) | null) => void;
+  setAutoplayEnabled: (fn: (() => boolean) | null) => void;
 }
 
 export const MusicContext = createContext<MusicContextType | undefined>(undefined);

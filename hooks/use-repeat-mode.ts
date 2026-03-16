@@ -1,28 +1,29 @@
+import * as PlayerService from "@/services/PlayerService";
 import { useEffect, useState } from "react";
-import TrackPlayer, { RepeatMode } from "react-native-track-player";
 
 export function useRepeatMode() {
   const [repeatOne, setRepeatOne] = useState(false);
 
-  // Solo cargar estado inicial
   useEffect(() => {
     (async () => {
       try {
-        const mode = await TrackPlayer.getRepeatMode();
-        setRepeatOne(mode === RepeatMode.Track);
+        // No hay getRepeatMode en PlayerService, arrancamos en off
+        setRepeatOne(false);
       } catch {}
     })();
   }, []);
 
   const toggleRepeatOne = async () => {
     const next = !repeatOne;
-    setRepeatOne(next); // Primero actualiza el estado local
-    
+    setRepeatOne(next);
+
     try {
-      await TrackPlayer.setRepeatMode(next ? RepeatMode.Track : RepeatMode.Off);
+      await PlayerService.setRepeatMode(
+        next ? PlayerService.RepeatMode.Track : PlayerService.RepeatMode.Off
+      );
     } catch (e) {
       console.warn("Error repeat:", e);
-      setRepeatOne(!next); // Si falla, revertí el estado
+      setRepeatOne(!next);
     }
   };
 

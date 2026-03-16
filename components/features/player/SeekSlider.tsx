@@ -1,8 +1,9 @@
+import * as PlayerService from "@/services/PlayerService";
 import { formatDuration } from "@/utils/durations";
 import Slider from "@react-native-community/slider";
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
-import TrackPlayer, { useProgress } from "react-native-track-player";
+import { useProgress } from "react-native-track-player";
 
 export const SeekSlider = React.memo(function SeekSlider() {
   const { position, duration } = useProgress(1000);
@@ -33,7 +34,7 @@ export const SeekSlider = React.memo(function SeekSlider() {
       friction: 6,
     }).start();
     setDragging(false);
-    await TrackPlayer.seekTo(v * duration);
+    await PlayerService.seekTo(v * duration);
   };
 
   const displayCurrentMs = dragging

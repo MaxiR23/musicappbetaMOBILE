@@ -14,7 +14,7 @@ export default function ReplayScreen() {
   const router = useRouter();
   const contentPadding = useContentPadding();
   const { songs, loading } = useReplay();
-  const { playFromList } = useMusic();
+  const { playList } = useMusic();
 
   const mosaicImages = useMemo(
     () => songs.map((s) => s.thumbnail).filter(Boolean) as string[],
@@ -32,17 +32,17 @@ export default function ReplayScreen() {
 
   const handlePlayAll = () => {
     if (!songs.length) return;
-    playFromList(songs, 0, { type: "queue", name: "Replay" });
+    playList(songs, 0, { type: "queue", name: "Replay" });
   };
 
   const handleShuffleAll = () => {
     if (!songs.length) return;
     const shuffled = [...songs].sort(() => Math.random() - 0.5);
-    playFromList(shuffled, 0, { type: "queue", name: "Replay" });
+    playList(shuffled, 0, { type: "queue", name: "Replay" });
   };
 
   const handleTrackPress = (index: number) => {
-    playFromList(songs, index, { type: "queue", name: "Replay" });
+    playList(songs, index, { type: "queue", name: "Replay" });
   };
 
   const renderSection = (section: any) => {

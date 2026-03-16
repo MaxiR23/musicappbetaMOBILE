@@ -57,7 +57,7 @@ interface PlayerTabsProps {
   isPlaying: boolean;
 
   // Cola y autoplay
-  originalQueueSize?: number;
+  autoplayStartIndex?: number;
 
   // Estados de cada tab
   lyricsText: string | null;
@@ -95,7 +95,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
   title,
   artist_name,
   isPlaying,
-  originalQueueSize = 0,
+  autoplayStartIndex = 0,
   lyricsText,
   lyricsLoading,
   lyricsError,
@@ -294,7 +294,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
 
                 {/* TODA LA COLA ORIGINAL COMPLETA (nada se oculta) */}
                 {(() => {
-                  const originalQueue = queue.slice(0, originalQueueSize);
+                  const originalQueue = queue;
                   if (originalQueue.length === 0) return null;
 
                   return (
@@ -585,7 +585,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
     prevProps.title === nextProps.title &&
     prevProps.artist_name === nextProps.artist_name &&
     prevProps.isPlaying === nextProps.isPlaying &&
-    prevProps.originalQueueSize === nextProps.originalQueueSize &&
+    prevProps.autoplayStartIndex === nextProps.autoplayStartIndex &&
     prevProps.lyricsText === nextProps.lyricsText &&
     prevProps.lyricsLoading === nextProps.lyricsLoading &&
     prevProps.upNextData === nextProps.upNextData &&
