@@ -195,6 +195,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const lastLoggedTrackIdRef = useRef<string | null>(null);
   const listenTimeRef = useRef<{ trackId: string; accumulated: number; lastPosition: number } | null>(null);
   const endingRef = useRef(false);
+  const preloadedTrackIdRef = useRef<string | null>(null);
 
   const stateRef = useRef(state);
   useEffect(() => {
@@ -403,14 +404,15 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
     if (ni < queue.length) {
       try {
-        const { resolveAudioStream } = await import("@/services/audioStreamService");
-        const result = await resolveAudioStream(String(queue[ni].id)).catch(() => null);
-        if (result?.stream?.url) {
-          await TrackPlayer.remove(ni);
-          await TrackPlayer.add(
-            { ...buildTrack(queue[ni], getBaseUrl()!), url: result.stream.url } as any,
-            ni
-          );
+        const nextId = String(queue[ni].id);
+        if (preloadedTrackIdRef.current !== nextId) {
+          const { resolveAudioStream } = await import("@/services/audioStreamService");
+          const result = await resolveAudioStream(nextId).catch(() => null);
+          if (result?.stream?.url) {
+            const track = { ...buildTrack(queue[ni], getBaseUrl()!), url: result.stream.url };
+            await TrackPlayer.add(track as any);
+          }
+          preloadedTrackIdRef.current = nextId;
         }
         dispatch({ type: "SET_INDEX", payload: { index: ni } });
         await TrackPlayer.skipToNext();
@@ -750,6 +752,24 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           };
 
           logPlayTrack(trackId, trackContext).catch(() => { });
+        }
+      }
+
+      const duration = (progress as any).duration;
+      if (duration && duration > 0 && duration - currentPosition <= 15) {
+        const nextIndex = queueIndex + 1;
+        if (nextIndex < queue.length) {
+          const nextSong = queue[nextIndex];
+          const nextId = String(nextSong.id);
+          if (preloadedTrackIdRef.current !== nextId) {
+            preloadedTrackIdRef.current = nextId;
+            const { resolveAudioStream } = await import("@/services/audioStreamService");
+            resolveAudioStream(nextId).then(async (result) => {
+              if (!result?.stream?.url) return;
+              const track = { ...buildTrack(nextSong, getBaseUrl()!), url: result.stream.url };
+              await TrackPlayer.add(track as any).catch(() => { });
+            }).catch(() => { });
+          }
         }
       }
     };
