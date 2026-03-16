@@ -310,7 +310,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
                               index={idx + 1}
                               title={track.title}
                               artist={track.artist_name || track.artist}
-                              thumbnail={track.thumbnail || track.thumbnail_url}
+                              thumbnail={track.thumbnail}
                               showIndex={false}
                               showMoreButton={true}
                               onPress={() => {
@@ -376,7 +376,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
                             index={idx + 1}
                             title={track.title}
                             artist={track.artists?.map((a: any) => a.name).join(", ")}
-                            thumbnail={getUpgradedThumb(track, 256)}
+                            thumbnail={getUpgradedThumb(track, 512)}
                             showIndex={false}
                             showMoreButton={false}
                             onPress={() => {
@@ -491,7 +491,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
                               index={tIdx + 1}
                               title={track.title}
                               artist={track.artists?.map((a: any) => a.name).join(", ")}
-                              thumbnail={getUpgradedThumb(track, 256)}
+                              thumbnail={getUpgradedThumb(track, 512)}
                               showIndex={false}
                               showMoreButton={false}
                               onPress={() => onRelatedTrackPress?.(track)}

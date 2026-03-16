@@ -1,5 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { resolveAudioStream } from "@/services/audioStreamService";
+import { upgradeThumbUrl } from "@/utils/image-helpers";
 import { ReactNode, useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { useCacheInvalidation } from "../hooks/use-cache-invalidation";
 import { useMusicApi } from "../hooks/use-music-api";
@@ -188,7 +189,7 @@ function toTrackInput(song: Song, url?: string | null): PlayerService.TrackInput
     url: url ?? song.url,
     title: song.title,
     artist_name: song.artist_name ?? undefined,
-    thumbnail: song.thumbnail,
+    thumbnail: upgradeThumbUrl(song.thumbnail, 512),
   };
 }
 
