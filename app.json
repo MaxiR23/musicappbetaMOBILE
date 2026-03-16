@@ -11,9 +11,12 @@
       "supportsTablet": true,
       "infoPlist": {
         "UIBackgroundModes": [
+          "audio",
           "audio"
-        ]
-      }
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.maxreb1.beatlybeta"
     },
     "android": {
       "adaptiveIcon": {
@@ -61,8 +64,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "021b87fc-e986-4d71-965a-0b483a5d3308"
+        "projectId": "a35ea2eb-1f28-491f-b152-7280db80104f"
       }
-    }
+    },
+    "owner": "maxreb1"
   }
 }
