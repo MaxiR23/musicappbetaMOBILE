@@ -13,20 +13,27 @@ export async function syncWithTrackPlayer(
 
   const idx = Math.max(0, Math.min(startIndex, list.length - 1));
 
-  // Construir todos los tracks
-  const tracks = list.map((s) => ({
-    id: String(s.id),
-    url: `${baseUrl}/music/play?id=${encodeURIComponent(s.id)}&redir=2`,
-    title: (s as any).title,
-    artist: (s as any).artist_name ?? (s as any).artist ?? "",
-    artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
-    type: TrackType.Default,
-    headers: {
-      Range: "bytes=0-",
-      "Accept-Encoding": "identity",
-      Connection: "keep-alive",
-    },
-  }));
+  // Construir todos los tracks - usar URL existente si la tiene
+  const tracks = list.map((s, i) => {
+    const hasResolvedUrl = s.url && !s.url.includes('/music/play');
+    const url = hasResolvedUrl
+      ? s.url
+      : `${baseUrl}/music/play?id=${encodeURIComponent(s.id)}&redir=2`;
+    
+    return {
+      id: String(s.id),
+      url,
+      title: (s as any).title,
+      artist: (s as any).artist_name ?? (s as any).artist ?? "",
+      artwork: (s as any).thumbnail ?? (s as any).thumbnail_url ?? undefined,
+      type: TrackType.Default,
+      headers: {
+        Range: "bytes=0-",
+        "Accept-Encoding": "identity",
+        Connection: "keep-alive",
+      },
+    };
+  });
 
   syncingRef.current = true;
   try {

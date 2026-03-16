@@ -9,11 +9,11 @@
  */
 
 import TrackPlayer, {
-    AppKilledPlaybackBehavior,
-    Capability,
-    RepeatMode,
-    State,
-    TrackType,
+  AppKilledPlaybackBehavior,
+  Capability,
+  RepeatMode,
+  State,
+  TrackType,
 } from 'react-native-track-player';
 
 // Estado global del servicio
@@ -37,7 +37,7 @@ export interface TrackData {
 function buildTrack(song: TrackData, baseUrl: string) {
   return {
     id: String(song.id),
-    url: `${baseUrl}/music/play?id=${encodeURIComponent(song.id)}&redir=2`,
+    url: (song as any).url || '', // TODO RESOLVE: `${baseUrl}/music/play?id=${encodeURIComponent(song.id)}&redir=2`
     title: song.title,
     artist: song.artist_name ?? song.artist ?? '',
     artwork: song.thumbnail ?? song.thumbnail_url ?? undefined,

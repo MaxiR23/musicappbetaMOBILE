@@ -246,7 +246,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   function buildTrack(song: Song, baseUrl: string) {
     return {
       id: String(song.id),
-      url: `${baseUrl}/music/play?id=${encodeURIComponent(song.id)}&redir=2`,
+      url: (song as any).url || '', // TODO RESOLVE: `${baseUrl}/music/play?id=${encodeURIComponent(song.id)}&redir=2`
       title: (song as any).title,
       artist: (song as any).artist_name ?? (song as any).artist ?? "",
       artwork: (song as any).thumbnail ?? (song as any).thumbnail_url ?? undefined,
@@ -262,35 +262,28 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   // === PLAYBACK FUNCTIONS ===
 
   const playFromList = useCallback(async (list: Song[], startIndex: number, source?: PlaySource) => {
-    const t0 = Date.now();
-    console.log("[playFromList] START");
-
     if (switchingRef.current) return;
     switchingRef.current = true;
 
     playedAutoplayIdsRef.current.clear();
 
     const ctx = resolveContextKey(list, source);
-    const isSameContext = ctx != null && lastLoadedContextKeyRef.current === ctx.key;
 
     try {
-      if (isSameContext) {
-        await ensureTrackPlayer();
-        await TrackPlayer.skip(startIndex);
-        await TrackPlayer.play();
-        console.log("[playFromList] sameContext done:", Date.now() - t0, "ms");
-      } else {
-        await syncWithTrackPlayer(list, startIndex, getBaseUrl()!, syncingRef);
-        console.log("[playFromList] syncWithTrackPlayer done:", Date.now() - t0, "ms");
-        lastLoadedContextKeyRef.current = ctx?.key ?? null;
-      }
+      const { resolveAudioStream } = await import("@/services/audioStreamService");
+      const result = await resolveAudioStream(String(list[startIndex].id)).catch(() => null);
+      const resolvedSong = result?.stream?.url
+        ? { ...list[startIndex], url: result.stream.url }
+        : list[startIndex];
+
+      await syncWithTrackPlayer([resolvedSong], 0, getBaseUrl()!, syncingRef);
+      lastLoadedContextKeyRef.current = ctx?.key ?? null;
     } catch (err) {
       console.error("[RNTP] error:", err);
       switchingRef.current = false;
       return;
     }
 
-    console.log("[playFromList] before dispatch:", Date.now() - t0, "ms");
     dispatch({
       type: "PLAY_FROM_LIST",
       payload: {
@@ -299,21 +292,16 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         source: source ? { ...source, id: ctx?.id ?? null } : null,
       },
     });
-    console.log("[playFromList] after dispatch:", Date.now() - t0, "ms");
 
-    if (ctx && !isSameContext) {
+    if (ctx) {
       lastLoggedContextKeyRef.current = ctx.key;
       const srcMeta = { name: source?.name ?? null, thumb: source?.thumb ?? null };
-      if (ctx.kind === "album") {
-        logPlayAlbum(ctx.id, srcMeta).catch(() => { });
-      } else if (ctx.kind === "artist") {
-        logPlayArtist(ctx.id, srcMeta).catch(() => { });
-      }
+      if (ctx.kind === "album") logPlayAlbum(ctx.id, srcMeta).catch(() => { });
+      else if (ctx.kind === "artist") logPlayArtist(ctx.id, srcMeta).catch(() => { });
       setTimeout(() => invalidateRecent().catch(() => { }), 2000);
     }
 
     switchingRef.current = false;
-    console.log("[playFromList] DONE:", Date.now() - t0, "ms");
   }, [logPlayAlbum, logPlayArtist, invalidateRecent]);
 
   const playFromRelated = useCallback(async (song: Song) => {
@@ -324,7 +312,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     lastLoggedContextKeyRef.current = null;
 
     try {
-      await syncWithTrackPlayer([song], 0, getBaseUrl()!, syncingRef);
+      const { resolveAudioStream } = await import("@/services/audioStreamService");
+      const result = await resolveAudioStream(String(song.id)).catch(() => null);
+      const resolvedSong = result ? { ...song, url: result.stream.url } : song;
+
+      await syncWithTrackPlayer([resolvedSong], 0, getBaseUrl()!, syncingRef);
     } catch (err) {
       console.error("[RNTP] error en syncWithTrackPlayer:", err);
       switchingRef.current = false;
@@ -350,7 +342,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     lastLoggedContextKeyRef.current = null;
 
     try {
-      await syncWithTrackPlayer([song], 0, getBaseUrl()!, syncingRef);
+      const { resolveAudioStream } = await import("@/services/audioStreamService");
+      const result = await resolveAudioStream(String(song.id)).catch(() => null);
+      const resolvedSong = result ? { ...song, url: result.stream.url } : song;
+
+      await syncWithTrackPlayer([resolvedSong], 0, getBaseUrl()!, syncingRef);
     } catch (err) {
       console.error("[playFromSearch] error:", err);
       switchingRef.current = false;
@@ -406,8 +402,17 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     const ni = queueIndex + 1;
 
     if (ni < queue.length) {
-      dispatch({ type: "SET_INDEX", payload: { index: ni } });
       try {
+        const { resolveAudioStream } = await import("@/services/audioStreamService");
+        const result = await resolveAudioStream(String(queue[ni].id)).catch(() => null);
+        if (result?.stream?.url) {
+          await TrackPlayer.remove(ni);
+          await TrackPlayer.add(
+            { ...buildTrack(queue[ni], getBaseUrl()!), url: result.stream.url } as any,
+            ni
+          );
+        }
+        dispatch({ type: "SET_INDEX", payload: { index: ni } });
         await TrackPlayer.skipToNext();
       } catch (e) {
         console.error("[next] ERROR:", e);
@@ -430,7 +435,12 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "ADD_AUTOPLAY", payload: { song: nextAutoplaySong } });
 
         try {
-          await TrackPlayer.add(buildTrack(nextAutoplaySong, getBaseUrl()!) as any);
+          const { resolveAudioStream } = await import("@/services/audioStreamService");
+          const result = await resolveAudioStream(String(nextAutoplaySong.id)).catch(() => null);
+          const track = result?.stream?.url
+            ? { ...buildTrack(nextAutoplaySong, getBaseUrl()!), url: result.stream.url }
+            : buildTrack(nextAutoplaySong, getBaseUrl()!);
+          await TrackPlayer.add(track as any);
           await TrackPlayer.skipToNext();
         } catch (e) {
           console.error("[next] ERROR agregando autoplay:", e);
@@ -449,9 +459,19 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    dispatch({ type: "SET_INDEX", payload: { index } });
-
     try {
+      const { resolveAudioStream } = await import("@/services/audioStreamService");
+      const result = await resolveAudioStream(String(queue[index].id)).catch(() => null);
+
+      if (result?.stream?.url) {
+        await TrackPlayer.remove(index);
+        await TrackPlayer.add(
+          { ...buildTrack(queue[index], getBaseUrl()!), url: result.stream.url } as any,
+          index
+        );
+      }
+
+      dispatch({ type: "SET_INDEX", payload: { index } });
       await TrackPlayer.skip(index);
       await TrackPlayer.play();
     } catch (e) {
@@ -460,7 +480,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const prev = useCallback(async () => {
-    const { queueIndex } = stateRef.current;
+    const { queue, queueIndex } = stateRef.current;
     if (queueIndex < 0) return;
 
     try {
@@ -486,13 +506,23 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    dispatch({ type: "SET_INDEX", payload: { index: ni } });
-
     try {
+      const { resolveAudioStream } = await import("@/services/audioStreamService");
+      const result = await resolveAudioStream(String(queue[ni].id)).catch(() => null);
+
+      if (result?.stream?.url) {
+        await TrackPlayer.remove(ni);
+        await TrackPlayer.add(
+          { ...buildTrack(queue[ni], getBaseUrl()!), url: result.stream.url } as any,
+          ni
+        );
+      }
+
+      dispatch({ type: "SET_INDEX", payload: { index: ni } });
       await TrackPlayer.skipToPrevious();
       await TrackPlayer.play();
     } catch (e) {
-      console.error("[prev] ERROR (skipToPrevious):", e);
+      console.error("[prev] ERROR:", e);
     }
   }, []);
 
