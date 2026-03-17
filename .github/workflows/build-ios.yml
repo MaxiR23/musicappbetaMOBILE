@@ -40,6 +40,7 @@ jobs:
           if [ -z "$TARGET" ]; then echo "ERROR: no encontrado"; exit 1; fi
           echo "=== Antes ==="
           sed -n '114,126p' "$TARGET"
+          chmod u+w "$TARGET"
           python3 .github/scripts/patch_duration.py "$TARGET"
           echo "=== Despues ==="
           sed -n '114,123p' "$TARGET"
