@@ -46,8 +46,9 @@ jobs:
           echo "=== Antes ==="
           sed -n '114,125p' "$TARGET"
 
-          perl -i -pe 's/(\s+)if (let seconds = currentItem\?\.asset\.duration\.seconds)/$1else if $2/g' "$TARGET"
-          perl -i -pe 's/(\s+)else if (let seconds = currentItem\?\.duration\.seconds)/$1if $2/g' "$TARGET"
+          perl -0777 -i -pe '
+            s/if (let seconds = currentItem\?\.asset\.duration\.seconds, !seconds\.isNaN \{.*?return seconds\n\s*\})\s*else if (let seconds = currentItem\?\.duration\.seconds, !seconds\.isNaN \{.*?return seconds\n\s*\})/if $2\n        else if $1/s
+          ' "$TARGET"
 
           echo "=== Despues ==="
           sed -n '114,125p' "$TARGET"
