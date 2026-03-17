@@ -193,6 +193,13 @@ export async function getRepeatMode(): Promise<RepeatMode> {
   return TrackPlayer.getRepeatMode();
 }
 
+export async function updateDuration(seconds?: number): Promise<void> {
+  if (!seconds || seconds <= 0) return;
+  const index = await TrackPlayer.getActiveTrackIndex();
+  if (index === undefined) return;
+  await TrackPlayer.updateMetadataForTrack(index, { duration: seconds });
+}
+
 /** Alterna play/pause. Retorna true si queda playing, false si paused. */
 export async function togglePlayPause(): Promise<boolean> {
   const state = await getPlaybackState();
