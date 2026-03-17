@@ -54,6 +54,12 @@ jobs:
           echo "=== Despues del patch ==="
           grep -n "asset.duration\|currentItem.*duration" "$TARGET"
 
+          echo "=== Lineas del bloque afectado ==="
+          grep -n "duration" "$TARGET" | head -20
+
+          echo "=== Contexto lineas 110-130 ==="
+          sed -n '110,130p' "$TARGET"
+
       - name: Build unsigned IPA
         run: |
           WORKSPACE=$(find ios -name "*.xcworkspace" -maxdepth 1 | head -1)
