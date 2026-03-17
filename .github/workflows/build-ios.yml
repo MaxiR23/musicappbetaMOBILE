@@ -45,20 +45,13 @@ jobs:
 
           echo "Archivo: $TARGET"
           echo "=== Antes del patch ==="
-          grep -n "asset.duration\|currentItem.*duration" "$TARGET"
+          sed -n '114,125p' "$TARGET"
 
-          perl -i -pe 's/if let seconds = currentItem\?\.asset\.duration\.seconds, !seconds\.isNaN \{/__SWAP__/g' "$TARGET"
-          perl -i -pe 's/else if let seconds = currentItem\?\.duration\.seconds, !seconds\.isNaN \{/if let seconds = currentItem?.duration.seconds, !seconds.isNaN {/g' "$TARGET"
-          perl -i -pe 's/__SWAP__/else if let seconds = currentItem?.asset.duration.seconds, !seconds.isNaN {/g' "$TARGET"
+          perl -i -pe 's/        if let seconds = currentItem\?\.asset\.duration\.seconds/        else if let seconds = currentItem?.asset.duration.seconds/g' "$TARGET"
+          perl -i -pe 's/        else if let seconds = currentItem\?\.duration\.seconds/        if let seconds = currentItem?.duration.seconds/g' "$TARGET"
 
           echo "=== Despues del patch ==="
-          grep -n "asset.duration\|currentItem.*duration" "$TARGET"
-
-          echo "=== Lineas del bloque afectado ==="
-          grep -n "duration" "$TARGET" | head -20
-
-          echo "=== Contexto lineas 110-130 ==="
-          sed -n '110,130p' "$TARGET"
+          sed -n '114,125p' "$TARGET"
 
       - name: Build unsigned IPA
         run: |
