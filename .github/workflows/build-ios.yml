@@ -37,51 +37,17 @@ jobs:
       - name: Patch SwiftAudioEx - fix duration x2 for fMP4 streams
         run: |
           TARGET=$(find ios/Pods -path "*SwiftAudioEx*" -name "AVPlayerWrapper.swift" | head -1)
-
-          if [ -z "$TARGET" ]; then
-            echo "ERROR: AVPlayerWrapper.swift no encontrado"
-            exit 1
-          fi
-
+          if [ -z "$TARGET" ]; then echo "ERROR: no encontrado"; exit 1; fi
           echo "=== Antes ==="
           sed -n '114,126p' "$TARGET"
-
-          perl -i -pe '
-            if (/var duration: TimeInterval/) { $in_block = 1; $buf = $_; next }
-            if ($in_block) {
-              $buf .= $_;
-              if (/return 0\.0/) {
-                $buf .= "    }\n";
-                $in_block = 2;
-              }
-              next;
-            }
-            if ($in_block == 2) {
-              if (/^\s*\}/) {
-                print "    var duration: TimeInterval {\n";
-                print "        let raw: Double\n";
-                print "        if let s = currentItem?.duration.seconds, !s.isNaN { raw = s }\n";
-                print "        else if let s = currentItem?.asset.duration.seconds, !s.isNaN { raw = s }\n";
-                print "        else if let s = currentItem?.seekableTimeRanges.last?.timeRangeValue.duration.seconds, !s.isNaN { raw = s }\n";
-                print "        else { return 0.0 }\n";
-                print "        return raw > 0 ? raw / 2.0 : 0.0\n";
-                print "    }\n";
-                $in_block = 0;
-                $buf = "";
-                next;
-              }
-            }
-            print;
-          ' "$TARGET"
-
+          python3 .github/scripts/patch_duration.py "$TARGET"
           echo "=== Despues ==="
-          sed -n '114,126p' "$TARGET"
+          sed -n '114,123p' "$TARGET"
 
       - name: Build unsigned IPA
         run: |
           WORKSPACE=$(find ios -name "*.xcworkspace" -maxdepth 1 | head -1)
           SCHEME=$(find ios -name "*.xcodeproj" -maxdepth 1 | head -1 | xargs -I{} basename {} .xcodeproj)
-
           set -o pipefail
           xcodebuild \
             -workspace "$WORKSPACE" \
@@ -93,16 +59,13 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             archive 2>&1 | tee /tmp/build.log; BUILD_EXIT=${PIPESTATUS[0]}
-
           if [ $BUILD_EXIT -ne 0 ]; then
             echo "=== ERRORES ==="
             grep " error:" /tmp/build.log | grep -v "^note:" | grep -v "^warning:" || true
             exit $BUILD_EXIT
           fi
-
           mkdir -p $RUNNER_TEMP/payload/Payload
-          cp -r "$RUNNER_TEMP/app.xcarchive/Products/Applications/"*.app \
-            "$RUNNER_TEMP/payload/Payload/"
+          cp -r "$RUNNER_TEMP/app.xcarchive/Products/Applications/"*.app "$RUNNER_TEMP/payload/Payload/"
           cd $RUNNER_TEMP/payload
           zip -r ../Beatly.ipa Payload
 
