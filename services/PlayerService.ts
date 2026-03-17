@@ -11,9 +11,11 @@ import TrackPlayer, {
   AppKilledPlaybackBehavior,
   Capability,
   Event,
+  IOSCategory,
+  IOSCategoryMode,
   RepeatMode,
   State,
-  TrackType,
+  TrackType
 } from "react-native-track-player";
 
 const g = globalThis as any;
@@ -35,6 +37,8 @@ async function init(): Promise<void> {
       playBuffer: 0.5,
       backBuffer: 0,
       maxCacheSize: 64 * 1024 * 1024,
+      iosCategory: IOSCategory.Playback,
+      iosCategoryMode: IOSCategoryMode.Default,
     });
   } catch (e: any) {
     if (!e?.message?.includes("already been initialized")) {
