@@ -43,14 +43,13 @@ jobs:
             exit 1
           fi
 
-          echo "Archivo: $TARGET"
-          echo "=== Antes del patch ==="
+          echo "=== Antes ==="
           sed -n '114,125p' "$TARGET"
 
-          perl -i -pe 's/        if let seconds = currentItem\?\.asset\.duration\.seconds/        else if let seconds = currentItem?.asset.duration.seconds/g' "$TARGET"
-          perl -i -pe 's/        else if let seconds = currentItem\?\.duration\.seconds/        if let seconds = currentItem?.duration.seconds/g' "$TARGET"
+          perl -i -pe 's/(\s+)if (let seconds = currentItem\?\.asset\.duration\.seconds)/$1else if $2/g' "$TARGET"
+          perl -i -pe 's/(\s+)else if (let seconds = currentItem\?\.duration\.seconds)/$1if $2/g' "$TARGET"
 
-          echo "=== Despues del patch ==="
+          echo "=== Despues ==="
           sed -n '114,125p' "$TARGET"
 
       - name: Build unsigned IPA
