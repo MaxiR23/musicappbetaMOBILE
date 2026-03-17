@@ -34,6 +34,45 @@ jobs:
       - name: Install CocoaPods
         run: cd ios && pod install
 
+      - name: Patch SwiftAudioEx - precise duration for iOS streams
+        run: |
+          echo "=== Buscando AVPlayerWrapper.swift ==="
+          TARGET=$(find ios/Pods -path "*SwiftAudioEx*" -name "AVPlayerWrapper.swift" | head -1)
+
+          if [ -z "$TARGET" ]; then
+            echo "ERROR: No se encontro AVPlayerWrapper.swift"
+            find ios/Pods -path "*SwiftAudioEx*" -name "*.swift" | sort
+            exit 1
+          fi
+
+          echo "Archivo: $TARGET"
+          echo ""
+          echo "=== Lineas con AVURLAsset ==="
+          grep -n "AVURLAsset" "$TARGET"
+
+          echo ""
+          echo "=== Aplicando patch ==="
+
+          if grep -q "AVURLAsset(url: url, options: options)" "$TARGET"; then
+            sed -i '' 's/self\._pendingAsset = AVURLAsset(url: url, options: options)/var assetOptions = options ?? [String: Any]()\
+            assetOptions[AVURLAssetPreferPreciseDurationAndTimingKey] = true\
+            self._pendingAsset = AVURLAsset(url: url, options: assetOptions)/' "$TARGET"
+            echo "Patch aplicado (patron 1: options existente)"
+
+          elif grep -q "AVURLAsset(url: url)" "$TARGET"; then
+            sed -i '' 's/AVURLAsset(url: url)/AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])/' "$TARGET"
+            echo "Patch aplicado (patron 2: sin options)"
+
+          else
+            echo "ERROR: No se encontro el patron esperado. Contenido relevante:"
+            grep -n -B3 -A3 "AVURLAsset\|pendingAsset\|AVPlayerItem" "$TARGET"
+            exit 1
+          fi
+
+          echo ""
+          echo "=== Verificacion post-patch ==="
+          grep -n "PreferPreciseDurationAndTimingKey\|AVURLAsset" "$TARGET"
+
       - name: Build unsigned IPA
         run: |
           WORKSPACE=$(find ios -name "*.xcworkspace" -maxdepth 1 | head -1)
