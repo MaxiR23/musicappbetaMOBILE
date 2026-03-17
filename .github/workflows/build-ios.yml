@@ -59,6 +59,7 @@ jobs:
           WORKSPACE=$(find ios -name "*.xcworkspace" -maxdepth 1 | head -1)
           SCHEME=$(find ios -name "*.xcodeproj" -maxdepth 1 | head -1 | xargs -I{} basename {} .xcodeproj)
 
+          set -o pipefail
           xcodebuild \
             -workspace "$WORKSPACE" \
             -scheme "$SCHEME" \
@@ -68,7 +69,13 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            archive
+            archive 2>&1 | tee /tmp/build.log; BUILD_EXIT=${PIPESTATUS[0]}
+
+          if [ $BUILD_EXIT -ne 0 ]; then
+            echo "=== ERRORES ==="
+            grep " error:" /tmp/build.log | grep -v "^note:" | grep -v "^warning:" || true
+            exit $BUILD_EXIT
+          fi
 
           mkdir -p $RUNNER_TEMP/payload/Payload
           cp -r "$RUNNER_TEMP/app.xcarchive/Products/Applications/"*.app \
