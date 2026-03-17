@@ -34,25 +34,25 @@ jobs:
       - name: Install CocoaPods
         run: cd ios && pod install
 
-      - name: Patch SwiftAudioEx - precise duration for iOS streams
+      - name: Patch SwiftAudioEx - fix duration x2 for fMP4 streams
         run: |
           TARGET=$(find ios/Pods -path "*SwiftAudioEx*" -name "AVPlayerWrapper.swift" | head -1)
 
           if [ -z "$TARGET" ]; then
-            echo "ERROR: No se encontro AVPlayerWrapper.swift"
+            echo "ERROR: AVPlayerWrapper.swift no encontrado"
             exit 1
           fi
 
           echo "Archivo: $TARGET"
           echo "=== Antes del patch ==="
-          grep -n "AVURLAsset" "$TARGET"
+          grep -n "asset.duration\|currentItem.*duration" "$TARGET"
 
-          sed -i '' 's/let pendingAsset = AVURLAsset(url: url, options: urlOptions)/var mergedOptions = urlOptions ?? [String: Any]()\
-            mergedOptions[AVURLAssetPreferPreciseDurationAndTimingKey] = true\
-            let pendingAsset = AVURLAsset(url: url, options: mergedOptions)/' "$TARGET"
+          perl -i -pe 's/if let seconds = currentItem\?\.asset\.duration\.seconds, !seconds\.isNaN \{/__SWAP__/g' "$TARGET"
+          perl -i -pe 's/else if let seconds = currentItem\?\.duration\.seconds, !seconds\.isNaN \{/if let seconds = currentItem?.duration.seconds, !seconds.isNaN {/g' "$TARGET"
+          perl -i -pe 's/__SWAP__/else if let seconds = currentItem?.asset.duration.seconds, !seconds.isNaN {/g' "$TARGET"
 
           echo "=== Despues del patch ==="
-          grep -n "PreferPreciseDurationAndTimingKey\|AVURLAsset" "$TARGET"
+          grep -n "asset.duration\|currentItem.*duration" "$TARGET"
 
       - name: Build unsigned IPA
         run: |

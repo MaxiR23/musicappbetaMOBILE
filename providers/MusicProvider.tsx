@@ -2,7 +2,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { resolveAudioStream } from "@/services/audioStreamService";
 import { upgradeThumbUrl } from "@/utils/image-helpers";
 import { ReactNode, useCallback, useEffect, useMemo, useReducer, useRef } from "react";
-import { Platform } from "react-native";
 import { useCacheInvalidation } from "../hooks/use-cache-invalidation";
 import { useMusicApi } from "../hooks/use-music-api";
 import * as PlayerService from "../services/PlayerService";
@@ -426,9 +425,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         // Acumular tiempo de escucha
         if (!listenTimeRef.current || listenTimeRef.current.trackId !== trackId) {
           listenTimeRef.current = { trackId, accumulated: 0, lastPosition: position };
-          if (Platform.OS === "ios") { // AVPlayer reporta duración incorrecta en streams adaptivos
-            await PlayerService.updateDuration(track.duration_seconds);
-          }
           return;
         }
 

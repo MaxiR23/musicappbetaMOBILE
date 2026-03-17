@@ -1,21 +1,12 @@
-import { useMusic } from "@/hooks/use-music";
 import * as PlayerService from "@/services/PlayerService";
 import { formatDuration } from "@/utils/durations";
 import Slider from "@react-native-community/slider";
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, Platform, StyleSheet, Text, View } from "react-native";
+import { Animated, StyleSheet, Text, View } from "react-native";
 import { useProgress } from "react-native-track-player";
 
 export const SeekSlider = React.memo(function SeekSlider() {
-  const { position, duration: tpDuration } = useProgress(1000);
-  const { currentSong } = useMusic();
-
-  // iOS: useProgress().duration reporta valores incorrectos en streams adaptivos de red
-  // https://github.com/doublesymmetry/react-native-track-player/issues/2311
-  const duration =
-    Platform.OS === "ios" && currentSong?.duration_seconds && currentSong.duration_seconds > 0
-      ? currentSong.duration_seconds
-      : tpDuration;
+  const { position, duration } = useProgress(1000);
 
   const [dragging, setDragging] = useState(false);
   const [localVal, setLocalVal] = useState(0);
