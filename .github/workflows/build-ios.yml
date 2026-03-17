@@ -44,14 +44,38 @@ jobs:
           fi
 
           echo "=== Antes ==="
-          sed -n '114,125p' "$TARGET"
+          sed -n '114,126p' "$TARGET"
 
-          perl -0777 -i -pe '
-            s/if (let seconds = currentItem\?\.asset\.duration\.seconds, !seconds\.isNaN \{.*?return seconds\n\s*\})\s*else if (let seconds = currentItem\?\.duration\.seconds, !seconds\.isNaN \{.*?return seconds\n\s*\})/if $2\n        else if $1/s
+          perl -i -pe '
+            if (/var duration: TimeInterval/) { $in_block = 1; $buf = $_; next }
+            if ($in_block) {
+              $buf .= $_;
+              if (/return 0\.0/) {
+                $buf .= "    }\n";
+                $in_block = 2;
+              }
+              next;
+            }
+            if ($in_block == 2) {
+              if (/^\s*\}/) {
+                print "    var duration: TimeInterval {\n";
+                print "        let raw: Double\n";
+                print "        if let s = currentItem?.duration.seconds, !s.isNaN { raw = s }\n";
+                print "        else if let s = currentItem?.asset.duration.seconds, !s.isNaN { raw = s }\n";
+                print "        else if let s = currentItem?.seekableTimeRanges.last?.timeRangeValue.duration.seconds, !s.isNaN { raw = s }\n";
+                print "        else { return 0.0 }\n";
+                print "        return raw > 0 ? raw / 2.0 : 0.0\n";
+                print "    }\n";
+                $in_block = 0;
+                $buf = "";
+                next;
+              }
+            }
+            print;
           ' "$TARGET"
 
           echo "=== Despues ==="
-          sed -n '114,125p' "$TARGET"
+          sed -n '114,126p' "$TARGET"
 
       - name: Build unsigned IPA
         run: |
