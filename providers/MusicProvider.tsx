@@ -190,6 +190,7 @@ function toTrackInput(song: Song, url?: string | null): PlayerService.TrackInput
     title: song.title,
     artist_name: song.artist_name ?? undefined,
     thumbnail: upgradeThumbUrl(song.thumbnail, 512),
+    duration_seconds: song.duration_seconds,
   };
 }
 

@@ -83,6 +83,7 @@ function buildTrack(song: TrackInput) {
     title: song.title || "",
     artist: song.artist_name ?? song.artist ?? "",
     artwork: song.thumbnail ?? song.thumbnail_url ?? undefined,
+    duration: song.duration_seconds,
     type: TrackType.Default,
     headers: {
       Range: "bytes=0-",
