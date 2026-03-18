@@ -2,7 +2,7 @@ import * as PlayerService from "@/services/PlayerService";
 import { formatDuration } from "@/utils/durations";
 import Slider from "@react-native-community/slider";
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import { Animated, Platform, StyleSheet, Text, View } from "react-native";
 import { useProgress } from "react-native-track-player";
 
 export const SeekSlider = React.memo(function SeekSlider() {
@@ -38,9 +38,14 @@ export const SeekSlider = React.memo(function SeekSlider() {
     await PlayerService.seekTo(v * duration);
   };
 
+  // iOS: useProgress sigue avanzando más allá de la duración una vez finalizada la pista. limitar solo a la visualización.
+  const displayPosition = Platform.OS === "ios" && duration > 0
+    ? Math.min(position, duration)
+    : position;
+
   const displayCurrentMs = dragging
     ? Math.round(localVal * (duration * 1000 || 0))
-    : position * 1000;
+    : displayPosition * 1000;
 
   return (
     <View style={styles.sliderContainer}>
