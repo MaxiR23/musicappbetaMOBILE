@@ -1,13 +1,11 @@
+import BRAND_ICON from '@/assets/images/icon.png';
 import React from "react";
 import {
   Image,
-  KeyboardAvoidingView,
-  Platform,
   Text,
   View,
 } from "react-native";
 import { authStyles } from "./auth-form-styles";
-
 interface AuthFormContainerProps {
   title: string;
   description: string;
@@ -18,10 +16,6 @@ interface AuthFormContainerProps {
   onSwitchPress: () => void;
 }
 
-/**
- * Container compartido para formularios de autenticación (Login/Register)
- * Incluye: brand, card wrapper, switch footer
- */
 export function AuthFormContainer({
   title,
   description,
@@ -31,14 +25,8 @@ export function AuthFormContainer({
   switchLinkText,
   onSwitchPress,
 }: AuthFormContainerProps) {
-
-  const BRAND_ICON = require('@/assets/images/icon.png');
-
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.select({ ios: "padding", android: undefined })}
-    >
+    <View style={{ flex: 1 }}>
       <View style={authStyles.wrap}>
         {/* Brand */}
         <View style={authStyles.brandBox}>
@@ -72,6 +60,6 @@ export function AuthFormContainer({
           © 2025 Beatly. Todos los derechos reservados.
         </Text>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
