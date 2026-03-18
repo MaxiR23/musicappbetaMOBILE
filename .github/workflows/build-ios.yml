@@ -34,6 +34,11 @@ jobs:
       - name: Install CocoaPods
         run: cd ios && pod install
 
+      # Patch SwiftAudioEx to fix duration x2 bug for fMP4 streams on iOS.
+      # AVURLAsset.duration reports double the real duration for fMP4 progressive streams.
+      # The HLS spec requires mvhd/tkhd duration = 0, so AVPlayer calculates it internally
+      # and returns an incorrect value. Fix: divide raw duration by 2.
+      # See: docs/ios-duration-fix.md
       - name: Patch SwiftAudioEx - fix duration x2 for fMP4 streams
         run: |
           TARGET=$(find ios/Pods -path "*SwiftAudioEx*" -name "AVPlayerWrapper.swift" | head -1)
