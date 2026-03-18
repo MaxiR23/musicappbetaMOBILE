@@ -21,14 +21,17 @@ import TrackPlayer, {
 const g = globalThis as any;
 g.__tp_init__ = g.__tp_init__ || { ready: false, registered: false };
 
+// Registra el playback service al arranque de la app — antes del primer play.
+// iOS requiere esto para habilitar controles de lock screen desde el inicio.
+export function initService(): void {
+  if (g.__tp_init__.registered) return;
+  TrackPlayer.registerPlaybackService(() => trackPlayerService);
+  g.__tp_init__.registered = true;
+}
+
 async function init(): Promise<void> {
-  if (!g.__tp_init__.registered) {
-    TrackPlayer.registerPlaybackService(() => trackPlayerService);
-    g.__tp_init__.registered = true;
-  }
-
   if (g.__tp_init__.ready) return;
-
+  
   try {
     await TrackPlayer.setupPlayer({
       waitForBuffer: false,
@@ -233,3 +236,5 @@ export function onRemotePrev(cb: () => void) {
 }
 
 export { RepeatMode, State };
+
+initService();
