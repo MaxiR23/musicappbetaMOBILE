@@ -2,6 +2,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { resolveAudioStream } from "@/services/audioStreamService";
 import { upgradeThumbUrl } from "@/utils/image-helpers";
 import { ReactNode, useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { AppState, Platform } from "react-native";
+import TrackPlayer from "react-native-track-player";
 import { useCacheInvalidation } from "../hooks/use-cache-invalidation";
 import { useMusicApi } from "../hooks/use-music-api";
 import * as PlayerService from "../services/PlayerService";
@@ -512,12 +514,30 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     const subRemoteNext = PlayerService.onRemoteNext(() => { next(); });
     const subRemotePrev = PlayerService.onRemotePrev(() => { prev(); });
 
+    // iOS: sync queue index when returning to foreground after background/killed state.
+    // JS thread was dead, lock screen used native skipToNext/Prev — re-align React state.
+    const appStateSub = Platform.OS === "ios"
+      ? AppState.addEventListener("change", async (nextState) => {
+        if (nextState !== "active") return;
+        try {
+          const activeIndex = await TrackPlayer.getActiveTrackIndex();
+          if (activeIndex == null) return;
+          const { queueIndex } = stateRef.current;
+          if (activeIndex !== queueIndex) {
+            dispatch({ type: "SET_INDEX", index: activeIndex });
+            lastLoggedTrackIdRef.current = null;
+          }
+        } catch { }
+      })
+      : null;
+
     return () => {
       subProgress.remove();
       subEnded.remove();
       subError.remove();
       subRemoteNext.remove();
       subRemotePrev.remove();
+      appStateSub?.remove();
     };
   }, [logPlayTrack, next, prev]);
 

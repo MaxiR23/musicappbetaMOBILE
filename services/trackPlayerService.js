@@ -1,20 +1,3 @@
-/**
- * INFO — Playback debug togglable por env
- *
- * Cómo activarlo mañana:
- * - Expo (dev): iniciar con `EXPO_PUBLIC_DEBUG_PLAYER=1 expo start`
- * - Expo (EAS build/dev client): agregar en app.json/app.config:
- *     {
- *       "expo": {
- *         "extra": { "EXPO_PUBLIC_DEBUG_PLAYER": "1" }
- *       }
- *     }
- * - .env: agregar `EXPO_PUBLIC_DEBUG_PLAYER=1` y reiniciar el bundler
- * - Bare RN: configurar variable de entorno antes de ejecutar Metro
- *
- * Cuando EXPO_PUBLIC_DEBUG_PLAYER ≠ "1", no loguea nada (comentarios quedan).
- */
-
 import TrackPlayer, { Event } from 'react-native-track-player';
 
 const DEBUG =
@@ -34,29 +17,31 @@ export default async function playbackService() {
   TrackPlayer.addEventListener(Event.RemotePause, () => TrackPlayer.pause());
   TrackPlayer.addEventListener(Event.RemoteSeek, e => TrackPlayer.seekTo(e.position));
 
+  // iOS: RemoteNext/RemotePrevious deben vivir aquí (background thread).
+  // MusicProvider no está vivo cuando la app está muerta — estos handlers
+  // permiten que la lock screen funcione siempre. MusicProvider sincroniza
+  // su estado al volver a foreground (AppState).
+  TrackPlayer.addEventListener(Event.RemoteNext, () => TrackPlayer.skipToNext());
+  TrackPlayer.addEventListener(Event.RemotePrevious, () => TrackPlayer.skipToPrevious());
+
   // --- Repeat-One (repetir la pista actual) ---
-  // Si el modo de repetición es "Track", cuando termina la canción:
-  // 1) volvemos al segundo 0
-  // 2) reproducimos de nuevo
-  // 3) cortamos el flujo para NO avanzar al siguiente tema
   TrackPlayer.addEventListener(Event.PlaybackTrackEnded, async () => {
     try {
       const getRepeatMode = TrackPlayer && TrackPlayer.getRepeatMode;
       const mode = getRepeatMode ? await getRepeatMode() : undefined;
 
-      const RM = (TrackPlayer && TrackPlayer.RepeatMode) || {}; // fallback
+      const RM = (TrackPlayer && TrackPlayer.RepeatMode) || {};
       if (mode === RM.Track) {
         await TrackPlayer.seekTo(0);
         await TrackPlayer.play();
-        return; // no avances al siguiente tema en repeat-one
+        return;
       }
     } catch (e) {
       // silencioso: si la API no existe, seguí el flujo normal
     }
-    // si NO está en repeat-one, dejá que otros handlers manejen el avance
   });
 
-  // --- Manejo de errores de IO (streams que terminan antes de duración reportada) ---
+  // --- Manejo de errores de IO ---
   TrackPlayer.addEventListener(Event.PlaybackError, async (e) => {
     const errorCode = e?.code || '';
     const isIOError = errorCode === 'android-io-unspecified' ||
@@ -69,14 +54,12 @@ export default async function playbackService() {
         const duration = await TrackPlayer.getDuration();
         const buffered = await TrackPlayer.getBufferedPosition();
 
-        // Si estamos cerca del final del buffer o de la duración reportada
         const nearEndOfBuffer = buffered > 0 && position >= buffered - 2;
         const nearEndOfTrack = duration > 0 && position / duration > 0.92;
 
         if (nearEndOfBuffer || nearEndOfTrack) {
           console.log('[RNTP] Stream terminó antes de duración reportada, avanzando...');
 
-          // Verificar si hay más tracks en la cola
           const queue = await TrackPlayer.getQueue();
           const currentIndex = await TrackPlayer.getActiveTrackIndex();
 
@@ -84,7 +67,6 @@ export default async function playbackService() {
             await TrackPlayer.skipToNext();
             await TrackPlayer.play();
           } else {
-            // Última canción - dejar que MusicProvider maneje autoplay
             console.log('[RNTP] Última canción de la cola, emitiendo evento de fin');
           }
           return;
@@ -94,7 +76,6 @@ export default async function playbackService() {
       }
     }
 
-    // Log otros errores
     console.warn('[RNTP][error]', errorCode, e?.message);
   });
 
@@ -113,12 +94,11 @@ export default async function playbackService() {
     dwarn('[RNTP][error]', e && (e.code || e.message) ? e : String(e));
   });
 
-  // Progreso / buffer (RNTP v3 expone position, duration, buffered)
   let lastLog = 0;
   TrackPlayer.addEventListener(Event.PlaybackProgressUpdated, e => {
     if (!DEBUG) return;
     const now = Date.now();
-    if (now - lastLog < 400) return; // throttle
+    if (now - lastLog < 400) return;
     lastLog = now;
     const position = (e && e.position) || 0;
     const duration = (e && e.duration) || 0;
