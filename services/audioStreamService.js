@@ -60,6 +60,9 @@ async function fetchPlayer(videoId, visitorData) {
 }
 
 function pickBestAudio(formats) {
+  // android: ExoPlayer (usado por RNTP) soporta WebM/Opus nativamente — mayor bitrate disponible.
+  // iOS: AVPlayer no soporta el contenedor WebM. Solo audio/mp4 (AAC, itag 140).
+  // TODO: testear Opus/WebM en iOS 17+ — hay indicios de soporte parcial pero sin confirmación oficial.
   const candidates = Platform.OS === "android"
     ? formats.filter((f) => f.mimeType?.startsWith("audio/mp4") || f.mimeType?.startsWith("audio/webm"))
     : formats.filter((f) => f.mimeType?.startsWith("audio/mp4"));
