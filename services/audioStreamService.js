@@ -1,5 +1,6 @@
 import { STREAM_CLIENT_NAME, STREAM_CLIENT_VERSION, STREAM_ENDPOINT } from "@/constants/config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
 const PLAYER_ENDPOINT = STREAM_ENDPOINT;
 const VISITOR_DATA_KEY = "audio:visitorData";
@@ -59,11 +60,13 @@ async function fetchPlayer(videoId, visitorData) {
 }
 
 function pickBestAudio(formats) {
-    const best = formats
-        .filter((f) => f.mimeType?.startsWith("audio/mp4"))
-        .sort((a, b) => b.bitrate - a.bitrate)[0];
-    if (!best) throw new Error("No audio/mp4 stream");
-    return { itag: best.itag, url: best.url, mimeType: best.mimeType, bitrate: best.bitrate, audioQuality: best.audioQuality };
+  const candidates = Platform.OS === "android"
+    ? formats.filter((f) => f.mimeType?.startsWith("audio/mp4") || f.mimeType?.startsWith("audio/webm"))
+    : formats.filter((f) => f.mimeType?.startsWith("audio/mp4"));
+
+  const best = candidates.sort((a, b) => b.bitrate - a.bitrate)[0];
+  if (!best) throw new Error("No audio stream");
+  return { itag: best.itag, url: best.url, mimeType: best.mimeType, bitrate: best.bitrate, audioQuality: best.audioQuality };
 }
 
 export async function resolveAudioStream(videoId) {
