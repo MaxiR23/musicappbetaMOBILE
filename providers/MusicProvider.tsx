@@ -216,6 +216,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     lastPosition: number;
   } | null>(null);
   const switchingRef = useRef(false);
+  // iOS FIX: guard para fallback de fin de track por posición (PlaybackQueueEnded no confiable en iOS)
+  const trackEndFiredRef = useRef<string | null>(null);
 
   const stateRef = useRef(state);
   useEffect(() => {
@@ -461,11 +463,25 @@ export function MusicProvider({ children }: { children: ReactNode }) {
             }
           }
         }
+
+        // iOS FIX: PlaybackQueueEnded no dispara confiablemente en iOS con queue de 1 track.
+        // Fallback por posición — dispara next() una sola vez por track via ref guard.
+        // SEE: https://github.com/doublesymmetry/react-native-track-player/issues/2003
+        if (Platform.OS === "ios" && duration > 0 && duration - position < 0.8) {
+          if (trackEndFiredRef.current !== trackId) {
+            trackEndFiredRef.current = trackId;
+            next();
+          }
+        }
       },
     );
 
     const subEnded = PlayerService.onTrackEnd(async () => {
       const { queue, queueIndex } = stateRef.current;
+      // iOS FIX: marcar el track como procesado para que el fallback de onProgress no duplique.
+      const track = queue[queueIndex];
+      if (track) trackEndFiredRef.current = String(track.id);
+
       const ni = queueIndex + 1;
 
       if (ni < queue.length) {
