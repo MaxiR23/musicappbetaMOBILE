@@ -42,6 +42,7 @@ export default function LoginForm({ onSwitchToRegister }: Props) {
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
+        textContentType="emailAddress"
       />
 
       <AuthInput
@@ -50,6 +51,7 @@ export default function LoginForm({ onSwitchToRegister }: Props) {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        textContentType="password"
         marginTop={12}
       />
 
