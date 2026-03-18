@@ -4,18 +4,17 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    InteractionManager,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  InteractionManager,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { cleanExpiredCache } from '@/utils/cache';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import HomeBanner from "@/components/features/home/HomeBanner";
 import RecentSection from "@/components/features/home/RecentSection";
 import TrackActionsSheet from "@/components/shared/TrackActionsSheet";
 import { supabase } from "@/lib/supabase";
@@ -157,7 +156,6 @@ export default function HomeScreen() {
         initialBlocks={3}
       >
         {/* banner */}
-        <HomeBanner />
         <HomeFeatured />
 
         {/* TODO: CHECK OLD CODE BELOW, if decided to be unused archived or delete PlaylistSection { */}
