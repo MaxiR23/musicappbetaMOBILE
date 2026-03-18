@@ -1,3 +1,4 @@
+import { usePlayerInsets } from "@/hooks/use-player-insets";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronDown } from "lucide-react-native";
@@ -150,6 +151,8 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
     return 90;
   }, [height]);
 
+  const { paddingTop, paddingBottom } = usePlayerInsets();
+
   return (
     <Animated.View
       {...(activePlayerTab === null ? panHandlers : {})}
@@ -185,9 +188,9 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
           bounces={false}
           overScrollMode="never"
           contentContainerStyle={{
-            paddingTop: 40,
+            paddingTop,
             paddingHorizontal: 20,
-            paddingBottom: 16,
+            paddingBottom,
           }}
           scrollEventThrottle={16}
         >
@@ -349,34 +352,34 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
     </Animated.View>
   );
 },
-(prev, next) =>
-  prev.isExpanded === next.isExpanded &&
-  prev.bgUrl === next.bgUrl &&
-  prev.coverUrl === next.coverUrl &&
-  prev.title === next.title &&
-  prev.artist_name === next.artist_name &&
-  prev.isPlaying === next.isPlaying &&
-  prev.hasPrev === next.hasPrev &&
-  prev.hasNext === next.hasNext &&
-  prev.isLiked === next.isLiked &&
-  prev.liking === next.liking &&
-  prev.repeatOne === next.repeatOne &&
-  prev.shuffled === next.shuffled &&
-  prev.activePlayerTab === next.activePlayerTab &&
-  prev.gradient[0] === next.gradient[0] &&
-  prev.gradient[1] === next.gradient[1] &&
-  prev.autoplayEnabled === next.autoplayEnabled &&
-  prev.lyricsText === next.lyricsText &&
-  prev.lyricsLoading === next.lyricsLoading &&
-  prev.lyricsError === next.lyricsError &&
-  prev.upNextData === next.upNextData &&
-  prev.upNextLoading === next.upNextLoading &&
-  prev.upNextError === next.upNextError &&
-  prev.relatedData === next.relatedData &&
-  prev.relatedLoading === next.relatedLoading &&
-  prev.relatedError === next.relatedError &&
-  prev.autoplayStartIndex === next.autoplayStartIndex &&
-  prev.playSource === next.playSource
+  (prev, next) =>
+    prev.isExpanded === next.isExpanded &&
+    prev.bgUrl === next.bgUrl &&
+    prev.coverUrl === next.coverUrl &&
+    prev.title === next.title &&
+    prev.artist_name === next.artist_name &&
+    prev.isPlaying === next.isPlaying &&
+    prev.hasPrev === next.hasPrev &&
+    prev.hasNext === next.hasNext &&
+    prev.isLiked === next.isLiked &&
+    prev.liking === next.liking &&
+    prev.repeatOne === next.repeatOne &&
+    prev.shuffled === next.shuffled &&
+    prev.activePlayerTab === next.activePlayerTab &&
+    prev.gradient[0] === next.gradient[0] &&
+    prev.gradient[1] === next.gradient[1] &&
+    prev.autoplayEnabled === next.autoplayEnabled &&
+    prev.lyricsText === next.lyricsText &&
+    prev.lyricsLoading === next.lyricsLoading &&
+    prev.lyricsError === next.lyricsError &&
+    prev.upNextData === next.upNextData &&
+    prev.upNextLoading === next.upNextLoading &&
+    prev.upNextError === next.upNextError &&
+    prev.relatedData === next.relatedData &&
+    prev.relatedLoading === next.relatedLoading &&
+    prev.relatedError === next.relatedError &&
+    prev.autoplayStartIndex === next.autoplayStartIndex &&
+    prev.playSource === next.playSource
 );
 
 const styles = StyleSheet.create({
