@@ -20,7 +20,7 @@ function StatsCard() {
   useEffect(() => {
     getMonthlyStats({ include: "artists", limit: 3 })
       .then((data) => setArtists(data?.artists ?? []))
-      .catch(() => { });
+      .catch(() => {});
   }, [getMonthlyStats]);
 
   if (!artists.length) return null;
@@ -72,7 +72,7 @@ function ReplayCard() {
   const router = useRouter();
   const { songs, loading, hasEnoughData } = useReplay();
 
-  if (loading || !hasEnoughData) return null; 
+  if (loading || !hasEnoughData) return null;
 
   const topSongs = songs.slice(0, 5);
   const trackNames = topSongs
@@ -110,6 +110,20 @@ function ReplayCard() {
 }
 
 export default function HomeFeatured() {
+  const { songs, loading, hasEnoughData } = useReplay();
+  const { getMonthlyStats } = useMusicApi();
+  const [hasStats, setHasStats] = useState(false);
+
+  useEffect(() => {
+    getMonthlyStats({ include: "artists", limit: 1 })
+      .then((data) => setHasStats((data?.artists ?? []).length > 0))
+      .catch(() => {});
+  }, [getMonthlyStats]);
+
+  const showReplay = !loading && hasEnoughData;
+
+  if (!hasStats && !showReplay) return null;
+
   return (
     <ScrollView
       horizontal
@@ -117,8 +131,8 @@ export default function HomeFeatured() {
       contentContainerStyle={styles.scroll}
       style={styles.container}
     >
-      <StatsCard />
-      <ReplayCard />
+      {hasStats && <StatsCard />}
+      {showReplay && <ReplayCard />}
     </ScrollView>
   );
 }
@@ -139,7 +153,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
   },
-  // Stats circles
   circle: {
     position: "absolute",
     overflow: "hidden",
@@ -171,7 +184,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     lineHeight: 20,
   },
-  // Replay
   replayContent: {
     flex: 1,
     justifyContent: "center",

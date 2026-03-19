@@ -148,7 +148,11 @@ export default function HomeScreen() {
       {/* contenido */}
       <ProList
         style={styles.container}
-        contentContainerStyle={contentPadding}
+        contentContainerStyle={{
+          ...contentPadding,
+          paddingHorizontal: 4,
+          paddingBottom: 10,
+        }}
         bounces={false}
         overScrollMode="never"
         showsVerticalScrollIndicator={false}
@@ -301,6 +305,6 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0e0e0e", padding: 10 },
+  container: { flex: 1, backgroundColor: "#0e0e0e" },
   section: { marginBottom: 20 },
 });
