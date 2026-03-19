@@ -150,7 +150,7 @@ export default function HomeScreen() {
         style={styles.container}
         contentContainerStyle={{
           ...contentPadding,
-          paddingHorizontal: 4,
+          paddingHorizontal: 8,
           paddingBottom: 10,
         }}
         bounces={false}

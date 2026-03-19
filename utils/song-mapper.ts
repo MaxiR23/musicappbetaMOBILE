@@ -161,21 +161,6 @@ export function mapPlaylistSongs(playlistSongs: any[]): MappedSong[] {
   }));
 }
 
-export function mapPresentingTracks(tracks: any[]): MappedSong[] {
-  if (!Array.isArray(tracks)) return [];
-  return tracks.map((track: any) => ({
-    id: track.videoId,
-    title: track.title,
-    artist_name: track.artist ?? "",
-    artist_id: track.artist_id ?? null,
-    album_id: track.album_id ?? null,
-    album_name: track.album ?? null,
-    thumbnail: track.thumbnail ?? "",
-    duration: track.duration ?? null,
-    duration_seconds: track.duration_seconds ?? null,
-  }));
-}
-
 /**
  * Mapea tracks genéricos (upNext, related) al formato estándar del reproductor
  * 

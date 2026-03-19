@@ -5,6 +5,7 @@ import { PlaylistSkeletonLayout } from "@/components/shared/skeletons/Skeleton";
 import { useContentPadding } from "@/hooks/use-content-padding";
 import { useMusic } from "@/hooks/use-music";
 import { useReplay } from "@/hooks/use-replay";
+import { formatDurationCustom } from "@/utils/durations";
 import { MappedSong } from "@/utils/song-mapper";
 import { useRouter } from "expo-router";
 import React, { useMemo } from "react";
@@ -20,6 +21,13 @@ export default function ReplayScreen() {
     () => songs.map((s) => s.thumbnail).filter(Boolean) as string[],
     [songs]
   );
+
+  const totalDuration = useMemo(() => {
+    const totalMs = songs.reduce(
+      (acc, s) => acc + (s.duration_seconds ?? 0) * 1000, 0
+    );
+    return formatDurationCustom(totalMs, { format: "compact", round: true });
+  }, [songs]);
 
   const sections = useMemo(() => {
     if (!songs.length) return [];
@@ -52,7 +60,7 @@ export default function ReplayScreen() {
           <View style={styles.infoSection}>
             <Text style={styles.title}>Replay</Text>
             <Text style={styles.meta}>
-              {songs.length} canciones • Tus más escuchadas
+              {songs.length} canciones • {totalDuration}
             </Text>
           </View>
         );

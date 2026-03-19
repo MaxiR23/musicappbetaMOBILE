@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 42,
     fontWeight: "800",
-    lineHeight: 48,
+    lineHeight: 36,
   },
   replayTrackNames: {
     color: "rgba(255,255,255,0.7)",
