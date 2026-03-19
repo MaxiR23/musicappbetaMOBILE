@@ -151,7 +151,6 @@ export default function HomeScreen() {
         contentContainerStyle={{
           ...contentPadding,
           paddingHorizontal: 8,
-          paddingBottom: 10,
         }}
         bounces={false}
         overScrollMode="never"
