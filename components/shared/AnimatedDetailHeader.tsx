@@ -81,7 +81,7 @@ export default function AnimatedDetailHeader({
   });
 
   const collapsedHeaderStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(scrollY.value, [220, 260], [0, 1], Extrapolation.CLAMP);
+    const opacity = interpolate(scrollY.value, [250, 290], [0, 1], Extrapolation.CLAMP);
     return { opacity };
   });
 
@@ -91,7 +91,7 @@ export default function AnimatedDetailHeader({
   });
 
   const fixedMenuButtonStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(scrollY.value, [200, 240], [1, 0], Extrapolation.CLAMP);
+    const opacity = interpolate(scrollY.value, [230, 270], [1, 0], Extrapolation.CLAMP);
     return { opacity };
   });
 
