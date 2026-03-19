@@ -87,7 +87,7 @@ export function useHomeFeed(userId: string) {
     }
   }, [userId, versions]);
 
-  // TODO: fix 502 — deshabilitado temporalmente
+  // TODO: fix 502 — deshabilitado temporalmente CHECK: commit 66358fb9eb89faa94851153c7f6aba6d5449c5be in backend
   const refreshRecommendations = useCallback(async () => {
     try {
       const data = await cacheWrap(
@@ -125,7 +125,7 @@ export function useHomeFeed(userId: string) {
       refreshTopTracks();
       refreshNewSingles();
       refreshSeedTracks();
-      refreshRecommendations(); // TODO: fix ALBUM RECO
+      refreshRecommendations(); // TODO: fix ALBUM RECO CHECK: commit 66358fb9eb89faa94851153c7f6aba6d5449c5be in backend
     }, 100);
 
     return () => clearTimeout(timer);
