@@ -3,31 +3,18 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface PlaybackButtonsProps {
-  /**
-   * Callback cuando se presiona el botón Play
-   */
   onPlay: () => void;
-
-  /**
-   * Callback cuando se presiona el botón Shuffle
-   */
-  onShuffle: () => void;
-
-  /**
-   * Deshabilitar ambos botones
-   */
+  onShuffle?: () => void;
   disabled?: boolean;
 }
 
-/**
- * Componente reutilizable para los botones de reproducción Play y Shuffle
- * Usado en AlbumScreen, PlaylistScreen, etc.
- */
 export default function PlaybackButtons({
   onPlay,
   onShuffle,
   disabled = false,
 }: PlaybackButtonsProps) {
+  const shuffleDisabled = disabled || !onShuffle;
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -41,10 +28,10 @@ export default function PlaybackButtons({
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.shuffleButton}
+        style={[styles.shuffleButton, shuffleDisabled && { opacity: 0.3 }]}
         onPress={onShuffle}
         activeOpacity={0.85}
-        disabled={disabled}
+        disabled={shuffleDisabled}
       >
         <Ionicons name="shuffle" size={18} color="#fff" />
         <Text style={styles.buttonText}>Shuffle</Text>

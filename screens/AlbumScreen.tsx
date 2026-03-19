@@ -158,14 +158,14 @@ export default function AlbumScreen() {
                                 thumb: coverUrl,
                             })
                         }
-                        onShuffle={() => {
+                        onShuffle={mappedSongs.length > 1 ? () => {
                             const randomIndex = Math.floor(Math.random() * mappedSongs.length);
                             playList(mappedSongs, randomIndex, {
                                 type: "album",
                                 name: album.info?.title,
                                 thumb: coverUrl,
                             });
-                        }}
+                        } : undefined}
                     />
                 );
 
