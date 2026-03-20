@@ -2,7 +2,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { resolveAudioStream } from "@/services/audioStreamService";
 import { upgradeThumbUrl } from "@/utils/image-helpers";
 import { ReactNode, useCallback, useEffect, useMemo, useReducer, useRef } from "react";
-import { Platform } from "react-native";
 import { useCacheInvalidation } from "../hooks/use-cache-invalidation";
 import { useMusicApi } from "../hooks/use-music-api";
 import * as PlayerService from "../services/PlayerService";
@@ -215,7 +214,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     lastPosition: number;
   } | null>(null);
   const switchingRef = useRef(false);
-  // iOS FIX: guard para fallback de fin de track por posición (PlaybackQueueEnded no confiable en iOS)
+  // guard para fallback de fin de track por posicion (PlaybackQueueEnded no confiable)
   const trackEndFiredRef = useRef<string | null>(null);
 
   const stateRef = useRef(state);
@@ -463,10 +462,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        // iOS FIX: PlaybackQueueEnded no dispara confiablemente en iOS con queue de 1 track.
-        // Fallback por posición — dispara next() una sola vez por track via ref guard.
-        // SEE: https://github.com/doublesymmetry/react-native-track-player/issues/2003
-        if (Platform.OS === "ios" && duration > 0 && duration - position < 0.8) {
+        // Fallback por posicion: PlaybackQueueEnded no dispara confiablemente
+        // cuando la duracion reportada difiere del stream real.
+        // Guard via trackEndFiredRef evita disparo doble.
+        if (duration > 0 && duration - position < 0.8) {
           if (trackEndFiredRef.current !== trackId) {
             trackEndFiredRef.current = trackId;
             next();
