@@ -58,7 +58,7 @@ export default function AlbumScreen() {
         : "";
 
     const artistThumbUrl =
-        album?.info?.straplineThumbnail?.[0]?.url ||
+        album?.info?.strapline_thumbnail?.[0]?.url ||
         getUpgradedThumb(album?.info, 256) || "";
 
     const artist_names = extractIncludedArtists(album?.info);
