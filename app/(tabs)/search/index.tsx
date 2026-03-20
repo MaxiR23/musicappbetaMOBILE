@@ -9,6 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   FlatList,
   Image,
@@ -244,15 +245,18 @@ export default function SearchScreen() {
               style={styles.searchInput}
               returnKeyType="search"
             />
-            <TouchableOpacity
-              onPress={() => {
-                setResults(null);
-                router.replace("/(tabs)/search");
-              }}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons name="close" size={20} color="#888" />
-            </TouchableOpacity>
+            {query.length > 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  setQuery("");
+                  setResults(null);
+                  inputRef.current?.focus();
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close" size={20} color="#888" />
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Recents header */}
@@ -290,6 +294,12 @@ export default function SearchScreen() {
                   )}
                 />
               )}
+            </View>
+          )}
+
+          {loading && (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+              <ActivityIndicator size="large" color="#fff" />
             </View>
           )}
 
