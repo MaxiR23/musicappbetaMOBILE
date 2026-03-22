@@ -14,7 +14,7 @@ interface NewReleaseCardProps {
     thumb?: string | null;
     thumbnails?: any[];
   };
-  onPress?: () => void; 
+  onPress?: () => void;
   badgeText?: string | null; // puede ser null para ocultarlo
   showBadge?: boolean; // control explícito del badge
   showChevron?: boolean; // control del chevron
@@ -50,10 +50,8 @@ export default function NewReleaseCard({
 
         {/* Contenido: cover + info + chevron */}
         <View style={styles.contentRow}>
-          {cover ? (
+          {cover && (
             <Image source={{ uri: cover }} style={styles.cover} />
-          ) : (
-            <View style={[styles.cover, { backgroundColor: "#0e0e0e" }]} />
           )}
 
           <View style={styles.infoCol}>
