@@ -1,4 +1,5 @@
 import { fetchFeed } from '@/services/feedService';
+import { musicService } from '@/services/musicService';
 import { fetchRecommendations } from '@/services/recommendService';
 import { cacheWrap, DAY_MS } from '@/utils/cache';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -16,6 +17,7 @@ export function useHomeFeed(userId: string) {
   const [seedTracks, setSeedTracks] = useState<any[]>([]);
   const [recoArtists, setRecoArtists] = useState<any[]>([]);
   const [recoAlbums, setRecoAlbums] = useState<any[]>([]);
+  const [thisMonthReleases, setThisMonthReleases] = useState<any[]>([]);
 
   const refreshNewReleases = useCallback(async () => {
     try {
@@ -104,6 +106,16 @@ export function useHomeFeed(userId: string) {
     }
   }, [userId, versions]);
 
+  const refreshThisMonthReleases = useCallback(async () => {
+    try {
+      const resp = await musicService.getThisMonthReleases(versions);
+      setThisMonthReleases(resp?.releases ?? []);
+    } catch (e: any) {
+      console.warn("[useHomeFeed] this_month_releases error:", e?.message || e);
+      setThisMonthReleases([]);
+    }
+  }, [versions]);
+
   const recoBySeed = useMemo(() => {
     const map = new Map<string, any[]>();
     for (const a of recoArtists || []) {
@@ -126,10 +138,11 @@ export function useHomeFeed(userId: string) {
       refreshNewSingles();
       refreshSeedTracks();
       refreshRecommendations(); // TODO: fix ALBUM RECO CHECK: commit 66358fb9eb89faa94851153c7f6aba6d5449c5be in backend
+      refreshThisMonthReleases();
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [ready, refreshNewReleases, refreshTopAlbums, refreshTopTracks, refreshNewSingles, refreshSeedTracks, refreshRecommendations]);
+  }, [ready, refreshNewReleases, refreshTopAlbums, refreshTopTracks, refreshNewSingles, refreshSeedTracks, refreshRecommendations, refreshThisMonthReleases]);
 
   return {
     newReleases,
@@ -140,5 +153,6 @@ export function useHomeFeed(userId: string) {
     recoArtists,
     recoAlbums,
     recoBySeed,
+    thisMonthReleases,
   };
 }

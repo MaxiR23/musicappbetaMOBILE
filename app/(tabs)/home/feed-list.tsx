@@ -23,7 +23,7 @@ export default function FeedListScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const contentPadding = useContentPadding();
-  const { getRecentPlays } = useMusicApi();
+  const { getRecentPlays, getThisMonthReleases } = useMusicApi();
 
   const { key, title } = useLocalSearchParams<{ key: string; title: string }>();
 
@@ -42,6 +42,16 @@ export default function FeedListScreen() {
         } else if (key === "reco-albums") {
           const resp = await fetchRecommendations();
           setItems(resp?.albums ?? []);
+        } else if (key === "this-month-releases") {
+          const resp = await getThisMonthReleases();
+          const mapped = (resp?.releases ?? []).map((r) => ({
+            id: r.artist_id,
+            title: r.album,
+            artist: r.artist,
+            thumbnail_url: r.thumbnail,
+            release_date: r.release_date,
+          }));
+          setItems(mapped);
         } else {
           const config = FEED_CONFIG[key];
           if (config) {
@@ -56,7 +66,7 @@ export default function FeedListScreen() {
         setLoading(false);
       }
     })();
-  }, [key, getRecentPlays]);
+  }, [key, getRecentPlays, getThisMonthReleases]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 8 }]}>

@@ -1,5 +1,3 @@
-// components/features/home/FeedSection.tsx
-
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { View } from 'react-native';

@@ -49,6 +49,16 @@ export type RecentItem = {
   thumbnail_url?: string | null;
 };
 
+export type UpcomingRelease = {
+  release_date: string | null;
+  artist: string | null;
+  album: string | null;
+  label: string | null;
+  thumbnail: string | null;
+  track_count: number | null;
+  artist_id: string | null;
+};
+
 type CacheVersions = Record<string, string>;
 
 export const musicService = {
@@ -70,6 +80,20 @@ export const musicService = {
 
   getReleases: async (): Promise<Song[]> => {
     return authFetch(`${API_URL}/music/releases`);
+  },
+
+  getThisMonthReleases: async (
+    versions: CacheVersions
+  ): Promise<{ ok: boolean; count: number; releases: UpcomingRelease[] }> => {
+    return cacheWrap(
+      "upcoming-releases:this-month",
+      async () => {
+        const data = await authFetch(`${API_URL}/upcoming-releases/this-month`);
+        if (!data?.ok) throw new Error("this_month_releases_failed");
+        return data;
+      },
+      { version: versions["upcoming-releases"] }
+    );
   },
 
   getArtist: async (id: string, versions: CacheVersions): Promise<Artist> => {
