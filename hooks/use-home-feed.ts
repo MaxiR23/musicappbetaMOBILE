@@ -17,7 +17,7 @@ export function useHomeFeed(userId: string) {
   const [seedTracks, setSeedTracks] = useState<any[]>([]);
   const [recoArtists, setRecoArtists] = useState<any[]>([]);
   const [recoAlbums, setRecoAlbums] = useState<any[]>([]);
-  const [thisMonthReleases, setThisMonthReleases] = useState<any[]>([]);
+  const [upcomingReleases, setUpcomingReleases] = useState<any[]>([]);
 
   const refreshNewReleases = useCallback(async () => {
     try {
@@ -106,13 +106,13 @@ export function useHomeFeed(userId: string) {
     }
   }, [userId, versions]);
 
-  const refreshThisMonthReleases = useCallback(async () => {
+  const refreshUpcomingReleases = useCallback(async () => {
     try {
-      const resp = await musicService.getThisMonthReleases(versions);
-      setThisMonthReleases(resp?.releases ?? []);
+      const resp = await musicService.getUpcomingReleases(versions);
+      setUpcomingReleases(resp?.releases ?? []);
     } catch (e: any) {
-      console.warn("[useHomeFeed] this_month_releases error:", e?.message || e);
-      setThisMonthReleases([]);
+      console.warn("[useHomeFeed] upcoming_releases error:", e?.message || e);
+      setUpcomingReleases([]);
     }
   }, [versions]);
 
@@ -138,11 +138,11 @@ export function useHomeFeed(userId: string) {
       refreshNewSingles();
       refreshSeedTracks();
       refreshRecommendations(); // TODO: fix ALBUM RECO CHECK: commit 66358fb9eb89faa94851153c7f6aba6d5449c5be in backend
-      refreshThisMonthReleases();
+      refreshUpcomingReleases();
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [ready, refreshNewReleases, refreshTopAlbums, refreshTopTracks, refreshNewSingles, refreshSeedTracks, refreshRecommendations, refreshThisMonthReleases]);
+  }, [ready, refreshNewReleases, refreshTopAlbums, refreshTopTracks, refreshNewSingles, refreshSeedTracks, refreshRecommendations, refreshUpcomingReleases]);
 
   return {
     newReleases,
@@ -153,6 +153,6 @@ export function useHomeFeed(userId: string) {
     recoArtists,
     recoAlbums,
     recoBySeed,
-    thisMonthReleases,
+    upcomingReleases,
   };
 }

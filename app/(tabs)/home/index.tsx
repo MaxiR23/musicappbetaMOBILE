@@ -46,7 +46,7 @@ export default function HomeScreen() {
     seedTracks,
     recoAlbums,
     recoBySeed,
-    thisMonthReleases,
+    upcomingReleases,
   } = useHomeFeed(userId);
 
   useEffect(() => {
@@ -284,17 +284,17 @@ export default function HomeScreen() {
           feedKey="reco-albums"
         />
 
-        {/* lanzamientos del mes */}
+        {/* próximos lanzamientos */}
         <FeedSection
-          title="Sale este mes"
-          items={thisMonthReleases.map((r) => ({
-            id: r.artist_id,
+          title="Próximos lanzamientos"
+          items={upcomingReleases.map((r) => ({
+            id: r.id,
             title: r.album,
             artist: r.artist,
             thumbnail: r.thumbnail,
           }))}
           type="album"
-          feedKey="this-month-releases"
+          feedKey="upcoming-releases"
         />
 
       </ProList>

@@ -50,6 +50,7 @@ export type RecentItem = {
 };
 
 export type UpcomingRelease = {
+  id: string;
   release_date: string | null;
   artist: string | null;
   album: string | null;
@@ -82,14 +83,14 @@ export const musicService = {
     return authFetch(`${API_URL}/music/releases`);
   },
 
-  getThisMonthReleases: async (
+  getUpcomingReleases: async (
     versions: CacheVersions
   ): Promise<{ ok: boolean; count: number; releases: UpcomingRelease[] }> => {
     return cacheWrap(
-      "upcoming-releases:this-month",
+      "upcoming-releases:next",
       async () => {
-        const data = await authFetch(`${API_URL}/upcoming-releases/this-month`);
-        if (!data?.ok) throw new Error("this_month_releases_failed");
+        const data = await authFetch(`${API_URL}/upcoming-releases/next`);
+        if (!data?.ok) throw new Error("upcoming_releases_failed");
         return data;
       },
       { version: versions["upcoming-releases"] }

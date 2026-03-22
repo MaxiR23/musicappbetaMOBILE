@@ -28,8 +28,8 @@ export function useMusicApi() {
     []
   );
 
-  const getThisMonthReleases = useCallback(
-    () => musicService.getThisMonthReleases(versions),
+  const getUpcomingReleases = useCallback(
+    () => musicService.getUpcomingReleases(versions),
     [versions]
   );
 
@@ -194,7 +194,7 @@ export function useMusicApi() {
     playSongUrl,
     prefetchSongs,
     getReleases,
-    getThisMonthReleases,
+    getUpcomingReleases,
     getArtist,
     getAlbum,
     getArtistAlbums,
