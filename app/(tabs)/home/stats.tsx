@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: "#fff",
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
   },
   headerSub: {
@@ -304,18 +304,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    marginBottom: 14,
+    marginBottom: 10,
   },
   sectionHeaderText: {
     color: "#fff",
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "700",
   },
   artistCard: {

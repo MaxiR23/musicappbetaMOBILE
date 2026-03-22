@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 interface TrackCardProps {
@@ -72,10 +72,10 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "transparent",
     borderRadius: 8,
-    padding: 8,
-    gap: 10,
+    padding: 4,
+    gap: 8,
   },
   imageContainer: {
     width: 48,
