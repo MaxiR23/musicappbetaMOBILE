@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useReplay } from "@/hooks/use-replay";
+
 import { cleanExpiredCache } from '@/utils/cache';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -50,6 +52,8 @@ export default function HomeScreen() {
     upcomingReleases,
     feedReady,
   } = useHomeFeed(userId);
+
+  const { loading: replayLoading } = useReplay();
 
   useEffect(() => {
     const task = InteractionManager.runAfterInteractions(async () => {
@@ -146,7 +150,7 @@ export default function HomeScreen() {
         </View>
       </SafeAreaView>
 
-      {!feedReady ? (
+      {!feedReady || replayLoading ? (
         <HomeSkeleton />
       ) : (
         <>

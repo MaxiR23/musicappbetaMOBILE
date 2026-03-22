@@ -11,6 +11,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 function StatsCard() {
   const router = useRouter();
@@ -71,6 +77,21 @@ function StatsCard() {
 function ReplayCard() {
   const router = useRouter();
   const { songs, loading, hasEnoughData } = useReplay();
+  const overlay = useSharedValue(0);
+  const textOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    overlay.value = withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.ease) });
+    textOpacity.value = withTiming(1, { duration: 1200, easing: Easing.out(Easing.ease) });
+  }, []);
+
+  const overlayStyle = useAnimatedStyle(() => ({
+    opacity: overlay.value,
+  }));
+
+  const textStyle = useAnimatedStyle(() => ({
+    opacity: textOpacity.value,
+  }));
 
   if (loading || !hasEnoughData) return null;
 
@@ -86,12 +107,24 @@ function ReplayCard() {
       onPress={() => router.push("/(tabs)/home/replay")}
       style={styles.card}
     >
+      {/* base: verde apagado/oscuro */}
       <LinearGradient
-        colors={["#00b894", "#00cec9", "#007a6e"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.cardGradient}
-      >
+        colors={["#008c6a", "#009e8e", "#006b5b"]}
+        start={{ x: 0, y: 1 }}
+        end={{ x: 1, y: 0 }}
+        style={StyleSheet.absoluteFill}
+      />
+      {/* overlay: verde vibrante final */}
+      <Animated.View style={[StyleSheet.absoluteFill, overlayStyle]}>
+        <LinearGradient
+          colors={["#00b894", "#00cec9", "#007a6e"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+      {/* contenido con fade */}
+      <Animated.View style={[styles.cardGradient, textStyle]}>
         <View style={styles.replayContent}>
           <Text style={styles.replayLabel}>Replay</Text>
           <Text style={styles.replayTitle}>Mix</Text>
@@ -104,7 +137,7 @@ function ReplayCard() {
             {trackNames}
           </Text>
         </View>
-      </LinearGradient>
+      </Animated.View>
     </TouchableOpacity>
   );
 }
