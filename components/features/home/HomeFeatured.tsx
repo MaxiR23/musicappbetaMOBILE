@@ -107,14 +107,12 @@ function ReplayCard() {
       onPress={() => router.push("/(tabs)/home/replay")}
       style={styles.card}
     >
-      {/* base: verde apagado/oscuro */}
       <LinearGradient
         colors={["#008c6a", "#009e8e", "#006b5b"]}
         start={{ x: 0, y: 1 }}
         end={{ x: 1, y: 0 }}
         style={StyleSheet.absoluteFill}
       />
-      {/* overlay: verde vibrante final */}
       <Animated.View style={[StyleSheet.absoluteFill, overlayStyle]}>
         <LinearGradient
           colors={["#00b894", "#00cec9", "#007a6e"]}
@@ -123,7 +121,6 @@ function ReplayCard() {
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>
-      {/* contenido con fade */}
       <Animated.View style={[styles.cardGradient, textStyle]}>
         <View style={styles.replayContent}>
           <Text style={styles.replayLabel}>Replay</Text>
@@ -142,6 +139,52 @@ function ReplayCard() {
   );
 }
 
+function ListenAgainCard() {
+  const router = useRouter();
+  const { getListenAgain } = useMusicApi();
+  const [album, setAlbum] = useState<any>(null);
+
+  useEffect(() => {
+    getListenAgain()
+      .then((data) => setAlbum(data?.album ?? null))
+      .catch(() => {});
+  }, [getListenAgain]);
+
+  if (!album) return null;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={() => router.push(`/(tabs)/home/album/${encodeURIComponent(album.album_id)}`)}
+      style={styles.card}
+    >
+      <View style={StyleSheet.absoluteFill}>
+        {album.thumbnail_url ? (
+          <Image
+            source={{ uri: album.thumbnail_url }}
+            style={styles.listenAgainCover}
+          />
+        ) : (
+          <View style={[styles.listenAgainCover, { backgroundColor: "#2a2a2a" }]} />
+        )}
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.85)"]}
+          style={styles.listenAgainGradient}
+        />
+      </View>
+      <View style={styles.cardFooter}>
+        <Text style={styles.listenAgainLabel}>Volvé a escuchar</Text>
+        <Text style={styles.listenAgainTitle} numberOfLines={2}>
+          {album.album_name}
+        </Text>
+        <Text style={styles.cardSubtitle} numberOfLines={1}>
+          {album.artist_name}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 export default function HomeFeatured() {
   const { songs, loading, hasEnoughData } = useReplay();
   const { getMonthlyStats } = useMusicApi();
@@ -155,8 +198,6 @@ export default function HomeFeatured() {
 
   const showReplay = !loading && hasEnoughData;
 
-  if (!hasStats && !showReplay) return null;
-
   return (
     <ScrollView
       horizontal
@@ -166,6 +207,7 @@ export default function HomeFeatured() {
     >
       {hasStats && <StatsCard />}
       {showReplay && <ReplayCard />}
+      <ListenAgainCard />
     </ScrollView>
   );
 }
@@ -236,5 +278,30 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.7)",
     fontSize: 10,
     fontWeight: "400",
+  },
+  listenAgainCover: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  listenAgainGradient: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: "55%",
+  },
+  listenAgainLabel: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 10,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  listenAgainTitle: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
+    lineHeight: 18,
   },
 });

@@ -60,6 +60,16 @@ export type UpcomingRelease = {
   artist_id: string | null;
 };
 
+export type ListenAgainAlbum = {
+  album_id: string;
+  album_name: string;
+  artist_id: string;
+  artist_name: string;
+  thumbnail_url: string;
+  total_plays: number;
+  last_played_at: string;
+};
+
 type CacheVersions = Record<string, string>;
 
 export const musicService = {
@@ -380,6 +390,20 @@ export const musicService = {
           duration_seconds: song.duration_seconds,
         }));
       }
+    );
+  },
+
+  getListenAgain: async (
+    versions: CacheVersions
+  ): Promise<{ ok: boolean; album: ListenAgainAlbum | null }> => {
+    return cacheWrap(
+      "feed:listen-again",
+      async () => {
+        const data = await authFetch(`${API_URL}/feed/listen-again`);
+        if (!data?.ok) throw new Error("listen_again_failed");
+        return data;
+      },
+      { version: versions["listen-again"] }
     );
   },
 

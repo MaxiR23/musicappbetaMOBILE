@@ -18,6 +18,7 @@ export function useHomeFeed(userId: string) {
   const [recoArtists, setRecoArtists] = useState<any[]>([]);
   const [recoAlbums, setRecoAlbums] = useState<any[]>([]);
   const [upcomingReleases, setUpcomingReleases] = useState<any[]>([]);
+  const [listenAgainAlbum, setListenAgainAlbum] = useState<any>(null);
   const [feedReady, setFeedReady] = useState(false);
 
   const refreshNewReleases = useCallback(async () => {
@@ -119,6 +120,16 @@ export function useHomeFeed(userId: string) {
     }
   }, [versions]);
 
+  const refreshListenAgain = useCallback(async () => {
+    try {
+      const resp = await musicService.getListenAgain(versions);
+      setListenAgainAlbum(resp?.album ?? null);
+    } catch (e: any) {
+      console.warn("[useHomeFeed] listen_again error:", e?.message || e);
+      setListenAgainAlbum(null);
+    }
+  }, [versions]);
+
   const recoBySeed = useMemo(() => {
     const map = new Map<string, any[]>();
     for (const a of recoArtists || []) {
@@ -142,10 +153,11 @@ export function useHomeFeed(userId: string) {
       refreshSeedTracks();
       refreshRecommendations(); // TODO: fix ALBUM RECO CHECK: commit 66358fb9eb89faa94851153c7f6aba6d5449c5be in backend
       refreshUpcomingReleases();
+      refreshListenAgain();
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [ready, refreshNewReleases, refreshTopAlbums, refreshTopTracks, refreshNewSingles, refreshSeedTracks, refreshRecommendations, refreshUpcomingReleases]);
+  }, [ready, refreshNewReleases, refreshTopAlbums, refreshTopTracks, refreshNewSingles, refreshSeedTracks, refreshRecommendations, refreshUpcomingReleases, refreshListenAgain]);
 
   return {
     newReleases,

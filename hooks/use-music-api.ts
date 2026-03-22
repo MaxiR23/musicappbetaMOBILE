@@ -168,6 +168,11 @@ export function useMusicApi() {
     []
   );
 
+  const getListenAgain = useCallback(
+    () => musicService.getListenAgain(versions),
+    [versions]
+  );
+
   const moveTrackInPlaylist = useCallback(
     (playlistId: string, oldPosition: number, newPosition: number) =>
       musicService.moveTrackInPlaylist(playlistId, oldPosition, newPosition),
@@ -217,6 +222,7 @@ export function useMusicApi() {
     getMonthlyStats,
     getRecentPlays,
     getReplaySongs,
+    getListenAgain,
     moveTrackInPlaylist,
     getTrackLyrics,
     getTrackUpNext,
