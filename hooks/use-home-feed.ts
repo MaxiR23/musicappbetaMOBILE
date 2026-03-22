@@ -18,6 +18,7 @@ export function useHomeFeed(userId: string) {
   const [recoArtists, setRecoArtists] = useState<any[]>([]);
   const [recoAlbums, setRecoAlbums] = useState<any[]>([]);
   const [upcomingReleases, setUpcomingReleases] = useState<any[]>([]);
+  const [feedReady, setFeedReady] = useState(false);
 
   const refreshNewReleases = useCallback(async () => {
     try {
@@ -27,9 +28,11 @@ export function useHomeFeed(userId: string) {
         { userId, ttl: DAY_MS, version: versions['new-releases'] }
       );
       setNewReleases(albums);
+      setFeedReady(true);
     } catch (e: any) {
       console.warn("[useHomeFeed] new_releases error:", e?.message || e);
       setNewReleases([]);
+      setFeedReady(true);
     }
   }, [userId, versions]);
 
@@ -154,5 +157,6 @@ export function useHomeFeed(userId: string) {
     recoAlbums,
     recoBySeed,
     upcomingReleases,
+    feedReady,
   };
 }

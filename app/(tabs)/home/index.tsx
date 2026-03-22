@@ -23,6 +23,7 @@ import HorizontalScrollSection from "@/components/shared/HorizontalScrollSection
 
 import FeedSection from "@/components/features/home/FeedSection";
 import HomeFeatured from "@/components/features/home/HomeFeatured";
+import HomeSkeleton from "@/components/features/home/HomeSkeleton";
 import SimilarToHeader from "@/components/shared/SimilarToHeader";
 import { useContentPadding } from "@/hooks/use-content-padding";
 import { useHomeFeed } from "@/hooks/use-home-feed";
@@ -47,6 +48,7 @@ export default function HomeScreen() {
     recoAlbums,
     recoBySeed,
     upcomingReleases,
+    feedReady,
   } = useHomeFeed(userId);
 
   useEffect(() => {
@@ -57,7 +59,7 @@ export default function HomeScreen() {
         const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
 
         if (!lastClean || now - parseInt(lastClean) > THREE_DAYS) {
-          console.log('[cache] Programando limpieza automática...');
+          console.log('[cache] Programando limpieza automatica...');
 
           setTimeout(async () => {
             await cleanExpiredCache();
@@ -93,7 +95,6 @@ export default function HomeScreen() {
   const mappedNewSingles = useMemo(() => mapTracksForPlayer(newSingles), [newSingles, mapTracksForPlayer]);
   const mappedSeedTracks = useMemo(() => mapTracksForPlayer(seedTracks), [seedTracks, mapTracksForPlayer]);
 
-  // ── tomar 2 seeds para ubicar bloques ──
   const items1 = useMemo(() => (recoBySeed[0]?.[1] || []), [recoBySeed]);
   const items2 = useMemo(() => (recoBySeed[1]?.[1] || []), [recoBySeed]);
   const seed1 = useMemo(() => {
@@ -111,13 +112,12 @@ export default function HomeScreen() {
       setProfileSheetOpen(false);
       router.replace("/login");
     } catch (err) {
-      console.warn("Error al cerrar sesión:", err);
+      console.warn("Error al cerrar sesion:", err);
     }
   }, [router]);
 
   return (
     <>
-      {/* Barra de búsqueda */}
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#0e0e0e" }}>
         <View style={{ paddingTop: 10, paddingHorizontal: 16, paddingBottom: 8 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
@@ -146,173 +146,154 @@ export default function HomeScreen() {
         </View>
       </SafeAreaView>
 
-      {/* contenido */}
-      <ProList
-        style={styles.container}
-        contentContainerStyle={{
-          ...contentPadding,
-          paddingHorizontal: 8,
-        }}
-        bounces={false}
-        overScrollMode="never"
-        showsVerticalScrollIndicator={false}
-        blockSize={2}
-        initialBlocks={3}
-      >
-        {/* banner */}
-        <HomeFeatured />
+      {!feedReady ? (
+        <HomeSkeleton />
+      ) : (
+        <>
+          <ProList
+            style={styles.container}
+            contentContainerStyle={{
+              ...contentPadding,
+              paddingHorizontal: 8,
+            }}
+            bounces={false}
+            overScrollMode="never"
+            showsVerticalScrollIndicator={false}
+            blockSize={2}
+            initialBlocks={6}
+          >
+            <HomeFeatured />
 
-        {/* TODO: CHECK OLD CODE BELOW, if decided to be unused archived or delete PlaylistSection { */}
+            <RecentSection items={recentVisible} />
 
-        {/* playlists */}
-        {/* <PlaylistsSection
-          playlists={playlistsWithCreate}
-          onCreatePress={() => setCreateOpen(true)}
-        /> */}
-
-        {/* } */}
-
-        {/* escuchados recientemente */}
-        <RecentSection items={recentVisible} />
-
-        {/* nuevos lanzamientos (álbumes) */}
-        <FeedSection
-          title="Nuevos lanzamientos"
-          items={newReleases}
-          type="album"
-          feedKey="new-releases"
-        />
-
-        {/* similar to (1) */}
-        {!!items1.length && (
-          <>
-            <SimilarToHeader name={seed1?.name} thumb={seed1?.thumb} style={{ paddingHorizontal: 10, paddingTop: 4 }} />
-            <HorizontalScrollSection
-              title={""}
-              items={items1}
-              keyExtractor={(a, idx) => `${a.id}-${idx}`}
-              imageExtractor={(a) =>
-                Array.isArray(a.thumbnails) && a.thumbnails.length
-                  ? a.thumbnails[a.thumbnails.length - 1]?.url
-                  : undefined
-              }
-              titleExtractor={(a) => a.name}
-              subtitleExtractor={() => "Artista"}
-              onItemPress={(a) => router.push(`/(tabs)/home/artist/${encodeURIComponent(a.id)}`)}
-              cardWidth={120}
-              imageHeight={120}
-              circularImage
-              sectionStyle={{ marginTop: 2 }}
+            <FeedSection
+              title="Nuevos lanzamientos"
+              items={newReleases}
+              type="album"
+              feedKey="new-releases"
             />
-          </>
-        )}
 
-        {/* más escuchados · Álbumes */}
-        <FeedSection
-          title="Más escuchados · Álbumes"
-          items={topAlbums}
-          type="album"
-          feedKey="top-albums"
-        />
+            {!!items1.length && (
+              <>
+                <SimilarToHeader name={seed1?.name} thumb={seed1?.thumb} style={{ paddingHorizontal: 10, paddingTop: 4 }} />
+                <HorizontalScrollSection
+                  title=""
+                  items={items1}
+                  keyExtractor={(a, idx) => `${a.id}-${idx}`}
+                  imageExtractor={(a) =>
+                    Array.isArray(a.thumbnails) && a.thumbnails.length
+                      ? a.thumbnails[a.thumbnails.length - 1]?.url
+                      : undefined
+                  }
+                  titleExtractor={(a) => a.name}
+                  subtitleExtractor={() => "Artista"}
+                  onItemPress={(a) => router.push(`/(tabs)/home/artist/${encodeURIComponent(a.id)}`)}
+                  cardWidth={120}
+                  imageHeight={120}
+                  circularImage
+                  sectionStyle={{ marginTop: 2 }}
+                />
+              </>
+            )}
 
-        {/* más escuchados · Canciones */}
-        <FeedSection
-          title="Más escuchados · Canciones"
-          items={topTracks}
-          type="track"
-          variant="compact"
-          feedKey="top-tracks"
-          onTrackPress={(index, queueName) => {
-            playList(mappedTopTracks, index, { type: "queue", name: queueName });
-          }}
-        />
-
-        {/* similar to (2) */}
-        {!!items2.length && (
-          <>
-            <SimilarToHeader name={seed2?.name} thumb={seed2?.thumb} style={{ paddingHorizontal: 10, paddingTop: 4 }} />
-            <HorizontalScrollSection
-              title={""}
-              items={items2}
-              keyExtractor={(a, idx) => `${a.id}-${idx}`}
-              imageExtractor={(a) =>
-                Array.isArray(a.thumbnails) && a.thumbnails.length
-                  ? a.thumbnails[a.thumbnails.length - 1]?.url
-                  : undefined
-              }
-              titleExtractor={(a) => a.name}
-              subtitleExtractor={() => "Artista"}
-              onItemPress={(a) => router.push(`/(tabs)/home/artist/${encodeURIComponent(a.id)}`)}
-              cardWidth={120}
-              imageHeight={120}
-              circularImage
-              sectionStyle={{ marginTop: 2 }}
+            <FeedSection
+              title="Más escuchados · Álbumes"
+              items={topAlbums}
+              type="album"
+              feedKey="top-albums"
             />
-          </>
-        )}
 
-        {/* WIP - TODO: FIX NEW SINGLES IN BACKEND */}
-        {/* singles nuevos */}
-        <FeedSection
-          title="Singles nuevos"
-          items={newSingles}
-          type="track"
-          variant="compact"
-          feedKey="new-singles"
-          onTrackPress={(index, queueName) => {
-            playList(mappedNewSingles, index, { type: "queue", name: queueName });
-          }}
-        />
+            <FeedSection
+              title="Más escuchados · Canciones"
+              items={topTracks}
+              type="track"
+              variant="compact"
+              feedKey="top-tracks"
+              onTrackPress={(index, queueName) => {
+                playList(mappedTopTracks, index, { type: "queue", name: queueName });
+              }}
+            />
 
-        {/* seed tracks */}
-        <FeedSection
-          title="Desde tu seed"
-          items={seedTracks}
-          type="track"
-          variant="compact"
-          feedKey="seed-tracks"
-          onTrackPress={(index, queueName) => {
-            playList(mappedSeedTracks, index, { type: "queue", name: queueName });
-          }}
-        />
+            {!!items2.length && (
+              <>
+                <SimilarToHeader name={seed2?.name} thumb={seed2?.thumb} style={{ paddingHorizontal: 10, paddingTop: 4 }} />
+                <HorizontalScrollSection
+                  title=""
+                  items={items2}
+                  keyExtractor={(a, idx) => `${a.id}-${idx}`}
+                  imageExtractor={(a) =>
+                    Array.isArray(a.thumbnails) && a.thumbnails.length
+                      ? a.thumbnails[a.thumbnails.length - 1]?.url
+                      : undefined
+                  }
+                  titleExtractor={(a) => a.name}
+                  subtitleExtractor={() => "Artista"}
+                  onItemPress={(a) => router.push(`/(tabs)/home/artist/${encodeURIComponent(a.id)}`)}
+                  cardWidth={120}
+                  imageHeight={120}
+                  circularImage
+                  sectionStyle={{ marginTop: 2 }}
+                />
+              </>
+            )}
 
-        {/* albumes recomendados */}
-        <FeedSection
-          title="Álbumes recomendados"
-          items={recoAlbums}
-          type="album"
-          feedKey="reco-albums"
-        />
+            <FeedSection
+              title="Singles nuevos"
+              items={newSingles}
+              type="track"
+              variant="compact"
+              feedKey="new-singles"
+              onTrackPress={(index, queueName) => {
+                playList(mappedNewSingles, index, { type: "queue", name: queueName });
+              }}
+            />
 
-        {/* próximos lanzamientos */}
-        <FeedSection
-          title="Próximos lanzamientos"
-          items={upcomingReleases.map((r) => ({
-            id: r.id,
-            title: r.album,
-            artist: r.artist,
-            thumbnail: r.thumbnail,
-          }))}
-          type="album"
-          feedKey="upcoming-releases"
-        />
+            <FeedSection
+              title="Desde tu seed"
+              items={seedTracks}
+              type="track"
+              variant="compact"
+              feedKey="seed-tracks"
+              onTrackPress={(index, queueName) => {
+                playList(mappedSeedTracks, index, { type: "queue", name: queueName });
+              }}
+            />
 
-      </ProList>
+            <FeedSection
+              title="Álbumes recomendados"
+              items={recoAlbums}
+              type="album"
+              feedKey="reco-albums"
+            />
 
-      {/* submenú avatar */}
-      <TrackActionsSheet
-        open={profileSheetOpen}
-        onOpenChange={setProfileSheetOpen}
-        track={null}
-        headerTitle="Cuenta"
-        subtitle={`${userName || "Usuario"}${userEmail ? " • " + userEmail : ""}`}
-        showAddTo={false}
-        showRemove={false}
-        showShare={false}
-        extraActions={[
-          { key: "logout", label: "Cerrar sesión", icon: "log-out-outline", onPress: handleSignOut },
-        ]}
-      />
+            <FeedSection
+              title="Próximos lanzamientos"
+              items={upcomingReleases.map((r) => ({
+                id: r.id,
+                title: r.album,
+                artist: r.artist,
+                thumbnail: r.thumbnail,
+              }))}
+              type="album"
+              feedKey="upcoming-releases"
+            />
+          </ProList>
+
+          <TrackActionsSheet
+            open={profileSheetOpen}
+            onOpenChange={setProfileSheetOpen}
+            track={null}
+            headerTitle="Cuenta"
+            subtitle={`${userName || "Usuario"}${userEmail ? " • " + userEmail : ""}`}
+            showAddTo={false}
+            showRemove={false}
+            showShare={false}
+            extraActions={[
+              { key: "logout", label: "Cerrar sesión", icon: "log-out-outline", onPress: handleSignOut },
+            ]}
+          />
+        </>
+      )}
     </>
   );
 }
