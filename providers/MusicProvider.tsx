@@ -181,7 +181,7 @@ async function resolveUrl(songId: string): Promise<string | null> {
   } catch (err) {
     logPlaybackError({
       trackId: songId,
-      errorMessage: err instanceof Error ? err.message : String(err),
+      errorMessage: err instanceof Error ? err.message : JSON.stringify(err),
     });
     return null;
   }
@@ -429,9 +429,16 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
         const trackId = String(track.id);
 
-        // Acumular tiempo de escucha
+        // acumular tiempo de escucha
         if (!listenTimeRef.current || listenTimeRef.current.trackId !== trackId) {
           listenTimeRef.current = { trackId, accumulated: 0, lastPosition: position };
+          return;
+        }
+
+        // repeat detection: position saltó para atrás (loop)
+        if (position < listenTimeRef.current.lastPosition - 5) {
+          listenTimeRef.current = { trackId, accumulated: 0, lastPosition: position };
+          lastLoggedTrackIdRef.current = null;
           return;
         }
 
@@ -532,7 +539,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       if (track) {
         logPlaybackError({
           trackId: String(track.id),
-          errorMessage: err instanceof Error ? err.message : String(err),
+          errorMessage: err instanceof Error ? err.message : JSON.stringify(err),
         });
       }
 
