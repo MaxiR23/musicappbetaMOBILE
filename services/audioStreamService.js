@@ -73,31 +73,30 @@ function pickBestAudio(formats) {
 }
 
 export async function resolveAudioStream(videoId) {
-    // 1. Cache hit?
+    // cache hit?
     const cached = streamCache.get(videoId);
     if (cached && cached.expiresAt > Date.now()) {
         return { stream: cached.stream };
     }
 
-    // 2. Cargar visitorData guardado
+    // cargar visitorData guardado
     const visitorData = await loadVisitorData();
 
-    // 3. Fetch
     const data = await fetchPlayer(videoId, visitorData);
 
-    // 4. Guardar nuevo visitorData si viene
+    // guardar nuevo visitorData si viene
     if (data.responseContext?.visitorData) {
         saveVisitorData(data.responseContext.visitorData);
     }
 
-    // 5. Si funciona, cachear y retornar
+    // si funciona, cachear y retornar
     if (data.streamingData) {
         const stream = pickBestAudio(data.streamingData.adaptiveFormats);
         streamCache.set(videoId, { stream, expiresAt: getExpiry(stream.url) });
         return { stream };
     }
 
-    // 6. Si falla, limpiar visitorData y reintentar con fallback
+    // si falla, limpiar visitorData y reintentar con fallback
     if (data.playabilityStatus?.status === "LOGIN_REQUIRED") {
         clearVisitorData();
         

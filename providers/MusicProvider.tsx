@@ -1,5 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { resolveAudioStream } from "@/services/audioStreamService";
+import { logPlaybackError } from "@/services/errorLogService";
 import { upgradeThumbUrl } from "@/utils/image-helpers";
 import { ReactNode, useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { useCacheInvalidation } from "../hooks/use-cache-invalidation";
@@ -177,7 +178,11 @@ async function resolveUrl(songId: string): Promise<string | null> {
   try {
     const result = await resolveAudioStream(songId);
     return result?.stream?.url ?? null;
-  } catch {
+  } catch (err) {
+    logPlaybackError({
+      trackId: songId,
+      errorMessage: err instanceof Error ? err.message : String(err),
+    });
     return null;
   }
 }
@@ -520,7 +525,17 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     });
 
     const subError = PlayerService.onError((err: unknown) => {
-      console.warn("[playback] Error:", err);
+      //console.warn("[playback] Error:", err);
+      const { queue, queueIndex } = stateRef.current;
+      const track = queue[queueIndex];
+
+      if (track) {
+        logPlaybackError({
+          trackId: String(track.id),
+          errorMessage: err instanceof Error ? err.message : String(err),
+        });
+      }
+
       dispatch({ type: "SET_ERROR", error: "No se pudo reproducir la cancion" });
       setTimeout(() => dispatch({ type: "SET_ERROR", error: null }), 4000);
     });
