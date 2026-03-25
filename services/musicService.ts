@@ -236,7 +236,7 @@ export const musicService = {
   },
 
   createPlaylist: async (title: string, description?: string, is_public?: boolean) => {
-    const result = await authFetch(`${API_URL}/playlists`, {
+    const result = await authFetch(`${API_URL}/playlists/`, {
       method: "POST",
       body: JSON.stringify({
         title,
