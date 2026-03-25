@@ -1,0 +1,28 @@
+{
+    "source": {
+        "playlist": "Desde playlist",
+        "album": "Desde álbum",
+        "artist": "Canciones de"
+    },
+    "tabs": {
+        "upNext": "UP NEXT",
+        "lyrics": "LYRICS",
+        "related": "RELATED"
+    },
+    "upNext": {
+        "playingFrom": "Reproduciendo de",
+        "unknown": "Desconocido",
+        "autoplay": "Autoplay",
+        "autoplayHint": "Basado en tu fila",
+        "noTracks": "No hay canciones siguientes",
+        "loading": "Cargando fila..."
+    },
+    "lyrics": {
+        "noLyrics": "No hay letras disponibles",
+        "loading": "Cargando letras..."
+    },
+    "related": {
+        "noContent": "No hay contenido relacionado",
+        "loading": "Cargando relacionados..."
+    }
+}

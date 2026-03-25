@@ -2,7 +2,7 @@
  * PlayerService.ts
  * Unica interfaz con TrackPlayer.
  * TP maneja maximo 2 tracks: el actual + preloaded.
- * React (MusicProvider) es la fuente de verdad de la cola.
+ * React (MusicProvider) es la fuente de verdad de la fila.
  */
 
 import trackPlayerService from "./trackPlayerService";

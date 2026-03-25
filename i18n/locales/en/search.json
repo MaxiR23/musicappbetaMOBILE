@@ -1,0 +1,22 @@
+{
+  "input": {
+    "placeholder": "Search songs or artists..."
+  },
+  "recents": {
+    "title": "Recent searches",
+    "clear": "Clear",
+    "emptyMessage": "No recent searches",
+    "emptySubmessage": "Your recent searches will appear here"
+  },
+  "results": {
+    "noResults": "No results",
+    "noResultsHint": "Try a different term",
+    "serviceError": "Search failed",
+    "serviceErrorHint": "Try again later"
+  },
+  "labels": {
+    "song": "Song",
+    "album": "Album",
+    "artist": "Artist"
+  }
+}

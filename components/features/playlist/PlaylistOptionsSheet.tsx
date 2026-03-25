@@ -1,14 +1,15 @@
 // components/playlist/PlaylistOptionsSheet.tsx
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 interface PlaylistOptionsSheetProps {
@@ -26,6 +27,8 @@ export default function PlaylistOptionsSheet({
   onEdit,
   editMode = false,
 }: PlaylistOptionsSheetProps) {
+  const { t } = useTranslation("playlist");
+
   return (
     <Modal
       visible={open}
@@ -49,7 +52,7 @@ export default function PlaylistOptionsSheet({
           {/* Header */}
           <View style={styles.headerRow}>
             <View style={{ width: 22 }} />
-            <Text style={styles.headerTitle}>Opciones de playlist</Text>
+            <Text style={styles.headerTitle}>{t("options.title")}</Text>
             <TouchableOpacity
               onPress={() => onOpenChange(false)}
               style={styles.iconBtn}
@@ -63,7 +66,7 @@ export default function PlaylistOptionsSheet({
             {/* Eliminar */}
             <ActionRow
               icon="trash-outline"
-              label="Eliminar playlist"
+              label={t("delete.title")}
               onPress={onDelete}
               danger
             />
@@ -72,14 +75,14 @@ export default function PlaylistOptionsSheet({
             {editMode ? (
               <ActionRow
                 icon="close"
-                label="Cerrar edición"
+                label={t("options.closeEdit")}
                 onPress={() => onOpenChange(false)}
               />
             ) : (
               onEdit && (
                 <ActionRow
                   icon="create-outline"
-                  label="Editar"
+                  label={t("options.edit")}
                   onPress={onEdit}
                 />
               )

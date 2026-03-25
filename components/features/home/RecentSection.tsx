@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
 import HorizontalScrollSection from './../../shared/HorizontalScrollSection';
 
@@ -16,13 +17,14 @@ interface Props {
 }
 
 export default function RecentSection({ items }: Props) {
+  const { t } = useTranslation("home");
   const router = useRouter();
 
   if (items.length === 0) return null;
 
   return (
     <HorizontalScrollSection
-      title="Escuchados recientemente"
+      title={t("sections.recents.title")}
       items={items}
       keyExtractor={(it, idx) => `${it.type}:${it.id}:${it.played_at}:${idx}`}
       imageExtractor={() => ""}
@@ -31,7 +33,7 @@ export default function RecentSection({ items }: Props) {
       cardWidth={120}
       imageHeight={120}
       has_more={items.length > 6}
-      onPressMore={() => router.push({ pathname: '/(tabs)/home/feed-list', params: { key: 'recents', title: 'Escuchados recientemente' } })}
+      onPressMore={() => router.push({ pathname: '/(tabs)/home/feed-list', params: { key: 'recents', title: t("sections.recents.title") } })}
       renderItem={(it) => {
         const SIZE = 120;
         const isArtist = it.type === "artist";
@@ -73,7 +75,7 @@ export default function RecentSection({ items }: Props) {
               </Text>
             )}
             <Text style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>
-              {isArtist ? "Artista" : "Álbum"}
+              {isArtist ? t("sections.recents.artistLabel") : t("sections.recents.albumLabel")}
             </Text>
           </TouchableOpacity>
         );

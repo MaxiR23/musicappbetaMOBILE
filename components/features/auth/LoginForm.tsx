@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "expo-router";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Text, TouchableOpacity } from "react-native";
 import { AuthFormContainer } from "./AuthFormContainer";
 import { AuthInput } from "./AuthInput";
@@ -9,6 +10,7 @@ import { authStyles } from "./auth-form-styles";
 type Props = { onSwitchToRegister: () => void };
 
 export default function LoginForm({ onSwitchToRegister }: Props) {
+  const { t } = useTranslation("auth");
   const router = useRouter();
   const { signIn, loading } = useAuth();
   const [email, setEmail] = useState("");
@@ -22,22 +24,22 @@ export default function LoginForm({ onSwitchToRegister }: Props) {
       await signIn({ email, password });
       router.replace("/");
     } catch (e: any) {
-      setError(e?.message ?? "Error al iniciar sesión");
+      setError(e?.message ?? t("login.errorFallback"));
     }
   };
 
   return (
     <AuthFormContainer
-      title="Iniciar Sesión"
-      description="Ingresa tus credenciales para continuar"
-      subtitle="Inicia sesión para acceder a tu música"
-      switchText="¿No tienes una cuenta?"
-      switchLinkText="Regístrate aquí"
+      title={t("login.title")}
+      description={t("login.description")}
+      subtitle={t("login.subtitle")}
+      switchText={t("login.switchText")}
+      switchLinkText={t("login.switchLink")}
       onSwitchPress={onSwitchToRegister}
     >
       <AuthInput
-        label="Email"
-        placeholder="tu@email.com"
+        label={t("fields.email")}
+        placeholder={t("fields.emailPlaceholder")}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -46,8 +48,8 @@ export default function LoginForm({ onSwitchToRegister }: Props) {
       />
 
       <AuthInput
-        label="Contraseña"
-        placeholder="••••••••"
+        label={t("fields.password")}
+        placeholder={t("fields.passwordPlaceholder")}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -62,7 +64,7 @@ export default function LoginForm({ onSwitchToRegister }: Props) {
         disabled={loading}
         style={[authStyles.btn, loading && { opacity: 0.7 }]}
       >
-        {loading ? <ActivityIndicator /> : <Text style={authStyles.btnText}>Iniciar Sesión</Text>}
+        {loading ? <ActivityIndicator /> : <Text style={authStyles.btnText}>{t("login.submit")}</Text>}
       </TouchableOpacity>
     </AuthFormContainer>
   );

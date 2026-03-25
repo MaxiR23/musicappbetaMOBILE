@@ -1,15 +1,16 @@
 import { useMusicApi } from "@/hooks/use-music-api";
 import React, { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type Props = {
@@ -19,6 +20,8 @@ type Props = {
 };
 
 export default function CreatePlaylistModal({ open, onOpenChange, onCreated }: Props) {
+  const { t } = useTranslation("playlist");
+  const { t: tCommon } = useTranslation("common");
   const { createPlaylist } = useMusicApi();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -40,7 +43,7 @@ export default function CreatePlaylistModal({ open, onOpenChange, onCreated }: P
       setIsPublic(false);
       onOpenChange(false);
     } catch (e: any) {
-      setErr(e?.message || "Error creando la playlist");
+      setErr(e?.message || t("create.errorFallback"));
     } finally {
       setLoading(false);
     }
@@ -55,14 +58,14 @@ export default function CreatePlaylistModal({ open, onOpenChange, onCreated }: P
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => onOpenChange(false)} />
 
         <View style={styles.sheet}>
-          <Text style={styles.title}>Crear Playlist</Text>
-          <Text style={styles.subtitle}>Organizá tu música favorita</Text>
+          <Text style={styles.title}>{t("create.title")}</Text>
+          <Text style={styles.subtitle}>{t("create.subtitle")}</Text>
 
           {/* Nombre */}
           <View style={{ marginTop: 14 }}>
-            <Text style={styles.label}>Nombre *</Text>
+            <Text style={styles.label}>{t("create.nameLabel")}</Text>
             <TextInput
-              placeholder="Mi playlist increíble"
+              placeholder={t("create.namePlaceholder")}
               placeholderTextColor="#888"
               value={name}
               onChangeText={setName}
@@ -72,9 +75,9 @@ export default function CreatePlaylistModal({ open, onOpenChange, onCreated }: P
 
           {/* Descripción */}
           <View style={{ marginTop: 12 }}>
-            <Text style={styles.label}>Descripción</Text>
+            <Text style={styles.label}>{t("create.descriptionLabel")}</Text>
             <TextInput
-              placeholder="Describe tu playlist…"
+              placeholder={t("create.descriptionPlaceholder")}
               placeholderTextColor="#888"
               value={description}
               onChangeText={setDescription}
@@ -86,9 +89,9 @@ export default function CreatePlaylistModal({ open, onOpenChange, onCreated }: P
           {/* Pública / Privada */}
           <View style={styles.privacyRow}>
             <View>
-              <Text style={styles.privacyTitle}>{isPublic ? "Pública" : "Privada"}</Text>
+              <Text style={styles.privacyTitle}>{isPublic ? t("create.publicLabel") : t("create.privateLabel")}</Text>
               <Text style={styles.privacyHint}>
-                {isPublic ? "Otros pueden descubrirla" : "Solo vos podés verla"}
+                {isPublic ? t("create.publicHint") : t("create.privateHint")}
               </Text>
             </View>
             <Switch value={isPublic} onValueChange={setIsPublic} />
@@ -99,7 +102,7 @@ export default function CreatePlaylistModal({ open, onOpenChange, onCreated }: P
           {/* Acciones */}
           <View style={styles.actions}>
             <TouchableOpacity style={styles.btnGhost} onPress={() => onOpenChange(false)}>
-              <Text style={styles.btnGhostText}>Cancelar</Text>
+              <Text style={styles.btnGhostText}>{tCommon("actions.cancel")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -107,7 +110,7 @@ export default function CreatePlaylistModal({ open, onOpenChange, onCreated }: P
               onPress={handleCreate}
               disabled={!isValid || loading}
             >
-              <Text style={styles.btnPrimaryText}>{loading ? "Creando…" : "Crear"}</Text>
+              <Text style={styles.btnPrimaryText}>{loading ? t("create.submitting") : t("create.submit")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -168,7 +171,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: "#4facfe", // mismo acento que el banner
+    backgroundColor: "#4facfe",
   },
   btnPrimaryText: { color: "#000", fontWeight: "700" },
 });

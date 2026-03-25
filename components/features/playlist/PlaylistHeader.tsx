@@ -2,6 +2,7 @@
 import PlaylistCover from "@/components/features/playlist/PlaylistCover";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BackButton from "../../shared/BackButton";
@@ -26,6 +27,7 @@ export default function PlaylistHeader({
   onMenuPress,
   showBackButton = true,
 }: PlaylistHeaderProps) {
+  const { t } = useTranslation("playlist");
   const insets = useSafeAreaInsets();
 
   return (
@@ -61,14 +63,14 @@ export default function PlaylistHeader({
       {playlist.isPublic !== undefined && (
         <View style={styles.badge}>
           <Text style={styles.badgeText}>
-            {playlist.isPublic ? "PÚBLICA" : "PRIVADA"}
+            {playlist.isPublic ? t("info.public") : t("info.private")}
           </Text>
         </View>
       )}
 
       {/* Meta */}
       <Text style={styles.meta}>
-        {playlist.songCount} canciones • {playlist.duration}
+        {t("info.songCount", { count: playlist.songCount })} • {playlist.duration}
       </Text>
     </View>
   );

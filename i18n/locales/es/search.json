@@ -1,0 +1,22 @@
+{
+  "input": {
+    "placeholder": "Buscar canción o artista..."
+  },
+  "recents": {
+    "title": "Búsquedas recientes",
+    "clear": "Limpiar",
+    "emptyMessage": "Sin búsquedas recientes",
+    "emptySubmessage": "Tus busquedas recientes van a aparecer aqui"
+  },
+  "results": {
+    "noResults": "No hay resultados",
+    "noResultsHint": "Probá con otro término",
+    "serviceError": "No se pudo realizar la búsqueda",
+    "serviceErrorHint": "Intentá de nuevo más tarde"
+  },
+  "labels": {
+    "song": "Canción",
+    "album": "Álbum",
+    "artist": "Artista"
+  }
+}

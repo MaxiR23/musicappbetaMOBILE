@@ -6,6 +6,7 @@ import { useMounted } from "@/hooks/use-mounted";
 import { useMusicApi } from "@/hooks/use-music-api";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FlatList, StatusBar, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 interface Genre {
@@ -25,6 +26,7 @@ export default function GenresScreen() {
 
   const [genres, setGenres] = useState<Genre[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation("explore");
 
   useEffect(() => {
     (async () => {

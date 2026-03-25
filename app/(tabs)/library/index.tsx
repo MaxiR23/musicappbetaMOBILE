@@ -8,6 +8,7 @@ import { useUserProfile } from "@/hooks/use-user-profile";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FlatList, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -18,6 +19,7 @@ export default function LibraryScreen() {
   const { playlistsWithCreate, refreshPlaylists } = useHomePlaylists(userId);
   const [createOpen, setCreateOpen] = useState(false);
   const contentPadding = useContentPadding();
+  const { t } = useTranslation("library");
 
   const playlists = playlistsWithCreate.filter(pl => !pl.isCreateButton);
 
@@ -34,7 +36,7 @@ export default function LibraryScreen() {
         <ReleaseCard
           thumbnails={thumbnails.length > 0 ? thumbnails : undefined}
           cover={null}
-          title={item.title || item.name || "Sin nombre"}
+          title={item.title || item.name || t("untitled")}
           onPress={() => router.push(`/(tabs)/library/playlist/${encodeURIComponent(item.id)}`)}
         />
       );
@@ -52,7 +54,7 @@ export default function LibraryScreen() {
     <>
       <StatusBar barStyle="light-content" />
       <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
-        <ScreenHeader title="Tu biblioteca" />
+        <ScreenHeader title={t("header")} />
 
         <FlatList
           data={playlists}

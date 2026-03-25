@@ -10,7 +10,7 @@ const TrackPlayer = {
   load: jest.fn().mockImplementation(async (track) => {
     mockCurrentTrack = track;
     mockCurrentIndex = 0;
-    // load() agrega el track a la cola (puede haber tracks viejos)
+    // load() agrega el track a la fila (puede haber tracks viejos)
     mockQueue.unshift(track);
   }),
   

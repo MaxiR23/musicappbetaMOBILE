@@ -1,0 +1,15 @@
+{
+  "header": {
+    "title": "Tu mes en música",
+    "subtitle": "Mes pasado"
+  },
+  "empty": "Sin datos del mes pasado",
+  "sections": {
+    "topArtists": "Tus artistas del mes",
+    "topTracks": "Tus canciones del mes",
+    "topAlbums": "Tus álbumes del mes"
+  },
+  "playCount_one": "{{count}} reproducción",
+  "playCount_other": "{{count}} reproducciones",
+  "queueName": "Top del mes"
+}

@@ -1,6 +1,7 @@
 import { useMusicApi } from "@/hooks/use-music-api";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     ActivityIndicator,
     KeyboardAvoidingView,
@@ -73,6 +74,7 @@ export default function TrackActionsSheet({
     showRemove,
     showShare,
 }: Props) {
+    const { t } = useTranslation("common");
     const { getPlaylists, addTrackToPlaylist, createPlaylist, getPlaylistById } = useMusicApi();
 
     const [mode, setMode] = useState<Mode>("root");
@@ -130,7 +132,7 @@ export default function TrackActionsSheet({
             await onRemove(playlistId, String(removeKey));
             onOpenChange(false);
         } catch (e: any) {
-            setErr(e?.message || "No se pudo quitar el tema.");
+            setErr(e?.message || t("trackActions.removeFailed"));
         } finally {
             setLoading(false);
         }
@@ -140,8 +142,8 @@ export default function TrackActionsSheet({
         try {
             const after = await getPlaylistById(plId);
             const items = after?.tracks || after?.playlist_tracks || [];
-            const found = items.some((t: any) => {
-                const keys = [t.id, t.track_id, t.video_id, t.song_id, t?.tracks?.id, t?.tracks?.track_id];
+            const found = items.some((track: any) => {
+                const keys = [track.id, track.track_id, track.video_id, track.song_id, track?.tracks?.id, track?.tracks?.track_id];
                 return keys.some((k) => k && candidateIds.includes(String(k)));
             });
             if (!found) console.warn("[Sheet] NOT FOUND after add (id/track_id mismatch?).");
@@ -150,23 +152,21 @@ export default function TrackActionsSheet({
 
     async function handleAddTo(plId: string) {
         if (!track) return;
-        setAddingToId(plId); // Marcar que está procesando
+        setAddingToId(plId);
         setErr(null);
         try {
             await addTrackToPlaylist(plId, track);
             await verifyAdded(plId, [String(track.id)]);
 
-            // Mostrar check
             setAddingToId(null);
             setAddedToId(plId);
 
-            // Cerrar después de 1 segundo
             setTimeout(() => {
                 setAddedToId(null);
                 onOpenChange(false);
             }, 1000);
         } catch (e: any) {
-            setErr(e?.message || "No se pudo agregar el tema.");
+            setErr(e?.message || t("trackActions.addFailed"));
             setAddingToId(null);
         }
     }
@@ -181,7 +181,7 @@ export default function TrackActionsSheet({
             await verifyAdded(pl.id, [String(track.id)]);
             onOpenChange(false);
         } catch (e: any) {
-            setErr(e?.message || "No se pudo crear/agregar.");
+            setErr(e?.message || t("trackActions.createFailed"));
         } finally {
             setLoading(false);
         }
@@ -191,6 +191,14 @@ export default function TrackActionsSheet({
     const allowAdd = showAddTo !== false && !!track;
     const allowRemove = showRemove !== false && !!playlistId && !!onRemove && !!track;
     const allowShare = showShare !== false && !!track;
+
+    const resolvedHeaderTitle = headerTitle ?? (
+        mode === "root"
+            ? t("trackActions.title")
+            : mode === "add"
+                ? t("trackActions.addToPlaylist")
+                : t("trackActions.newPlaylist")
+    );
 
     return (
         <Modal visible={open} transparent animationType="fade" onRequestClose={() => onOpenChange(false)}>
@@ -213,7 +221,7 @@ export default function TrackActionsSheet({
                             <View style={{ width: 22 }} />
                         )}
                         <Text style={styles.headerTitle}>
-                            {headerTitle ?? (mode === "root" ? "Opciones" : mode === "add" ? "Agregar a playlist" : "Nueva playlist")}
+                            {resolvedHeaderTitle}
                         </Text>
                         <TouchableOpacity onPress={() => onOpenChange(false)} style={styles.iconBtn}>
                             <Ionicons name="close" size={18} color="#aaa" />
@@ -235,20 +243,20 @@ export default function TrackActionsSheet({
                             {allowAdd && (
                                 <ActionRow
                                     icon="add-circle-outline"
-                                    label="Agregar a playlist"
+                                    label={t("trackActions.addToPlaylist")}
                                     onPress={() => setMode("add")}
                                 />
                             )}
                             {allowRemove && (
                                 <ActionRow
                                     icon="remove-circle-outline"
-                                    label="Quitar de esta playlist"
+                                    label={t("trackActions.removeFromPlaylist")}
                                     onPress={handleRemove}
                                     danger
                                 />
                             )}
                             {allowShare && (
-                                <ActionRow icon="share-outline" label="Compartir" onPress={handleShare} />
+                                <ActionRow icon="share-outline" label={t("trackActions.share")} onPress={handleShare} />
                             )}
                             {extraActions.map((a) => (
                                 <ActionRow
@@ -270,12 +278,11 @@ export default function TrackActionsSheet({
                                     style={styles.listRow}
                                     activeOpacity={0.85}
                                     onPress={() => handleAddTo(pl.id)}
-                                    disabled={addingToId === pl.id || addedToId === pl.id} // Deshabilitar mientras procesa
+                                    disabled={addingToId === pl.id || addedToId === pl.id}
                                 >
                                     <Ionicons name="musical-notes" size={16} color="#bbb" style={{ marginRight: 10 }} />
                                     <Text style={styles.listRowText} numberOfLines={1}>{pl.title}</Text>
 
-                                    {/* Spinner o Check */}
                                     {addingToId === pl.id && (
                                         <ActivityIndicator size="small" color="#bbb" style={{ marginLeft: "auto" }} />
                                     )}
@@ -290,7 +297,7 @@ export default function TrackActionsSheet({
                                 activeOpacity={0.85}
                             >
                                 <Ionicons name="add" size={18} color="#fff" style={{ marginRight: 8 }} />
-                                <Text style={[styles.listRowText, { color: "#fff" }]}>Nueva playlist</Text>
+                                <Text style={[styles.listRowText, { color: "#fff" }]}>{t("trackActions.newPlaylist")}</Text>
                             </TouchableOpacity>
 
                             {err && <Text style={styles.error}>{err}</Text>}
@@ -300,19 +307,19 @@ export default function TrackActionsSheet({
 
                     {mode === "create" && (
                         <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>
-                            <Text style={styles.label}>Nombre *</Text>
+                            <Text style={styles.label}>{t("trackActions.nameLabel")}</Text>
                             <TextInput
                                 value={name}
                                 onChangeText={setName}
-                                placeholder="Mi playlist"
+                                placeholder={t("trackActions.namePlaceholder")}
                                 placeholderTextColor="#888"
                                 style={styles.input}
                             />
-                            <Text style={[styles.label, { marginTop: 8 }]}>Descripción</Text>
+                            <Text style={[styles.label, { marginTop: 8 }]}>{t("trackActions.descriptionLabel")}</Text>
                             <TextInput
                                 value={desc}
                                 onChangeText={setDesc}
-                                placeholder="Opcional…"
+                                placeholder={t("trackActions.descriptionPlaceholder")}
                                 placeholderTextColor="#888"
                                 style={[styles.input, { height: 70, textAlignVertical: "top" }]}
                                 multiline
@@ -320,7 +327,7 @@ export default function TrackActionsSheet({
                             {err && <Text style={styles.error}>{err}</Text>}
                             <View style={styles.footerActions}>
                                 <TouchableOpacity style={styles.btnGhost} onPress={() => setMode("add")}>
-                                    <Text style={styles.btnGhostText}>Cancelar</Text>
+                                    <Text style={styles.btnGhostText}>{t("actions.cancel")}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     style={[styles.btnPrimary, !canCreate || loading ? { opacity: 0.6 } : null]}
@@ -329,7 +336,7 @@ export default function TrackActionsSheet({
                                     activeOpacity={0.85}
                                 >
                                     <Ionicons name="checkmark" size={16} color="#000" />
-                                    <Text style={styles.btnPrimaryText}>Crear y agregar</Text>
+                                    <Text style={styles.btnPrimaryText}>{t("trackActions.createAndAdd")}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>

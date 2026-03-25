@@ -8,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Animated,
@@ -48,6 +49,7 @@ export default function SearchScreen() {
   const { searchSongs } = useMusicApi();
   const { playSingle } = useMusic();
   const contentPadding = useContentPadding();
+  const { t } = useTranslation("search");
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ResultItem[] | null>(null);
@@ -207,8 +209,8 @@ export default function SearchScreen() {
     }
   };
 
-  const typeLabel = (t: ResultItem["type"]) =>
-    t === "song" ? "Canción" : t === "album" ? "Álbum" : "Artista";
+  const typeLabel = (type: ResultItem["type"]) =>
+    type === "song" ? t("labels.song") : type === "album" ? t("labels.album") : t("labels.artist");
 
   const showRecents = results === null && !loading;
   const showNoResults = !loading && results !== null && results.length === 0;
@@ -235,12 +237,12 @@ export default function SearchScreen() {
             <TextInput
               ref={inputRef}
               value={query}
-              onChangeText={(t) => {
-                setQuery(t);
-                if (t === "") setResults(null);
+              onChangeText={(text) => {
+                setQuery(text);
+                if (text === "") setResults(null);
               }}
               onSubmitEditing={() => doSearch()}
-              placeholder="Buscar canción o artista..."
+              placeholder={t("input.placeholder")}
               placeholderTextColor="#aaa"
               style={styles.searchInput}
               returnKeyType="search"
@@ -262,9 +264,9 @@ export default function SearchScreen() {
           {/* Recents header */}
           {showRecents && recents.length > 0 && (
             <View style={styles.recentsHeader}>
-              <Text style={styles.sectionTitle}>Búsquedas recientes</Text>
+              <Text style={styles.sectionTitle}>{t("recents.title")}</Text>
               <TouchableOpacity onPress={clearRecents} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                <Text style={styles.clearText}>Limpiar</Text>
+                <Text style={styles.clearText}>{t("recents.clear")}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -277,8 +279,8 @@ export default function SearchScreen() {
                   icon="search"
                   iconSize={72}
                   iconColor="#3a3a3a"
-                  message="Sin búsquedas recientes"
-                  submessage="Tus busquedas recientes van a aparecer aqui"
+                  message={t("recents.emptyMessage")}
+                  submessage={t("recents.emptySubmessage")}
                 />
               ) : (
                 <FlatList
@@ -339,8 +341,8 @@ export default function SearchScreen() {
               icon="search"
               iconSize={72}
               iconColor="#3a3a3a"
-              message={serviceError ? "No se pudo realizar la búsqueda" : "No hay resultados"}
-              submessage={serviceError ? "Intentá de nuevo más tarde" : "Probá con otro término"}
+              message={serviceError ? t("results.serviceError") : t("results.noResults")}
+              submessage={serviceError ? t("results.serviceErrorHint") : t("results.noResultsHint")}
             />
           )}
 

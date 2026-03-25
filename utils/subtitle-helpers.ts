@@ -12,24 +12,24 @@ export function cleanDurationText(text: string): string {
 /**
  * Formatea metadata de álbum: "2024 • 12 canciones • 45 min"
  */
-export function formatAlbumMeta(info: {
-  year?: number;
-  song_count?: number;
-  duration_text?: string;
-}): string {
+export function formatAlbumMeta(
+  info: {
+    year?: number;
+    song_count?: number;
+    duration_text?: string;
+  },
+  t: (key: string, options?: any) => string
+): string {
   const parts: string[] = [];
 
-  if (info.year) {
-    parts.push(String(info.year));
-  }
+  if (info.year) parts.push(String(info.year));
 
   if (typeof info.song_count === "number") {
-    parts.push(`${info.song_count} ${info.song_count === 1 ? "canción" : "canciones"}`);
+    parts.push(t("album.songCount", { count: info.song_count }));
   }
 
   if (info.duration_text) {
-    const cleaned = cleanDurationText(String(info.duration_text));
-    parts.push(cleaned);
+    parts.push(cleanDurationText(String(info.duration_text)));
   }
 
   return parts.join(" • ");

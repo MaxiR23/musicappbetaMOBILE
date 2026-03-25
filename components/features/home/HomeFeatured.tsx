@@ -3,6 +3,7 @@ import { useReplay } from "@/hooks/use-replay";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Image,
   ScrollView,
@@ -19,6 +20,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 function StatsCard() {
+  const { t } = useTranslation("home");
   const router = useRouter();
   const { getMonthlyStats } = useMusicApi();
   const [artists, setArtists] = useState<any[]>([]);
@@ -67,7 +69,7 @@ function StatsCard() {
         </View>
         <View style={styles.cardFooter}>
           <Text style={styles.cardSubtitle} numberOfLines={2}>{artistNames}</Text>
-          <Text style={styles.cardTitle}>Tu mes{"\n"}en música</Text>
+          <Text style={styles.cardTitle}>{t("sections.featured.statsTitle")}</Text>
         </View>
       </LinearGradient>
     </TouchableOpacity>
@@ -75,6 +77,7 @@ function StatsCard() {
 }
 
 function ReplayCard() {
+  const { t } = useTranslation("home");
   const router = useRouter();
   const { songs, loading, hasEnoughData } = useReplay();
   const overlay = useSharedValue(0);
@@ -128,7 +131,7 @@ function ReplayCard() {
         </View>
         <View style={styles.cardFooter}>
           <Text style={styles.cardSubtitle} numberOfLines={1}>
-            Tus canciones más repetidas
+            {t("sections.featured.replaySubtitle")}
           </Text>
           <Text style={styles.replayTrackNames} numberOfLines={2}>
             {trackNames}
@@ -140,6 +143,7 @@ function ReplayCard() {
 }
 
 function ListenAgainCard() {
+  const { t } = useTranslation("home");
   const router = useRouter();
   const { getListenAgain } = useMusicApi();
   const [album, setAlbum] = useState<any>(null);
@@ -173,7 +177,7 @@ function ListenAgainCard() {
         />
       </View>
       <View style={styles.cardFooter}>
-        <Text style={styles.listenAgainLabel}>Volvé a escuchar</Text>
+        <Text style={styles.listenAgainLabel}>{t("sections.featured.listenAgainLabel")}</Text>
         <Text style={styles.listenAgainTitle} numberOfLines={2}>
           {album.album_name}
         </Text>

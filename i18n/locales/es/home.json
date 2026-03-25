@@ -1,0 +1,42 @@
+{
+  "sections": {
+    "featured": {
+      "statsTitle": "Tu mes\nen música",
+      "replaySubtitle": "Tus canciones más repetidas",
+      "listenAgainLabel": "Volvé a escuchar"
+    },
+    "recents": {
+      "title": "Escuchados recientemente",
+      "artistLabel": "Artista",
+      "albumLabel": "Álbum"
+    },
+    "newReleases": {
+      "title": "Nuevos lanzamientos"
+    },
+    "topAlbums": {
+      "title": "Más escuchados · Álbumes"
+    },
+    "topTracks": {
+      "title": "Más escuchados · Canciones"
+    },
+    "newSingles": {
+      "title": "Singles nuevos"
+    },
+    "fromSeed": {
+      "title": "Desde tu seed"
+    },
+    "recoAlbums": {
+      "title": "Álbumes recomendados"
+    },
+    "upcomingReleases": {
+      "title": "Próximos lanzamientos"
+    },
+    "similarTo": {
+      "label": "Similar a",
+      "fallbackName": "Artista"
+    }
+  },
+  "labels": {
+    "artist": "Artista"
+  }
+}

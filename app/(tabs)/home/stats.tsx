@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Dimensions,
@@ -43,7 +44,7 @@ type StatsData = {
   tracks: StatItem[];
 };
 
-function ArtistCard({ item, index, onPress }: { item: StatItem; index: number; onPress?: () => void }) {
+function ArtistCard({ item, index, onPress, playLabel }: { item: StatItem; index: number; onPress?: () => void; playLabel: string }) {
   return (
     <TouchableOpacity
       activeOpacity={0.8}
@@ -69,14 +70,14 @@ function ArtistCard({ item, index, onPress }: { item: StatItem; index: number; o
           {item.display_name ?? "—"}
         </Text>
         <Text style={styles.artistCardPlays}>
-          {item.play_count} {item.play_count === 1 ? "reproducción" : "reproducciones"}
+          {playLabel}
         </Text>
       </View>
     </TouchableOpacity>
   );
 }
 
-function AlbumCard({ item, index, onPress }: { item: StatItem; index: number; onPress?: () => void }) {
+function AlbumCard({ item, index, onPress, playLabel }: { item: StatItem; index: number; onPress?: () => void; playLabel: string }) {
   return (
     <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={{ width: ALBUM_CARD_W }}>
       <View style={[styles.albumCover, { width: ALBUM_CARD_W, height: ALBUM_CARD_W }]}>
@@ -100,7 +101,7 @@ function AlbumCard({ item, index, onPress }: { item: StatItem; index: number; on
         </Text>
       )}
       <Text style={styles.albumPlays}>
-        {item.play_count} {item.play_count === 1 ? "reproducción" : "reproducciones"}
+        {playLabel}
       </Text>
     </TouchableOpacity>
   );
@@ -129,6 +130,7 @@ export default function MonthlyStatsScreen() {
   const contentPadding = useContentPadding();
   const [data, setData] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation("stats");
 
   useEffect(() => {
     getMonthlyStats({ include: "artists,albums,tracks" })
@@ -153,16 +155,16 @@ export default function MonthlyStatsScreen() {
 
   const mappedTracks = useMemo(() => {
     if (!data?.tracks) return [];
-    return data.tracks.map((t) => ({
-      id: t.entity_id,
-      title: t.display_name ?? "",
-      artist_name: t.artist_name ?? "",
-      artist_id: t.artist_id,
-      album_id: t.album_id,
-      album_name: t.album_name,
-      thumbnail: t.thumbnail_url,
-      thumbnail_url: t.thumbnail_url,
-      duration_seconds: t.duration_seconds,
+    return data.tracks.map((track) => ({
+      id: track.entity_id,
+      title: track.display_name ?? "",
+      artist_name: track.artist_name ?? "",
+      artist_id: track.artist_id,
+      album_id: track.album_id,
+      album_name: track.album_name,
+      thumbnail: track.thumbnail_url,
+      thumbnail_url: track.thumbnail_url,
+      duration_seconds: track.duration_seconds,
     }));
   }, [data?.tracks]);
 
@@ -176,8 +178,8 @@ export default function MonthlyStatsScreen() {
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
             <View style={{ flex: 1 }}>
-              <Text style={styles.headerTitle}>Tu mes en música</Text>
-              <Text style={styles.headerSub}>Mes pasado</Text>
+              <Text style={styles.headerTitle}>{t("header.title")}</Text>
+              <Text style={styles.headerSub}>{t("header.subtitle")}</Text>
             </View>
           </View>
         </SafeAreaView>
@@ -188,7 +190,7 @@ export default function MonthlyStatsScreen() {
           </View>
         ) : !hasAnyData ? (
           <View style={styles.centered}>
-            <Text style={styles.emptyText}>Sin datos del mes pasado</Text>
+            <Text style={styles.emptyText}>{t("empty")}</Text>
           </View>
         ) : (
           <ScrollView
@@ -197,7 +199,7 @@ export default function MonthlyStatsScreen() {
           >
             {!!data!.artists.length && (
               <View style={styles.section}>
-                <SectionHeader title="Tus artistas del mes" />
+                <SectionHeader title={t("sections.topArtists")} />
                 <FlatList
                   horizontal
                   data={data!.artists}
@@ -209,6 +211,7 @@ export default function MonthlyStatsScreen() {
                       item={item}
                       index={index}
                       onPress={() => router.push(`/(tabs)/home/artist/${item.entity_id}`)}
+                      playLabel={t("playCount", { count: item.play_count })}
                     />
                   )}
                 />
@@ -217,7 +220,7 @@ export default function MonthlyStatsScreen() {
 
             {!!data!.tracks.length && (
               <View style={styles.section}>
-                <SectionHeader title="Tus canciones del mes" />
+                <SectionHeader title={t("sections.topTracks")} />
                 <FlatList
                   horizontal
                   data={trackChunks}
@@ -235,8 +238,8 @@ export default function MonthlyStatsScreen() {
                             artist={item.artist_name}
                             thumbnail={item.thumbnail_url}
                             rank={globalIndex + 1}
-                            subtitle={`${item.play_count} ${item.play_count === 1 ? "Play" : "Plays"}`}
-                            onPress={() => playList(mappedTracks, globalIndex, { type: "queue", name: "Top del mes" })}
+                            subtitle={t("playCount", { count: item.play_count })}
+                            onPress={() => playList(mappedTracks, globalIndex, { type: "queue", name: t("queueName") })}
                           />
                         );
                       })}
@@ -248,7 +251,7 @@ export default function MonthlyStatsScreen() {
 
             {!!data!.albums.length && (
               <View style={styles.section}>
-                <SectionHeader title="Tus álbumes del mes" />
+                <SectionHeader title={t("sections.topAlbums")} />
                 <FlatList
                   horizontal
                   data={data!.albums}
@@ -260,6 +263,7 @@ export default function MonthlyStatsScreen() {
                       item={item}
                       index={index}
                       onPress={() => router.push(`/(tabs)/home/album/${item.entity_id}`)}
+                      playLabel={t("playCount", { count: item.play_count })}
                     />
                   )}
                 />
