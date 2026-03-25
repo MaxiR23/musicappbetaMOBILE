@@ -1,0 +1,20 @@
+{
+    "sections": {
+        "topSongs": "Canciones Populares",
+        "albums": "Álbumes",
+        "singlesEps": "Singles / EPs",
+        "upcomingEvents": "Próximos eventos",
+        "relatedArtists": "Artistas Relacionados"
+    },
+    "badges": {
+        "comingSoon": "Próximamente",
+        "upcomingRelease": "Estreno próximo"
+    },
+    "releases": {
+        "tabAlbums": "Álbumes",
+        "tabSingles": "Singles & EPs",
+        "fallbackTitle": "Artista",
+        "subtitleAlbum": "Álbum",
+        "subtitleSingle": "Single"
+    }
+}

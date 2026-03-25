@@ -1,0 +1,33 @@
+{
+  "error": {
+    "loadFailed": "Couldn't load",
+    "retryHint": "Try again later",
+    "goBack": "Go back"
+  },
+  "actions": {
+    "cancel": "Cancel"
+  },
+  "newRelease": {
+    "badge": "New release",
+    "trackCount": "{{count}} tracks"
+  },
+  "playback": {
+    "play": "Play",
+    "shuffle": "Shuffle"
+  },
+  "trackActions": {
+    "title": "Options",
+    "addToPlaylist": "Add to playlist",
+    "removeFromPlaylist": "Remove from this playlist",
+    "share": "Share",
+    "newPlaylist": "New playlist",
+    "createAndAdd": "Create and add",
+    "namePlaceholder": "My playlist",
+    "descriptionPlaceholder": "Optional…",
+    "nameLabel": "Name *",
+    "descriptionLabel": "Description",
+    "addFailed": "Couldn't add the track.",
+    "removeFailed": "Couldn't remove the track.",
+    "createFailed": "Couldn't create/add."
+  }
+}

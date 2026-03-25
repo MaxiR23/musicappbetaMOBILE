@@ -1,0 +1,33 @@
+{
+  "error": {
+    "loadFailed": "No se pudo cargar",
+    "retryHint": "Intentá de nuevo más tarde",
+    "goBack": "Volver"
+  },
+  "actions": {
+    "cancel": "Cancelar"
+  },
+  "newRelease": {
+    "badge": "Nuevo lanzamiento",
+    "trackCount": "{{count}} tracks"
+  },
+  "playback": {
+    "play": "Reproducir",
+    "shuffle": "Shuffle"
+  },
+  "trackActions": {
+    "title": "Opciones",
+    "addToPlaylist": "Agregar a playlist",
+    "removeFromPlaylist": "Quitar de esta playlist",
+    "share": "Compartir",
+    "newPlaylist": "Nueva playlist",
+    "createAndAdd": "Crear y agregar",
+    "namePlaceholder": "Mi playlist",
+    "descriptionPlaceholder": "Opcional…",
+    "nameLabel": "Nombre *",
+    "descriptionLabel": "Descripción",
+    "addFailed": "No se pudo agregar el tema.",
+    "removeFailed": "No se pudo quitar el tema.",
+    "createFailed": "No se pudo crear/agregar."
+  }
+}

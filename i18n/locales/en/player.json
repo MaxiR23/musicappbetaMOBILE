@@ -1,0 +1,28 @@
+{
+    "source": {
+        "playlist": "From playlist",
+        "album": "From album",
+        "artist": "Songs by"
+    },
+    "tabs": {
+        "upNext": "UP NEXT",
+        "lyrics": "LYRICS",
+        "related": "RELATED"
+    },
+    "upNext": {
+        "playingFrom": "Playing from",
+        "unknown": "Unknown",
+        "autoplay": "Autoplay",
+        "autoplayHint": "Based on your queue",
+        "noTracks": "No upcoming tracks",
+        "loading": "Loading queue..."
+    },
+    "lyrics": {
+        "noLyrics": "No lyrics available",
+        "loading": "Loading lyrics..."
+    },
+    "related": {
+        "noContent": "No related content available",
+        "loading": "Loading related..."
+    }
+}

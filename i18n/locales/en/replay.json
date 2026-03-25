@@ -1,0 +1,7 @@
+{
+  "title": "Replay",
+  "meta": {
+    "songCount_one": "{{count}} song",
+    "songCount_other": "{{count}} songs"
+  }
+}

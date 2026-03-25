@@ -1,0 +1,41 @@
+{
+  "error": {
+    "notFound": "No se encontró la playlist",
+    "loadFailed": "Error al cargar playlist"
+  },
+  "info": {
+    "public": "PÚBLICA",
+    "private": "PRIVADA",
+    "songCount_one": "{{count}} canción",
+    "songCount_other": "{{count}} canciones"
+  },
+  "delete": {
+    "title": "Eliminar playlist",
+    "message": "¿Seguro que querés eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
+    "confirm": "Eliminar"
+  },
+  "errors": {
+    "deleteFailed": "No se pudo eliminar la playlist.",
+    "removeFailed": "No se pudo quitar el tema."
+  },
+  "options": {
+    "title": "Opciones de playlist",
+    "edit": "Editar",
+    "closeEdit": "Cerrar edición"
+  },
+  "create": {
+    "title": "Crear Playlist",
+    "subtitle": "Organizá tu música favorita",
+    "nameLabel": "Nombre *",
+    "namePlaceholder": "Mi playlist increíble",
+    "descriptionLabel": "Descripción",
+    "descriptionPlaceholder": "Describe tu playlist…",
+    "publicLabel": "Pública",
+    "privateLabel": "Privada",
+    "publicHint": "Otros pueden descubrirla",
+    "privateHint": "Solo vos podés verla",
+    "submit": "Crear",
+    "submitting": "Creando…",
+    "errorFallback": "Error creando la playlist"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "error": {
+    "notFound": "Playlist not found",
+    "loadFailed": "Failed to load playlist"
+  },
+  "info": {
+    "public": "PUBLIC",
+    "private": "PRIVATE",
+    "songCount_one": "{{count}} song",
+    "songCount_other": "{{count}} songs"
+  },
+  "delete": {
+    "title": "Delete playlist",
+    "message": "Are you sure you want to delete \"{{name}}\"? This can't be undone.",
+    "confirm": "Delete"
+  },
+  "errors": {
+    "deleteFailed": "Couldn't delete the playlist.",
+    "removeFailed": "Couldn't remove the track."
+  },
+  "options": {
+    "title": "Playlist options",
+    "edit": "Edit",
+    "closeEdit": "Close editing"
+  },
+  "create": {
+    "title": "Create Playlist",
+    "subtitle": "Organize your favorite music",
+    "nameLabel": "Name *",
+    "namePlaceholder": "My awesome playlist",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Describe your playlist…",
+    "publicLabel": "Public",
+    "privateLabel": "Private",
+    "publicHint": "Others can discover it",
+    "privateHint": "Only you can see it",
+    "submit": "Create",
+    "submitting": "Creating…",
+    "errorFallback": "Failed to create playlist"
+  }
+}

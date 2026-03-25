@@ -1,0 +1,15 @@
+{
+  "header": {
+    "title": "Your month in music",
+    "subtitle": "Last month"
+  },
+  "empty": "No data from last month",
+  "sections": {
+    "topArtists": "Your artists of the month",
+    "topTracks": "Your songs of the month",
+    "topAlbums": "Your albums of the month"
+  },
+  "playCount_one": "{{count}} play",
+  "playCount_other": "{{count}} plays",
+  "queueName": "Top of the month"
+}

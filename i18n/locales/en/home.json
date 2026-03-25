@@ -1,0 +1,42 @@
+{
+  "sections": {
+    "featured": {
+      "statsTitle": "Your month\nin music",
+      "replaySubtitle": "Your most repeated songs",
+      "listenAgainLabel": "Listen again"
+    },
+    "recents": {
+      "title": "Recently played",
+      "artistLabel": "Artist",
+      "albumLabel": "Album"
+    },
+    "newReleases": {
+      "title": "New Releases"
+    },
+    "topAlbums": {
+      "title": "Most Played · Albums"
+    },
+    "topTracks": {
+      "title": "Most Played · Songs"
+    },
+    "newSingles": {
+      "title": "New Singles"
+    },
+    "fromSeed": {
+      "title": "From Your Seed"
+    },
+    "recoAlbums": {
+      "title": "Recommended Albums"
+    },
+    "upcomingReleases": {
+      "title": "Upcoming Releases"
+    },
+    "similarTo": {
+      "label": "More like",
+      "fallbackName": "Artist"
+    }
+  },
+  "labels": {
+    "artist": "Artist"
+  }
+}
