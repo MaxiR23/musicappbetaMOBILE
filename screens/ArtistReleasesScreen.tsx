@@ -9,17 +9,13 @@ import { usePaginatedData } from "@/hooks/use-paginated-data";
 import { getUpgradedThumb } from "@/utils/image-helpers";
 import { useLocalSearchParams, useRouter, useSegments } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FlatList, StatusBar, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type TabKey = "albums" | "singles";
 
 const ITEMS_PER_PAGE = 20;
-
-const TABS: Tab[] = [
-  { id: "albums", label: "Albums" },
-  { id: "singles", label: "Singles & EPs" },
-];
 
 export default function ArtistReleasesScreen() {
   const router = useRouter();
@@ -45,6 +41,12 @@ export default function ArtistReleasesScreen() {
   const [albums, setAlbums] = useState<any[] | null>(null);
   const [singles, setSingles] = useState<any[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const { t } = useTranslation("artist");
+
+  const TABS: Tab[] = [
+    { id: "albums", label: t("releases.tabAlbums") },
+    { id: "singles", label: t("releases.tabSingles") },
+  ];
 
   useEffect(() => {
     (async () => {
@@ -83,8 +85,8 @@ export default function ArtistReleasesScreen() {
       const cover = getUpgradedThumb(item, 512);
       const subtitle =
         activeTab === "albums"
-          ? `Album${item.year ? ` • ${item.year}` : ""}`
-          : `${item.type ?? "Single"}${item.year ? ` • ${item.year}` : ""}`;
+          ? `${t("releases.subtitleAlbum")}${item.year ? ` • ${item.year}` : ""}`
+          : `${item.type ?? t("releases.subtitleSingle")}${item.year ? ` • ${item.year}` : ""}`;
 
       return (
         <ReleaseCard
@@ -95,7 +97,7 @@ export default function ArtistReleasesScreen() {
         />
       );
     },
-    [activeTab, router]
+    [activeTab, router, t]
   );
 
   const keyExtractor = useCallback(
@@ -107,7 +109,7 @@ export default function ArtistReleasesScreen() {
     <>
       <StatusBar barStyle="light-content" />
       <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
-        <ScreenHeader title={artist_name || "Artist"} />
+        <ScreenHeader title={artist_name || t("releases.fallbackTitle")} />
 
         <TabBar
           tabs={TABS}

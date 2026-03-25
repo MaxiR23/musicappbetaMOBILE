@@ -1,15 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { memo } from "react";
+import { useTranslation } from "react-i18next";
 import { Image, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 
-/**
- * Props del componente:
- * - label: Texto arriba (default: "More like").
- * - name: Nombre del seed (opcional).
- * - thumb: URL del seed (opcional).
- * - size: Tamaño del avatar (default: 48).
- * - style: Estilos extra para el contenedor.
- */
 type Props = {
   label?: string;
   name?: string | null;
@@ -18,14 +11,18 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-function _SimilarToHeader({
-  label = "More like",
-  name = "Artista",
+function SimilarToHeaderBase({
+  label,
+  name,
   thumb,
   size = 48,
   style,
 }: Props) {
+  const { t } = useTranslation("home");
   const radius = size / 2;
+
+  const resolvedLabel = label ?? t("similarTo.label");
+  const resolvedName = name ?? t("similarTo.fallbackName");
 
   return (
     <View style={[styles.row, style]}>
@@ -37,14 +34,14 @@ function _SimilarToHeader({
         </View>
       )}
       <View style={{ flexShrink: 1 }}>
-        <Text style={styles.label}>{label}</Text>
-        <Text numberOfLines={1} style={styles.name}>{name}</Text>
+        <Text style={styles.label}>{resolvedLabel}</Text>
+        <Text numberOfLines={1} style={styles.name}>{resolvedName}</Text>
       </View>
     </View>
   );
 }
 
-export default memo(_SimilarToHeader);
+export default memo(SimilarToHeaderBase);
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10, marginTop: 10 },

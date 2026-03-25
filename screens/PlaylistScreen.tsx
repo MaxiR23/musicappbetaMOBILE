@@ -18,14 +18,15 @@ import { mapPlaylistSongs } from "@/utils/song-mapper";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter, useSegments } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
-    Alert,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 
 export default function PlaylistScreen() {
@@ -46,6 +47,8 @@ export default function PlaylistScreen() {
   const { invalidatePlaylists } = useCacheInvalidation(userId);
 
   const isGenrePlaylist = segments.includes('genre-playlist');
+  const { t } = useTranslation("playlist");
+  const { t: tCommon } = useTranslation("common");
 
   const [playlist, setPlaylist] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -107,7 +110,7 @@ export default function PlaylistScreen() {
                 songs,
               });
             } else {
-              setError(result?.error || "Error al cargar playlist");
+              setError(result?.error || t("error.loadFailed"));
             }
           }
         } else {
@@ -215,12 +218,12 @@ export default function PlaylistScreen() {
   const confirmDelete = () => {
     if (!playlist || isGenrePlaylist) return;
     Alert.alert(
-      "Eliminar playlist",
-      `¿Seguro que querés eliminar "${playlist.name}"? Esta acción no se puede deshacer.`,
+      t("delete.title"),
+      t("delete.message", { name: playlist.name }),
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: tCommon("actions.cancel"), style: "cancel" },
         {
-          text: "Eliminar",
+          text: t("delete.confirm"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -229,7 +232,7 @@ export default function PlaylistScreen() {
               setMenuOpen(false);
               router.back();
             } catch (e: any) {
-              Alert.alert("Error", e?.message || "No se pudo eliminar la playlist.");
+              Alert.alert("Error", e?.message || t("errors.deleteFailed"));
             }
           },
         },
@@ -294,7 +297,7 @@ export default function PlaylistScreen() {
 
       invalidatePlaylists().catch(() => { });
     } catch (e: any) {
-      Alert.alert("Error", e?.message || "No se pudo quitar el tema.");
+      Alert.alert("Error", e?.message || t("errors.removeFailed"));
     }
   };
 
@@ -316,9 +319,9 @@ export default function PlaylistScreen() {
         <StatusBar barStyle="light-content" />
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#888" />
-          <Text style={styles.errorText}>{error || "No se encontró la playlist"}</Text>
+          <Text style={styles.errorText}>{error || t("error.notFound")}</Text>
           <TouchableOpacity onPress={() => router.back()} style={styles.retryBtn}>
-            <Text style={styles.retryText}>Volver</Text>
+            <Text style={styles.retryText}>{tCommon("error.goBack")}</Text>
           </TouchableOpacity>
         </View>
       </>
@@ -363,13 +366,13 @@ export default function PlaylistScreen() {
             {section.data.isPublic !== undefined && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>
-                  {section.data.isPublic ? "PÚBLICA" : "PRIVADA"}
+                  {section.data.isPublic ? t("info.public") : t("info.private")}
                 </Text>
               </View>
             )}
 
             <Text style={styles.meta}>
-              {section.data.songCount} canciones • {section.data.duration}
+              {t("info.songCount", { count: section.data.songCount })} • {section.data.duration}
             </Text>
           </View>
         );

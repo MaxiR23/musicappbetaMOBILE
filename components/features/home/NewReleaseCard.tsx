@@ -2,6 +2,7 @@
 import { getUpgradedThumb } from "@/utils/image-helpers";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface NewReleaseCardProps {
@@ -15,19 +16,22 @@ interface NewReleaseCardProps {
     thumbnails?: any[];
   };
   onPress?: () => void;
-  badgeText?: string | null; // puede ser null para ocultarlo
-  showBadge?: boolean; // control explícito del badge
-  showChevron?: boolean; // control del chevron
+  badgeText?: string | null;
+  showBadge?: boolean;
+  showChevron?: boolean;
 }
 
 export default function NewReleaseCard({
   release,
   onPress,
-  badgeText = "Nuevo lanzamiento",
+  badgeText,
   showBadge = true,
   showChevron = true,
 }: NewReleaseCardProps) {
+  const { t } = useTranslation("common");
   const cover = getUpgradedThumb(release, 256);
+
+  const resolvedBadgeText = badgeText ?? t("newRelease.badge");
 
   // si no hay onPress, usamos View en lugar de TouchableOpacity
   const Container = onPress ? TouchableOpacity : View;
@@ -39,11 +43,11 @@ export default function NewReleaseCard({
     <View style={styles.cardWrap}>
       <Container style={styles.card} {...containerProps}>
         {/* Badge arriba - solo si showBadge es true y hay texto */}
-        {showBadge && badgeText && (
+        {showBadge && resolvedBadgeText && (
           <View style={styles.headerRow}>
             <View style={styles.badge}>
               <Ionicons name="sparkles" size={11} color="#111" />
-              <Text style={styles.badgeText}>{badgeText}</Text>
+              <Text style={styles.badgeText}>{resolvedBadgeText}</Text>
             </View>
           </View>
         )}
@@ -66,7 +70,7 @@ export default function NewReleaseCard({
             {!!release.release_date && (
               <Text style={styles.meta} numberOfLines={1}>
                 {release.release_date}
-                {release.track_count != null && ` · ${release.track_count} tracks`}
+                {release.track_count != null && ` · ${t("newRelease.trackCount", { count: release.track_count })}`}
               </Text>
             )}
           </View>

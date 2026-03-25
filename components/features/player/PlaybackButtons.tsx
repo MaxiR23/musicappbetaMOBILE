@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface PlaybackButtonsProps {
@@ -13,6 +14,7 @@ export default function PlaybackButtons({
   onShuffle,
   disabled = false,
 }: PlaybackButtonsProps) {
+  const { t } = useTranslation("common");
   const shuffleDisabled = disabled || !onShuffle;
 
   return (
@@ -24,7 +26,7 @@ export default function PlaybackButtons({
         disabled={disabled}
       >
         <Ionicons name="play" size={18} color="#fff" />
-        <Text style={styles.buttonText}>Reproducir</Text>
+        <Text style={styles.buttonText}>{t("playback.play")}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -34,7 +36,7 @@ export default function PlaybackButtons({
         disabled={shuffleDisabled}
       >
         <Ionicons name="shuffle" size={18} color="#fff" />
-        <Text style={styles.buttonText}>Shuffle</Text>
+        <Text style={styles.buttonText}>{t("playback.shuffle")}</Text>
       </TouchableOpacity>
     </View>
   );

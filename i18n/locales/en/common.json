@@ -7,9 +7,17 @@
   "actions": {
     "cancel": "Cancel"
   },
+  "album": {
+    "songCount_one": "{{count}} song",
+    "songCount_other": "{{count}} songs"
+  },
+  "account": {
+    "title": "Account",
+    "fallbackUser": "User",
+    "signOut": "Sign out"
+  },
   "newRelease": {
-    "badge": "New release",
-    "trackCount": "{{count}} tracks"
+    "badge": "New release"
   },
   "playback": {
     "play": "Play",

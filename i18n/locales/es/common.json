@@ -4,12 +4,20 @@
     "retryHint": "Intentá de nuevo más tarde",
     "goBack": "Volver"
   },
+  "album": {
+    "songCount_one": "{{count}} canción",
+    "songCount_other": "{{count}} canciones"
+  },
+  "account": {
+    "title": "Cuenta",
+    "fallbackUser": "Usuario",
+    "signOut": "Cerrar sesión"
+  },
   "actions": {
     "cancel": "Cancelar"
   },
   "newRelease": {
     "badge": "Nuevo lanzamiento",
-    "trackCount": "{{count}} tracks"
   },
   "playback": {
     "play": "Reproducir",

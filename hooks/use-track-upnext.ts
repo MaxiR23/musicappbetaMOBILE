@@ -30,14 +30,14 @@ export function useTrackUpNext({
 
       if (!res?.ok || !res?.up_next) {
         setUpNextData(null);
-        setUpNextError("No hay cola disponible.");
+        setUpNextError("No hay fila disponible.");
       } else {
         //DBG: console.log("[Upnext] cargado:", res.up_next.length, "canciones");
         setUpNextData(res);
       }
     } catch {
       setUpNextData(null);
-      setUpNextError("No se pudo cargar la cola.");
+      setUpNextError("No se pudo cargar la fila.");
     } finally {
       setUpNextLoading(false);
     }

@@ -1,7 +1,7 @@
 import { syncWithTrackPlayer } from '../../services/syncWithTrackPlayer';
 import TrackPlayer, {
-    getMockState,
-    resetMockState,
+  getMockState,
+  resetMockState,
 } from '../__mocks__/react-native-track-player';
 
 jest.mock('../../services/setupTrackPlayer', () => ({
@@ -55,7 +55,7 @@ describe('syncWithTrackPlayer - función real', () => {
     );
   });
 
-  test('arma la cola completa en orden correcto', async () => {
+  test('arma la fila completa en orden correcto', async () => {
     const tracks = createMockAlbum(5);
 
     await syncWithTrackPlayer(tracks, 2, BASE_URL, syncingRef);
@@ -153,7 +153,7 @@ describe('syncWithTrackPlayer - cambio de contexto', () => {
     syncingRef = { current: false };
   });
 
-  test('cambiar de álbum reemplaza toda la cola', async () => {
+  test('cambiar de álbum reemplaza toda la fila', async () => {
     const album1 = createMockAlbum(3);
     await syncWithTrackPlayer(album1, 0, BASE_URL, syncingRef);
 

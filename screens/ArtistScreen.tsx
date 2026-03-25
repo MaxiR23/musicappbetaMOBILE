@@ -17,6 +17,7 @@ import { useContentPadding } from "@/hooks/use-content-padding";
 import { normalizeRelatedArtists } from "@/utils/data-helpers";
 import { getUpgradedThumb, upgradeThumbUrl } from "@/utils/image-helpers";
 import { formatReleaseSubtitle } from "@/utils/subtitle-helpers";
+import { useTranslation } from "react-i18next";
 
 export default function ArtistScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -26,6 +27,8 @@ export default function ArtistScreen() {
   const router = useRouter();
   const segments = useSegments();
   const contentPadding = useContentPadding();
+  const { t } = useTranslation("artist");
+  const { t: tCommon } = useTranslation("common");
 
   const currentTab = segments[1] as 'home' | 'search';
 
@@ -101,10 +104,10 @@ export default function ArtistScreen() {
       <>
         <StatusBar barStyle="light-content" backgroundColor="#0e0e0e" />
         <View style={{ flex: 1, backgroundColor: '#0e0e0e', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
-          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>No se pudo cargar el artista</Text>
-          <Text style={{ color: '#aaa', fontSize: 13 }}>Intentá de nuevo más tarde</Text>
+          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>{tCommon("error.loadFailed")}</Text>
+          <Text style={{ color: '#aaa', fontSize: 13 }}>{tCommon("error.retryHint")}</Text>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={{ color: '#1DB954', fontSize: 14, marginTop: 8 }}>Volver</Text>
+            <Text style={{ color: '#1DB954', fontSize: 14, marginTop: 8 }}>{tCommon("error.goBack")}</Text>
           </TouchableOpacity>
         </View>
       </>
@@ -129,7 +132,7 @@ export default function ArtistScreen() {
                   track_count: release.track_count,
                   thumb: release.thumbnail,
                 }}
-                badgeText={release.is_tba ? "Próximamente" : "Estreno próximo"}
+                badgeText={release.is_tba ? t("badges.comingSoon") : t("badges.upcomingRelease")}
               />
             ))}
           </View>
@@ -148,7 +151,7 @@ export default function ArtistScreen() {
       case 'topSongs':
         return (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Canciones Populares</Text>
+            <Text style={styles.sectionTitle}>{t("sections.topSongs")}</Text>
             {section.data.map((song: any, index: number) => (
               <TrackRow
                 key={`topsong-${song.id || song.track_id}-${index}`}
@@ -174,7 +177,7 @@ export default function ArtistScreen() {
         return (
           <View style={{ marginBottom: 20 }}>
             <HorizontalScrollSection
-              title="Álbumes"
+              title={t("sections.albums")}
               has_more={!!artist.has_more?.albums}
               items={section.data}
               keyExtractor={(album, idx) => `album-${album.id}-${idx}`}
@@ -200,7 +203,7 @@ export default function ArtistScreen() {
         return (
           <View style={{ marginBottom: 20 }}>
             <HorizontalScrollSection
-              title="Singles / EPs"
+              title={t("sections.singlesEps")}
               has_more={!!artist.has_more?.singles}
               items={section.data}
               keyExtractor={(single, idx) => `single-${single.id}-${idx}`}
@@ -228,7 +231,7 @@ export default function ArtistScreen() {
             <EventsList
               events={section.data}
               artist_name={artist?.header?.name}
-              title="Upcoming events"
+              title={t("sections.upcomingEvents")}
               initialCount={3}
               maxCount={10}
             />
@@ -238,7 +241,7 @@ export default function ArtistScreen() {
         return (
           <View style={{ marginBottom: 20 }}>
             <HorizontalScrollSection
-              title="Artistas Relacionados"
+              title={t("sections.relatedArtists")}
               items={section.data}
               keyExtractor={(rel, idx) => `related-${rel.id}-${idx}`}
               imageExtractor={(rel) => upgradeThumbUrl(rel.img, 256)}

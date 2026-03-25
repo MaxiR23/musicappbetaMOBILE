@@ -67,7 +67,7 @@ export default async function playbackService() {
             await TrackPlayer.skipToNext();
             await TrackPlayer.play();
           } else {
-            console.log('[RNTP] Última canción de la cola, emitiendo evento de fin');
+            console.log('[RNTP] Última canción de la fila, emitiendo evento de fin');
           }
           return;
         }

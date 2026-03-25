@@ -1,5 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Text, TouchableOpacity } from "react-native";
 import { authStyles } from "./auth-form-styles";
 import { AuthFormContainer } from "./AuthFormContainer";
@@ -9,6 +10,7 @@ import { PasswordValidationHint } from "./PasswordValidationHint";
 type Props = { onSwitchToLogin: () => void };
 
 export default function RegisterForm({ onSwitchToLogin }: Props) {
+  const { t } = useTranslation("auth");
   const { signUp, loading } = useAuth();
   const [name, setName] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -29,37 +31,37 @@ export default function RegisterForm({ onSwitchToLogin }: Props) {
     try {
       await signUp({ email, password, metadata: { display_name: name } });
     } catch (e: any) {
-      setError(e?.message ?? "Error al registrarse");
+      setError(e?.message ?? t("register.errorFallback"));
     }
   };
 
   return (
     <AuthFormContainer
-      title="Crear Cuenta"
-      description="Completa los datos para registrarte"
-      subtitle="Únete a la mejor experiencia musical"
-      switchText="¿Ya tienes una cuenta?"
-      switchLinkText="Inicia sesión aquí"
+      title={t("register.title")}
+      description={t("register.description")}
+      subtitle={t("register.subtitle")}
+      switchText={t("register.switchText")}
+      switchLinkText={t("register.switchLink")}
       onSwitchPress={onSwitchToLogin}
     >
       <AuthInput
-        label="Nombre completo"
-        placeholder="Tu nombre"
+        label={t("fields.fullName")}
+        placeholder={t("fields.fullNamePlaceholder")}
         value={name}
         onChangeText={setName}
       />
 
       <AuthInput
-        label="Display name"
-        placeholder="Ej: Maxi23"
+        label={t("fields.displayName")}
+        placeholder={t("fields.displayNamePlaceholder")}
         value={displayName}
         onChangeText={setDisplayName}
         marginTop={12}
       />
 
       <AuthInput
-        label="Email"
-        placeholder="tu@email.com"
+        label={t("fields.email")}
+        placeholder={t("fields.emailPlaceholder")}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -68,8 +70,8 @@ export default function RegisterForm({ onSwitchToLogin }: Props) {
       />
 
       <AuthInput
-        label="Contraseña"
-        placeholder="••••••••"
+        label={t("fields.password")}
+        placeholder={t("fields.passwordPlaceholder")}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -78,13 +80,13 @@ export default function RegisterForm({ onSwitchToLogin }: Props) {
       {!!password && (
         <PasswordValidationHint
           isValid={longEnough}
-          text="Mínimo 6 caracteres"
+          text={t("validation.minChars")}
         />
       )}
 
       <AuthInput
-        label="Confirmar contraseña"
-        placeholder="••••••••"
+        label={t("fields.confirmPassword")}
+        placeholder={t("fields.passwordPlaceholder")}
         value={confirm}
         onChangeText={setConfirm}
         secureTextEntry
@@ -95,8 +97,8 @@ export default function RegisterForm({ onSwitchToLogin }: Props) {
           isValid={passwordMatch}
           text={
             passwordMatch
-              ? "Las contraseñas coinciden"
-              : "Las contraseñas no coinciden"
+              ? t("validation.passwordsMatch")
+              : t("validation.passwordsNoMatch")
           }
         />
       )}
@@ -111,7 +113,7 @@ export default function RegisterForm({ onSwitchToLogin }: Props) {
           (!passwordMatch || !longEnough || loading) && { opacity: 0.7 },
         ]}
       >
-        {loading ? <ActivityIndicator /> : <Text style={authStyles.btnText}>Crear Cuenta</Text>}
+        {loading ? <ActivityIndicator /> : <Text style={authStyles.btnText}>{t("register.submit")}</Text>}
       </TouchableOpacity>
     </AuthFormContainer>
   );

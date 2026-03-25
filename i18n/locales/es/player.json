@@ -13,9 +13,9 @@
         "playingFrom": "Reproduciendo de",
         "unknown": "Desconocido",
         "autoplay": "Autoplay",
-        "autoplayHint": "Basado en tu cola",
+        "autoplayHint": "Basado en tu fila",
         "noTracks": "No hay canciones siguientes",
-        "loading": "Cargando cola..."
+        "loading": "Cargando fila..."
     },
     "lyrics": {
         "noLyrics": "No hay letras disponibles",

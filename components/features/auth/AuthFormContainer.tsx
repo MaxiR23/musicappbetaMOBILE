@@ -1,5 +1,6 @@
 import BRAND_ICON from '@/assets/images/icon.png';
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Image,
   Text,
@@ -25,6 +26,8 @@ export function AuthFormContainer({
   switchLinkText,
   onSwitchPress,
 }: AuthFormContainerProps) {
+  const { t } = useTranslation("auth");
+
   return (
     <View style={{ flex: 1 }}>
       <View style={authStyles.wrap}>
@@ -57,7 +60,7 @@ export function AuthFormContainer({
         </View>
 
         <Text style={authStyles.footer}>
-          © 2025 Beatly. Todos los derechos reservados.
+          {t("footer")}
         </Text>
       </View>
     </View>

@@ -3,6 +3,7 @@ import { useMusic } from "@/hooks/use-music";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   InteractionManager,
   StyleSheet,
@@ -53,6 +54,7 @@ export default function HomeScreen() {
     feedReady,
   } = useHomeFeed(userId);
 
+  const { t } = useTranslation("home");
   const { loading: replayLoading } = useReplay();
 
   useEffect(() => {
@@ -171,7 +173,7 @@ export default function HomeScreen() {
             <RecentSection items={recentVisible} />
 
             <FeedSection
-              title="Nuevos lanzamientos"
+              title={t("sections.newReleases.title")}
               items={newReleases}
               type="album"
               feedKey="new-releases"
@@ -190,7 +192,7 @@ export default function HomeScreen() {
                       : undefined
                   }
                   titleExtractor={(a) => a.name}
-                  subtitleExtractor={() => "Artista"}
+                  subtitleExtractor={() => t("labels.artist")}
                   onItemPress={(a) => router.push(`/(tabs)/home/artist/${encodeURIComponent(a.id)}`)}
                   cardWidth={120}
                   imageHeight={120}
@@ -201,14 +203,14 @@ export default function HomeScreen() {
             )}
 
             <FeedSection
-              title="Más escuchados · Álbumes"
+              title={t("sections.topAlbums.title")}
               items={topAlbums}
               type="album"
               feedKey="top-albums"
             />
 
             <FeedSection
-              title="Más escuchados · Canciones"
+              title={t("sections.topTracks.title")}
               items={topTracks}
               type="track"
               variant="compact"
@@ -231,7 +233,7 @@ export default function HomeScreen() {
                       : undefined
                   }
                   titleExtractor={(a) => a.name}
-                  subtitleExtractor={() => "Artista"}
+                  subtitleExtractor={() => t("labels.artist")}
                   onItemPress={(a) => router.push(`/(tabs)/home/artist/${encodeURIComponent(a.id)}`)}
                   cardWidth={120}
                   imageHeight={120}
@@ -242,7 +244,7 @@ export default function HomeScreen() {
             )}
 
             <FeedSection
-              title="Singles nuevos"
+              title={t("sections.newSingles.title")}
               items={newSingles}
               type="track"
               variant="compact"
@@ -253,7 +255,7 @@ export default function HomeScreen() {
             />
 
             <FeedSection
-              title="Desde tu seed"
+              title={t("sections.fromSeed.title")}
               items={seedTracks}
               type="track"
               variant="compact"
@@ -264,14 +266,14 @@ export default function HomeScreen() {
             />
 
             <FeedSection
-              title="Álbumes recomendados"
+              title={t("sections.recoAlbums.title")}
               items={recoAlbums}
               type="album"
               feedKey="reco-albums"
             />
 
             <FeedSection
-              title="Próximos lanzamientos"
+              title={t("sections.upcomingReleases.title")}
               items={upcomingReleases.map((r) => ({
                 id: r.id,
                 title: r.album,
@@ -287,13 +289,16 @@ export default function HomeScreen() {
             open={profileSheetOpen}
             onOpenChange={setProfileSheetOpen}
             track={null}
-            headerTitle="Cuenta"
-            subtitle={`${userName || "Usuario"}${userEmail ? " • " + userEmail : ""}`}
+            headerTitle={t("account.title", { ns: "common" })}
+            subtitle={`${userName || t("account.fallbackUser", { ns: "common" })}${userEmail ? " • " + userEmail : ""}`}
             showAddTo={false}
             showRemove={false}
             showShare={false}
             extraActions={[
-              { key: "logout", label: "Cerrar sesión", icon: "log-out-outline", onPress: handleSignOut },
+              {
+                key: "logout", label: t("account.signOut", { ns: "common" })
+                , icon: "log-out-outline", onPress: handleSignOut
+              },
             ]}
           />
         </>

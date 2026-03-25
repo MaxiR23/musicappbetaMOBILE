@@ -1,3 +1,4 @@
+import "@/i18n";
 import { DarkTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";

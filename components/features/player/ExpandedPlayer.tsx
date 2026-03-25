@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronDown } from "lucide-react-native";
 import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Animated,
   Dimensions,
@@ -134,6 +135,8 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
   onRelatedArtistPress,
   onRelatedAlbumPress,
 }: ExpandedPlayerProps) {
+  const { t } = useTranslation("player");
+
   const {
     coverScale: tabCoverScale,
     coverTranslateY,
@@ -152,6 +155,13 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
   }, [height]);
 
   const { paddingTop, paddingBottom } = usePlayerInsets();
+
+  const sourceLabel = useMemo(() => {
+    if (playSource?.type === "playlist") return t("source.playlist");
+    if (playSource?.type === "album") return t("source.album");
+    if (playSource?.type === "artist") return t("source.artist");
+    return "";
+  }, [playSource?.type, t]);
 
   return (
     <Animated.View
@@ -205,9 +215,7 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
 
             <View style={styles.sourceContainer}>
               <Text style={styles.sourceLabel}>
-                {playSource?.type === "playlist" && "Desde playlist"}
-                {playSource?.type === "album" && "Desde álbum"}
-                {playSource?.type === "artist" && "Canciones de"}
+                {sourceLabel}
               </Text>
               <Text style={styles.sourceName} numberOfLines={1} ellipsizeMode="tail">
                 {playSource?.name ?? ""}
@@ -290,19 +298,19 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
           <View style={[styles.tabsContainer, { marginTop: dynamicTabMargin }]}>
             <TouchableOpacity style={styles.tab} onPress={() => onTabChange("upnext")}>
               <Text style={[styles.tabText, activePlayerTab === "upnext" && styles.tabTextActive]}>
-                UP NEXT
+                {t("tabs.upNext")}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.tab} onPress={() => onTabChange("lyrics")}>
               <Text style={[styles.tabText, activePlayerTab === "lyrics" && styles.tabTextActive]}>
-                LYRICS
+                {t("tabs.lyrics")}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.tab} onPress={() => onTabChange("related")}>
               <Text style={[styles.tabText, activePlayerTab === "related" && styles.tabTextActive]}>
-                RELATED
+                {t("tabs.related")}
               </Text>
             </TouchableOpacity>
           </View>

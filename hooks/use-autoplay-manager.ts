@@ -114,7 +114,7 @@ export function useAutoplayManager(params: UseAutoplayManagerParams) {
           continue;
         }
 
-        // Ya esta en la cola actual
+        // Ya esta en la fila actual
         if (queueIdsRef.current.has(String(trackId))) {
           continue;
         }

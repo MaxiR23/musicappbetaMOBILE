@@ -19,6 +19,7 @@ import { useContentPadding } from "@/hooks/use-content-padding";
 import { extractIncludedArtists } from "@/utils/data-helpers";
 import { getUpgradedThumb } from "@/utils/image-helpers";
 import { formatAlbumMeta, formatReleaseSubtitle } from "@/utils/subtitle-helpers";
+import { useTranslation } from "react-i18next";
 
 
 export default function AlbumScreen() {
@@ -29,6 +30,8 @@ export default function AlbumScreen() {
     const router = useRouter();
     const segments = useSegments();
     const contentPadding = useContentPadding();
+    const { t } = useTranslation("album");
+    const { t: tCommon } = useTranslation("common");
 
     const currentTab = segments[1] as 'home' | 'search';
 
@@ -54,7 +57,7 @@ export default function AlbumScreen() {
             year: (album.info as any).year,
             song_count: (album.info as any).song_count,
             duration_text: (album.info as any).duration_text,
-        })
+        }, tCommon)
         : "";
 
     const artistThumbUrl =
@@ -125,10 +128,10 @@ export default function AlbumScreen() {
     if (error || !album) {
         return (
             <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', gap: 12 }]}>
-                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>No se pudo cargar el álbum</Text>
-                <Text style={{ color: '#aaa', fontSize: 13 }}>Intentá de nuevo más tarde</Text>
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>{tCommon("error.loadFailed")}</Text>
+                <Text style={{ color: '#aaa', fontSize: 13 }}>{tCommon("error.retryHint")}</Text>
                 <TouchableOpacity onPress={() => router.back()}>
-                    <Text style={{ color: '#1DB954', fontSize: 14, marginTop: 8 }}>Volver</Text>
+                    <Text style={{ color: '#1DB954', fontSize: 14, marginTop: 8 }}>{tCommon("error.goBack")}</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -211,7 +214,7 @@ export default function AlbumScreen() {
                 return (
                     <View style={{ paddingHorizontal: 16, marginTop: 8, gap: 10 }}>
                         <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 6 }}>
-                            Upcoming event
+                            {t("sections.upcomingEvent")}
                         </Text>
                         <EventCard
                             event={section.data}
@@ -225,7 +228,7 @@ export default function AlbumScreen() {
             case 'otherVersions':
                 return (
                     <HorizontalScrollSection
-                        title="Other versions"
+                        title={t("sections.otherVersions")}
                         items={section.data}
                         keyExtractor={(it, i) => `ov-${i}-${it.browseId || it.title}`}
                         imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
@@ -238,7 +241,7 @@ export default function AlbumScreen() {
             case 'moreFromArtist':
                 return (
                     <HorizontalScrollSection
-                        title="More from artist"
+                        title={t("sections.moreFromArtist")}
                         items={section.data}
                         keyExtractor={(it, i) => `mfa-${i}-${it.id || it.title}`}
                         imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}
@@ -251,7 +254,7 @@ export default function AlbumScreen() {
             case 'releasesForYou':
                 return (
                     <HorizontalScrollSection
-                        title="Releases for you"
+                        title={t("sections.releasesForYou")}
                         items={section.data}
                         keyExtractor={(it, i) => `rfy-${i}-${it.browseId || it.title}`}
                         imageExtractor={(it) => getUpgradedThumb(it, 512) || coverUrl}

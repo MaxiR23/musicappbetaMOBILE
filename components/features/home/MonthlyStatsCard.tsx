@@ -1,19 +1,21 @@
 import { useRouter } from "expo-router";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type Props = {
   artists: any[];
 };
 
-const getArtistFields = (artist: any, idx: number) => ({
-  key: artist?.entity_id ?? artist?.id ?? String(idx),
-  name: artist?.display_name ?? artist?.name ?? "Artista",
-  thumbnail: artist?.thumbnail_url ?? artist?.thumbnail,
-});
-
 export default function MonthlyStatsCard({ artists }: Props) {
+  const { t } = useTranslation("home");
   const router = useRouter();
+
+  const getArtistFields = (artist: any, idx: number) => ({
+    key: artist?.entity_id ?? artist?.id ?? String(idx),
+    name: artist?.display_name ?? artist?.name ?? t("labels.artist"),
+    thumbnail: artist?.thumbnail_url ?? artist?.thumbnail,
+  });
 
   if (!artists?.length) return null;
 
@@ -41,7 +43,7 @@ export default function MonthlyStatsCard({ artists }: Props) {
         })}
       </View>
 
-      <Text style={styles.label}>Tu mes en música</Text>
+      <Text style={styles.label}>{t("featured.statsTitle")}</Text>
     </TouchableOpacity>
   );
 }

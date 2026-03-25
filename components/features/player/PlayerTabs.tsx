@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   FlatList,
@@ -50,16 +51,13 @@ function getSectionType(section: any): "songs" | "artists" | "albums" | "unknown
 
 interface PlayerTabsProps {
   initialTab?: TabType;
-  // Metadata de la canción actual (para el header)
   coverUrl: string;
   title: string;
   artist_name: string;
   isPlaying: boolean;
 
-  // Cola y autoplay
   autoplayStartIndex?: number;
 
-  // Estados de cada tab
   lyricsText: string | null;
   lyricsLoading: boolean;
   lyricsError: string | null;
@@ -72,7 +70,6 @@ interface PlayerTabsProps {
   relatedLoading: boolean;
   relatedError: string | null;
 
-  // Callbacks
   onTogglePlay: () => void;
   onCoverPress: () => void;
   onTabChange: (tab: TabType) => void;
@@ -80,10 +77,8 @@ interface PlayerTabsProps {
   onFetchUpNext: () => Promise<void>;
   onFetchRelated: () => Promise<void>;
 
-  // Callbacks para Up Next
   onUpNextTrackPress?: (track: any, isFromAutoplay: boolean) => void;
 
-  // Callbacks para Related
   onRelatedTrackPress?: (track: any) => void;
   onRelatedArtistPress?: (artist_id: string) => void;
   onRelatedAlbumPress?: (album_id: string) => void;
@@ -116,17 +111,15 @@ export const PlayerTabs = React.memo(function PlayerTabs({
   onRelatedArtistPress,
   onRelatedAlbumPress,
 }: PlayerTabsProps) {
-  // Obtener datos del contexto directamente
+  const { t } = useTranslation("player");
   const { currentSong, queue, queueIndex, playSource } = useMusic();
 
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
-  // Sincronizar con initialTab cuando cambie
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
 
-  // Hacer fetch inicial cuando se monta el componente
   useEffect(() => {
     const fetchInitialData = async () => {
       if (activeTab === "lyrics" && !lyricsText && !lyricsLoading) {
@@ -143,23 +136,15 @@ export const PlayerTabs = React.memo(function PlayerTabs({
     fetchInitialData();
   }, [activeTab]);
 
-  // Refrescar datos cuando cambia la canción
   const prevSongIdRef = useRef(currentSong?.id);
 
   useEffect(() => {
     const currentSongId = currentSong?.id;
 
     if (prevSongIdRef.current && currentSongId && prevSongIdRef.current !== currentSongId) {
-      //DBG: console.log("Canción cambió, refrescando datos...");
-
-      // Refrescar según el tab activo
       if (activeTab === "lyrics") {
         onFetchLyrics();
       }
-      // NO refrescar upnext aquí - useTrackUpNext ya lo maneja por contexto
-      // if (activeTab === "upnext") {
-      //   onFetchUpNext();
-      // }
       if (activeTab === "related") {
         onFetchRelated();
       }
@@ -223,7 +208,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
               activeTab === "upnext" && styles.tabTextActive,
             ]}
           >
-            UP NEXT
+            {t("tabs.upNext")}
           </Text>
           {activeTab === "upnext" && <View style={styles.tabIndicator} />}
         </Pressable>
@@ -238,7 +223,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
               activeTab === "lyrics" && styles.tabTextActive,
             ]}
           >
-            LYRICS
+            {t("tabs.lyrics")}
           </Text>
           {activeTab === "lyrics" && <View style={styles.tabIndicator} />}
         </Pressable>
@@ -253,7 +238,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
               activeTab === "related" && styles.tabTextActive,
             ]}
           >
-            RELATED
+            {t("tabs.related")}
           </Text>
           {activeTab === "related" && <View style={styles.tabIndicator} />}
         </Pressable>
@@ -274,7 +259,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
             {upNextLoading && (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#fff" />
-                <Text style={styles.loadingText}>Loading queue...</Text>
+                <Text style={styles.loadingText}>{t("upNext.loading")}</Text>
               </View>
             )}
 
@@ -286,13 +271,13 @@ export const PlayerTabs = React.memo(function PlayerTabs({
               <View>
                 {/* Playing from header */}
                 <View style={styles.playingFromHeader}>
-                  <Text style={styles.playingFromLabel}>Playing from</Text>
+                  <Text style={styles.playingFromLabel}>{t("upNext.playingFrom")}</Text>
                   <Text style={styles.playingFromName}>
-                    {playSource?.name || "Unknown"}
+                    {playSource?.name || t("upNext.unknown")}
                   </Text>
                 </View>
 
-                {/* TODA LA COLA ORIGINAL COMPLETA (nada se oculta) */}
+                {/* TODA LA FILA ORIGINAL COMPLETA (nada se oculta) */}
                 {(() => {
                   const originalQueue = queue;
                   if (originalQueue.length === 0) return null;
@@ -334,18 +319,14 @@ export const PlayerTabs = React.memo(function PlayerTabs({
                 })()}
 
                 {(() => {
-                  // SECCIÓN 2: AUTOPLAY (sugerencias que NO están en el queue aún)
                   if (!upNextData?.up_next || upNextData.up_next.length <= 1) {
                     return null;
                   }
 
-                  // Las sugerencias de autoplay (sin la primera que es la canción actual)
                   const autoplaySuggestions = upNextData.up_next.slice(1);
 
-                  // IDs de canciones ya en el queue (para filtrar duplicados)
                   const queueIds = new Set(queue.map((s: any) => String(s.id)));
 
-                  // Filtrar canciones que NO están en el queue
                   const autoplayNotInQueue = autoplaySuggestions.filter(
                     (track: any) => !queueIds.has(String(track.track_id || track.id))
                   );
@@ -357,13 +338,12 @@ export const PlayerTabs = React.memo(function PlayerTabs({
                   return (
                     <View style={styles.queueSection}>
                       <View style={styles.autoplayHeader}>
-                        <Text style={styles.queueSectionTitle}>Autoplay</Text>
+                        <Text style={styles.queueSectionTitle}>{t("upNext.autoplay")}</Text>
                         <Text style={styles.autoplaySubtitle}>
-                          Based on your queue
+                          {t("upNext.autoplayHint")}
                         </Text>
                       </View>
 
-                      {/* FlatList para carga progresiva; sin scroll propio para no pelear con el contenedor padre */}
                       <FlatList
                         data={autoplayNotInQueue}
                         keyExtractor={(track: any, idx: number) =>
@@ -380,7 +360,6 @@ export const PlayerTabs = React.memo(function PlayerTabs({
                             showIndex={false}
                             showMoreButton={false}
                             onPress={() => {
-                              // Esta canción NO está en el queue, agregarla
                               if (onUpNextTrackPress) {
                                 onUpNextTrackPress(track, true);
                               }
@@ -400,10 +379,9 @@ export const PlayerTabs = React.memo(function PlayerTabs({
                   );
                 })()}
 
-                {/* Mensaje si no hay nada */}
                 {queue.length <= queueIndex + 1 && (!upNextData?.up_next || upNextData.up_next.length <= 1) && (
                   <View style={styles.errorContainer}>
-                    <Text style={styles.placeholderText}>No upcoming tracks</Text>
+                    <Text style={styles.placeholderText}>{t("upNext.noTracks")}</Text>
                   </View>
                 )}
               </View>
@@ -417,7 +395,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
             {lyricsLoading && (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#fff" />
-                <Text style={styles.loadingText}>Loading lyrics...</Text>
+                <Text style={styles.loadingText}>{t("lyrics.loading")}</Text>
               </View>
             )}
 
@@ -435,7 +413,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
 
             {!lyricsLoading && !lyricsError && !lyricsText && (
               <View style={styles.errorContainer}>
-                <Text style={styles.placeholderText}>No lyrics available</Text>
+                <Text style={styles.placeholderText}>{t("lyrics.noLyrics")}</Text>
               </View>
             )}
           </View>
@@ -447,7 +425,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
             {relatedLoading && (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#fff" />
-                <Text style={styles.loadingText}>Loading related...</Text>
+                <Text style={styles.loadingText}>{t("related.loading")}</Text>
               </View>
             )}
 
@@ -471,10 +449,8 @@ export const PlayerTabs = React.memo(function PlayerTabs({
                           : getSectionType(section);
                   const contents = section?.contents || [];
 
-                  // Validar que contents sea un array y tenga elementos
                   if (!Array.isArray(contents) || !contents.length) return null;
 
-                  // CANCIONES → Usar TrackRow
                   if (sectionType === "songs") {
                     return (
                       <View key={sectionKey} style={styles.relatedSection}>
@@ -510,7 +486,6 @@ export const PlayerTabs = React.memo(function PlayerTabs({
                     );
                   }
 
-                  // ARTISTAS → Scroll horizontal con fotos circulares
                   if (sectionType === "artists") {
                     return (
                       <View key={sectionKey} style={styles.relatedSection}>
@@ -535,7 +510,6 @@ export const PlayerTabs = React.memo(function PlayerTabs({
                     );
                   }
 
-                  // ÁLBUMES → Scroll horizontal con fotos cuadradas
                   if (sectionType === "albums") {
                     return (
                       <View key={sectionKey} style={styles.relatedSection}>
@@ -569,7 +543,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
 
             {!relatedLoading && !relatedError && (!Array.isArray(relatedData) || relatedData.length === 0) && (
               <View style={styles.errorContainer}>
-                <Text style={styles.placeholderText}>No related content available</Text>
+                <Text style={styles.placeholderText}>{t("related.noContent")}</Text>
               </View>
             )}
           </View>
@@ -578,7 +552,6 @@ export const PlayerTabs = React.memo(function PlayerTabs({
     </View>
   );
 }, (prevProps, nextProps) => {
-  // Solo re-renderizar si cambian datos, ignorar callbacks
   return (
     prevProps.initialTab === nextProps.initialTab &&
     prevProps.coverUrl === nextProps.coverUrl &&
@@ -602,7 +575,6 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === "ios" ? 44 : StatusBar.currentHeight || 24,
   },
 
-  // HEADER MINIMIZADO
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -637,7 +609,6 @@ const styles = StyleSheet.create({
     padding: 8,
   },
 
-  // TABS
   tabsContainer: {
     flexDirection: "row",
     backgroundColor: "#1a1a1a",
@@ -651,9 +622,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     position: "relative",
   },
-  tabActive: {
-    // El activo no necesita background especial
-  },
+  tabActive: {},
   tabText: {
     color: "#888",
     fontSize: 13,
@@ -672,7 +641,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
 
-  // CONTENIDO
   contentContainer: {
     flex: 1,
   },
@@ -685,7 +653,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // UP NEXT
   playingFromHeader: {
     paddingHorizontal: 12,
     paddingVertical: 16,
@@ -707,7 +674,6 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
 
-  // Secciones de Queue
   queueSection: {
     marginBottom: 24,
   },
@@ -729,7 +695,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  // LYRICS
   lyricsContainer: {
     paddingHorizontal: 20,
     paddingVertical: 24,
@@ -744,7 +709,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // RELATED
   relatedContent: {
     paddingTop: 8,
   },
@@ -763,7 +727,6 @@ const styles = StyleSheet.create({
     gap: 16,
   },
 
-  // ARTISTAS
   artistCard: {
     alignItems: "center",
     width: 120,
@@ -782,7 +745,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // ÁLBUMES
   albumCard: {
     width: 140,
   },
@@ -804,7 +766,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
-  // ESTADOS
   loadingContainer: {
     paddingVertical: 60,
     alignItems: "center",

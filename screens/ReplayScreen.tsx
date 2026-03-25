@@ -9,6 +9,7 @@ import { formatDurationCustom } from "@/utils/durations";
 import { MappedSong } from "@/utils/song-mapper";
 import { useRouter } from "expo-router";
 import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 
 export default function ReplayScreen() {
@@ -16,6 +17,7 @@ export default function ReplayScreen() {
   const contentPadding = useContentPadding();
   const { songs, loading } = useReplay();
   const { playList } = useMusic();
+  const { t } = useTranslation("replay");
 
   const mosaicImages = useMemo(
     () => songs.map((s) => s.thumbnail).filter(Boolean) as string[],
@@ -58,9 +60,9 @@ export default function ReplayScreen() {
       case "info":
         return (
           <View style={styles.infoSection}>
-            <Text style={styles.title}>Replay</Text>
+            <Text style={styles.title}>{t("title")}</Text>
             <Text style={styles.meta}>
-              {songs.length} canciones • {totalDuration}
+              {t("meta.songCount", { count: songs.length })} • {totalDuration}
             </Text>
           </View>
         );
