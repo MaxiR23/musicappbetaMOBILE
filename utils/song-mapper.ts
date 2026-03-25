@@ -20,38 +20,18 @@ export interface MappedSong {
  * Opciones para mapear canciones desde diferentes fuentes
  */
 interface MapSongsOptions {
-  /**
-   * Thumbnail/cover por defecto si la canción no tiene
-   */
   defaultThumbnail?: string;
-
-  /**
-   * ID del álbum (para canciones de álbum)
-   */
   album_id?: string | null;
-
-  /**
-   * ID del artista (para canciones de artista)
-   */
   artist_id?: string | null;
-
-  /**
-   * Nombre del álbum por defecto
-   */
   album_name?: string | null;
-
-  /**
-   * Nombre del artista por defecto
-   */
   defaultartist_name?: string;
 }
 
+const safeUri = (val?: string | null): string | undefined =>
+  val && val !== "null" && val !== "undefined" ? val : undefined;
+
 /**
  * Mapea canciones de álbum al formato estándar del reproductor
- * 
- * @param tracks - Array de tracks del álbum
- * @param options - Opciones de mapeo
- * @returns Array de canciones en formato estándar
  */
 export function mapAlbumTracks(
   tracks: any[],
@@ -86,17 +66,13 @@ export function mapAlbumTracks(
         album_name: track.album_name ?? album_name ?? null,
         duration: track.duration || null,
         duration_seconds: track.duration_seconds || null,
-        thumbnail: defaultThumbnail || "",
+        thumbnail: safeUri(defaultThumbnail),
       };
     });
 }
 
 /**
  * Mapea canciones de artista (top songs) al formato estándar del reproductor
- * 
- * @param topSongs - Array de top songs del artista
- * @param options - Opciones de mapeo
- * @returns Array de canciones en formato estándar
  */
 export function mapArtistTopSongs(
   topSongs: any[],
@@ -128,7 +104,7 @@ export function mapArtistTopSongs(
     return {
       id: trackId,
       title: song.title,
-      thumbnail: song.thumbnail,
+      thumbnail: safeUri(song.thumbnail),
       duration: song.duration,
       duration_seconds: song.duration_seconds,
       artist_name,
@@ -142,9 +118,6 @@ export function mapArtistTopSongs(
 
 /**
  * Mapea canciones de playlist al formato estándar del reproductor
- * 
- * @param playlistSongs - Array de canciones de la playlist
- * @returns Array de canciones en formato estándar
  */
 export function mapPlaylistSongs(playlistSongs: any[]): MappedSong[] {
   if (!Array.isArray(playlistSongs)) return [];
@@ -155,7 +128,7 @@ export function mapPlaylistSongs(playlistSongs: any[]): MappedSong[] {
     artist_name: song.artist,
     artist_id: song.artist_id ?? null,
     album_id: song.album_id ?? null,
-    thumbnail: song.albumCover,
+    thumbnail: safeUri(song.albumCover),
     duration: song.duration,
     duration_seconds: null,
   }));
@@ -163,9 +136,6 @@ export function mapPlaylistSongs(playlistSongs: any[]): MappedSong[] {
 
 /**
  * Mapea tracks genéricos (upNext, related) al formato estándar del reproductor
- * 
- * @param track - Track individual
- * @returns Canción en formato estándar
  */
 export function mapGenericTrack(track: any): MappedSong {
   const trackId = track.track_id || track.id;
@@ -198,7 +168,7 @@ export function mapGenericTrack(track: any): MappedSong {
     artists: artistsArr,
     album_id,
     album_name,
-    thumbnail: track.thumbnail,
+    thumbnail: safeUri(track.thumbnail),
     duration: track.duration || "--:--",
     duration_seconds: track.duration_seconds || null,
   };

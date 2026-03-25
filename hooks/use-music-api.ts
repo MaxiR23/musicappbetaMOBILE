@@ -93,6 +93,12 @@ export function useMusicApi() {
     []
   );
 
+  const updatePlaylist = useCallback(
+    (playlistId: string, title: string, description?: string, is_public?: boolean) =>
+      musicService.updatePlaylist(playlistId, title, description, is_public),
+    []
+  );
+
   const addTrackToPlaylist = useCallback(
     (playlistId: string, song: Song) => musicService.addTrackToPlaylist(playlistId, song),
     []
@@ -211,6 +217,7 @@ export function useMusicApi() {
     getPlaylists,
     getPlaylistById,
     createPlaylist,
+    updatePlaylist,
     addTrackToPlaylist,
     deletePlaylist,
     removeTrackFromPlaylist,

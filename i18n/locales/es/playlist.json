@@ -20,8 +20,9 @@
   },
   "options": {
     "title": "Opciones de playlist",
-    "edit": "Editar",
-    "closeEdit": "Cerrar edición"
+    "edit": "Editar orden",
+    "closeEdit": "Cerrar edición",
+    "editDetails": "Nombre y detalles"
   },
   "create": {
     "title": "Crear Playlist",
@@ -37,5 +38,12 @@
     "submit": "Crear",
     "submitting": "Creando…",
     "errorFallback": "Error creando la playlist"
+  },
+  "edit": {
+    "title": "Editar Playlist",
+    "subtitle": "Actualizá los detalles de tu playlist",
+    "submit": "Guardar",
+    "submitting": "Guardando…",
+    "errorFallback": "No se pudo actualizar la playlist"
   }
 }

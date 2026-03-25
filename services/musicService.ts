@@ -249,6 +249,21 @@ export const musicService = {
     return result;
   },
 
+  updatePlaylist: async (playlistId: string, title: string, description?: string, is_public?: boolean) => {
+    const result = await authFetch(`${API_URL}/playlists/${encodeURIComponent(playlistId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        title,
+        description: description ?? null,
+        is_public: !!is_public,
+      }),
+    });
+    await cacheClearPrefix(`playlist:${playlistId}`);
+    await cacheClearPrefix('playlists:list');
+    emitPlaylistChange();
+    return result;
+  },
+
   addTrackToPlaylist: async (playlistId: string, song: Song) => {
     const payload = toTrackPayload(song as any);
     const result = await authFetch(

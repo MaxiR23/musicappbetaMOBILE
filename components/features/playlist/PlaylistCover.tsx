@@ -17,7 +17,9 @@ export default function PlaylistCover({
   size?: number;
   borderRadius?: number;
 }) {
-  const safe = Array.isArray(images) ? images.filter(Boolean) : [];
+  const safe = Array.isArray(images)
+    ? images.filter((img) => img && img !== "null")
+    : [];
 
   const containerStyle = size
     ? { width: size, height: size, borderRadius }

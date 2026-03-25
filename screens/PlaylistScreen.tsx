@@ -2,6 +2,7 @@ import PlaybackButtons from "@/components/features/player/PlaybackButtons";
 import PlaylistEditView from "@/components/features/playlist/PlaylistEditView";
 import PlaylistOptionsSheet from "@/components/features/playlist/PlaylistOptionsSheet";
 import AnimatedDetailHeader from "@/components/shared/AnimatedDetailHeader";
+import CreatePlaylistModal from "@/components/shared/CreatePlaylistModal";
 import TrackActionsSheet from "@/components/shared/TrackActionsSheet";
 import TrackRow from "@/components/shared/TrackRow";
 import { PlaylistSkeletonLayout } from "@/components/shared/skeletons/Skeleton";
@@ -56,6 +57,7 @@ export default function PlaylistScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<any | null>(null);
+  const [editDetailsOpen, setEditDetailsOpen] = useState(false);
 
   const {
     editMode,
@@ -245,6 +247,21 @@ export default function PlaylistScreen() {
     setMenuOpen(false);
   };
 
+  const handleEditDetails = () => {
+    setMenuOpen(false);
+    setEditDetailsOpen(true);
+  };
+
+  const handleUpdated = (updated: any) => {
+    setPlaylist((prev: any) => prev ? {
+      ...prev,
+      name: updated.title ?? prev.name,
+      description: updated.description ?? prev.description,
+      isPublic: updated.is_public ?? prev.isPublic,
+    } : prev);
+    invalidatePlaylists().catch(() => { });
+  };
+
   const handleSaveEdit = () => {
     const newSongs = saveEdits();
     if (newSongs) {
@@ -420,7 +437,8 @@ export default function PlaylistScreen() {
           open={menuOpen}
           onOpenChange={setMenuOpen}
           onDelete={confirmDelete}
-          onEdit={editMode || playlist.songs.length === 1 ? undefined : handleStartEdit}
+          onEdit={editMode || playlist.songs.length <= 1 ? undefined : handleStartEdit}
+          onEditDetails={handleEditDetails}
           editMode={editMode}
         />
       )}
@@ -433,6 +451,18 @@ export default function PlaylistScreen() {
         onRemove={!isGenrePlaylist ? (_, trackId) => handleRemoveFromSheet(playlist.id, trackId) : undefined}
         showAddTo={!isGenrePlaylist}
         showRemove={!isGenrePlaylist}
+      />
+
+      <CreatePlaylistModal
+        open={editDetailsOpen}
+        onOpenChange={setEditDetailsOpen}
+        onUpdated={handleUpdated}
+        initialData={{
+          id: playlist.id,
+          name: playlist.name,
+          description: playlist.description,
+          isPublic: playlist.isPublic,
+        }}
       />
     </>
   );
@@ -469,7 +499,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
   },
-
   infoSection: {
     alignItems: "center",
     paddingHorizontal: 20,

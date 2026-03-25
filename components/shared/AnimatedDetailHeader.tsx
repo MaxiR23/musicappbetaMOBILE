@@ -17,8 +17,9 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 function MosaicCover({ images }: { images: string[] }) {
   const displayImages = images.slice(0, 4);
   while (displayImages.length < 4) {
-    displayImages.push(displayImages[0] || "");
+    displayImages.push(displayImages[0] ?? "");
   }
+
   return (
     <View style={{ width: "100%", height: "100%", flexDirection: "row", flexWrap: "wrap" }}>
       {displayImages.map((img, idx) => {
@@ -27,11 +28,23 @@ function MosaicCover({ images }: { images: string[] }) {
         if (idx === 1) borderRadiusStyles.borderTopRightRadius = 8;
         if (idx === 2) borderRadiusStyles.borderBottomLeftRadius = 8;
         if (idx === 3) borderRadiusStyles.borderBottomRightRadius = 8;
+
+        const cellStyle = {
+          width: "50%" as const,
+          height: "50%" as const,
+          backgroundColor: "#2a2a2a",
+          ...borderRadiusStyles,
+        };
+
+        if (!img) {
+          return <View key={idx} style={cellStyle} />;
+        }
+
         return (
           <Image
             key={idx}
             source={{ uri: img }}
-            style={{ width: "50%", height: "50%", backgroundColor: "#2a2a2a", ...borderRadiusStyles }}
+            style={cellStyle}
             resizeMode="cover"
           />
         );

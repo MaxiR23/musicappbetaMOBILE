@@ -1,5 +1,5 @@
 import { useMusicApi } from "@/hooks/use-music-api";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   KeyboardAvoidingView,
@@ -17,30 +17,53 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated?: (playlist: any) => void;
+  onUpdated?: (playlist: any) => void;
+  initialData?: {
+    id: string;
+    name: string;
+    description?: string;
+    isPublic?: boolean;
+  };
 };
 
-export default function CreatePlaylistModal({ open, onOpenChange, onCreated }: Props) {
+export default function CreatePlaylistModal({ open, onOpenChange, onCreated, onUpdated, initialData }: Props) {
   const { t } = useTranslation("playlist");
   const { t: tCommon } = useTranslation("common");
-  const { createPlaylist } = useMusicApi();
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [isPublic, setIsPublic] = useState(false);
+  const { createPlaylist, updatePlaylist } = useMusicApi();
+  const isEditMode = !!initialData;
+
+  const [name, setName] = useState(initialData?.name ?? "");
+  const [description, setDescription] = useState(initialData?.description ?? "");
+  const [isPublic, setIsPublic] = useState(initialData?.isPublic ?? false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (open) {
+      setName(initialData?.name ?? "");
+      setDescription(initialData?.description ?? "");
+      setIsPublic(initialData?.isPublic ?? false);
+      setErr(null);
+    }
+  }, [open, initialData]);
+
   const isValid = useMemo(() => name.trim().length > 0, [name]);
 
-  async function handleCreate() {
+  async function handleSubmit() {
     if (!isValid || loading) return;
     setLoading(true);
     setErr(null);
     try {
-      const created = await createPlaylist(name.trim(), description.trim() || undefined, isPublic);
-      onCreated?.(created);
-      setName("");
-      setDescription("");
-      setIsPublic(false);
+      if (isEditMode) {
+        const updated = await updatePlaylist(initialData.id, name.trim(), description.trim() || undefined, isPublic);
+        onUpdated?.(updated);
+      } else {
+        const created = await createPlaylist(name.trim(), description.trim() || undefined, isPublic);
+        onCreated?.(created);
+        setName("");
+        setDescription("");
+        setIsPublic(false);
+      }
       onOpenChange(false);
     } catch (e: any) {
       setErr(e?.message || t("create.errorFallback"));
@@ -58,8 +81,8 @@ export default function CreatePlaylistModal({ open, onOpenChange, onCreated }: P
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => onOpenChange(false)} />
 
         <View style={styles.sheet}>
-          <Text style={styles.title}>{t("create.title")}</Text>
-          <Text style={styles.subtitle}>{t("create.subtitle")}</Text>
+          <Text style={styles.title}>{isEditMode ? t("edit.title") : t("create.title")}</Text>
+          <Text style={styles.subtitle}>{isEditMode ? t("edit.subtitle") : t("create.subtitle")}</Text>
 
           {/* Nombre */}
           <View style={{ marginTop: 14 }}>
@@ -107,10 +130,14 @@ export default function CreatePlaylistModal({ open, onOpenChange, onCreated }: P
 
             <TouchableOpacity
               style={[styles.btnPrimary, !isValid || loading ? { opacity: 0.6 } : null]}
-              onPress={handleCreate}
+              onPress={handleSubmit}
               disabled={!isValid || loading}
             >
-              <Text style={styles.btnPrimaryText}>{loading ? t("create.submitting") : t("create.submit")}</Text>
+              <Text style={styles.btnPrimaryText}>
+                {loading
+                  ? t(isEditMode ? "edit.submitting" : "create.submitting")
+                  : t(isEditMode ? "edit.submit" : "create.submit")}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

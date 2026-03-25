@@ -17,6 +17,7 @@ interface PlaylistOptionsSheetProps {
   onOpenChange: (open: boolean) => void;
   onDelete: () => void;
   onEdit?: () => void;
+  onEditDetails?: () => void;
   editMode?: boolean;
 }
 
@@ -25,6 +26,7 @@ export default function PlaylistOptionsSheet({
   onOpenChange,
   onDelete,
   onEdit,
+  onEditDetails,
   editMode = false,
 }: PlaylistOptionsSheetProps) {
   const { t } = useTranslation("playlist");
@@ -70,6 +72,15 @@ export default function PlaylistOptionsSheet({
               onPress={onDelete}
               danger
             />
+
+            {/* Editar detalles */}
+            {!editMode && onEditDetails && (
+              <ActionRow
+                icon="pencil-outline"
+                label={t("options.editDetails")}
+                onPress={onEditDetails}
+              />
+            )}
 
             {/* Editar / Cerrar edición */}
             {editMode ? (
