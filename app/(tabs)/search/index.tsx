@@ -161,6 +161,7 @@ export default function SearchScreen() {
     if (!q) return;
     if (forceQ !== undefined && forceQ !== query) setQuery(forceQ);
     setLoading(true);
+    setResults(null);
     try {
       const res = await searchSongs(q);
       if (res && typeof res === "object" && !Array.isArray(res) && (res as any).error) {
@@ -214,7 +215,7 @@ export default function SearchScreen() {
 
   const showRecents = results === null && !loading;
   const showNoResults = !loading && results !== null && results.length === 0;
-  const showResults = !!results && results.length > 0;
+  const showResults = !loading && !!results && results.length > 0;
 
   // ==================== RENDER ====================
 
