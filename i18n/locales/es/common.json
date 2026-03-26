@@ -17,7 +17,7 @@
     "cancel": "Cancelar"
   },
   "newRelease": {
-    "badge": "Nuevo lanzamiento",
+    "badge": "Nuevo lanzamiento"
   },
   "playback": {
     "play": "Reproducir",
@@ -36,6 +36,9 @@
     "descriptionLabel": "Descripción",
     "addFailed": "No se pudo agregar el tema.",
     "removeFailed": "No se pudo quitar el tema.",
-    "createFailed": "No se pudo crear/agregar."
+    "createFailed": "No se pudo crear/agregar.",
+    "alreadyInPlaylist": "Ya está en esta playlist",
+    "goToArtist": "Ir al artista",
+    "goToAlbum": "Ir al álbum"
   }
 }

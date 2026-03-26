@@ -46,7 +46,10 @@ interface TrackRowProps {
 
   trackId: string | number;
   disabled?: boolean;
+
   track?: any;
+  showGoToArtist?: boolean;
+  showGoToAlbum?: boolean;
 }
 
 /**
@@ -68,6 +71,8 @@ export default function TrackRow({
   trackId,
   disabled,
   track,
+  showGoToArtist,
+  showGoToAlbum,
 }: TrackRowProps) {
 
   const { isCurrentTrack, isPlaying } = useIsTrackPlaying(trackId);
@@ -185,6 +190,8 @@ export default function TrackRow({
           open={actionsOpen}
           onOpenChange={setActionsOpen}
           track={track}
+          showGoToArtist={showGoToArtist}
+          showGoToAlbum={showGoToAlbum}
         />
       )}
     </>

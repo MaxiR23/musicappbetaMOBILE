@@ -162,6 +162,7 @@ export default function ArtistScreen() {
                 showMoreButton={true}
                 track={song}
                 trackId={song.id}
+                showGoToArtist={false}
                 onPress={() =>
                   playList(mappedTop, index, {
                     type: "artist",

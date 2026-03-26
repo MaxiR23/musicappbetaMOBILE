@@ -1,5 +1,6 @@
 import { useMusicApi } from "@/hooks/use-music-api";
 import { Ionicons } from "@expo/vector-icons";
+import { router, useSegments } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -25,38 +26,26 @@ type ExtraAction = {
     onPress: () => void | Promise<void>;
 };
 
-/**
- * Props del componente:
- * - open: Si el sheet está abierto.
- * - onOpenChange: Callback cuando cambia el estado de apertura.
- * - track: Track actual (si es null, funciona en modo genérico).
- *
- * - playlistId: ID de playlist (modo por-canción).
- * - onRemove: Callback para remover un track de una playlist (requiere playlistId).
- *
- * - extraActions: Acciones extra para agregar al listado.
- *
- * - headerTitle: Override del título del header (ej: "Opciones") (modo genérico).
- * - subtitle: Línea secundaria cuando no hay track (ej: "Nombre • mail") (modo genérico).
- * - showAddTo: Mostrar acción "Add to" (default: true).
- * - showRemove: Mostrar acción "Remove" (default: true si hay playlistId + onRemove).
- * - showShare: Mostrar acción "Share" (default: true).
- */
 type Props = {
-  open: boolean;
-  onOpenChange: (o: boolean) => void;
-  track: Track | null;
+    open: boolean;
+    onOpenChange: (o: boolean) => void;
+    track: Track | null;
 
-  playlistId?: string;
-  onRemove?: (playlistId: string, trackId: string) => Promise<void> | void;
+    playlistId?: string;
+    onRemove?: (playlistId: string, trackId: string) => Promise<void> | void;
 
-  extraActions?: ExtraAction[];
+    extraActions?: ExtraAction[];
 
-  headerTitle?: string;
-  subtitle?: string;
-  showAddTo?: boolean;
-  showRemove?: boolean;
-  showShare?: boolean;
+    headerTitle?: string;
+    subtitle?: string;
+    showAddTo?: boolean;
+    showRemove?: boolean;
+    showShare?: boolean;
+    showGoToArtist?: boolean;
+    showGoToAlbum?: boolean;
+
+    onGoToArtist?: (artistId: string) => void;
+    onGoToAlbum?: (albumId: string) => void;
 };
 
 type Mode = "root" | "add" | "create";
@@ -73,9 +62,15 @@ export default function TrackActionsSheet({
     showAddTo,
     showRemove,
     showShare,
+    showGoToArtist,
+    showGoToAlbum,
+    onGoToArtist,
+    onGoToAlbum,
 }: Props) {
     const { t } = useTranslation("common");
-    const { getPlaylists, addTrackToPlaylist, createPlaylist, getPlaylistById } = useMusicApi();
+    const segments = useSegments();
+    const currentTab = (segments[1] as string) || "home";
+    const { getPlaylists, addTrackToPlaylist, createPlaylist } = useMusicApi();
 
     const [mode, setMode] = useState<Mode>("root");
     const [loading, setLoading] = useState(false);
@@ -90,6 +85,7 @@ export default function TrackActionsSheet({
 
     const [addingToId, setAddingToId] = useState<string | null>(null);
     const [addedToId, setAddedToId] = useState<string | null>(null);
+    const [alreadyInId, setAlreadyInId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!open) {
@@ -101,6 +97,7 @@ export default function TrackActionsSheet({
             setLoaded(false);
             setAddingToId(null);
             setAddedToId(null);
+            setAlreadyInId(null);
         }
     }, [open, track]);
 
@@ -113,6 +110,36 @@ export default function TrackActionsSheet({
             })
             .catch((e) => console.error("[Sheet] getPlaylists error:", e));
     }, [open, mode, loaded, getPlaylists]);
+
+    // ── NAVIGATION ────────────────────────────────────────────────────────────
+
+    const artistId = track?.artist_id ?? null;
+    const albumId = track?.album_id ?? track?.go_to?.album_id ?? null;
+
+    const allowGoToArtist = showGoToArtist !== false && !!artistId;
+    const allowGoToAlbum = showGoToAlbum !== false && !!albumId;
+
+    function handleGoToArtist() {
+        if (!artistId) return;
+        onOpenChange(false);
+        if (onGoToArtist) {
+            onGoToArtist(artistId);
+        } else {
+            router.push(`/(tabs)/${currentTab}/artist/${artistId}` as any);
+        }
+    }
+
+    function handleGoToAlbum() {
+        if (!albumId) return;
+        onOpenChange(false);
+        if (onGoToAlbum) {
+            onGoToAlbum(albumId);
+        } else {
+            router.push(`/(tabs)/${currentTab}/album/${albumId}` as any);
+        }
+    }
+
+    // ── ACTIONS ───────────────────────────────────────────────────────────────
 
     async function handleShare() {
         if (!track) return;
@@ -138,36 +165,24 @@ export default function TrackActionsSheet({
         }
     }
 
-    async function verifyAdded(plId: string, candidateIds: string[]) {
-        try {
-            const after = await getPlaylistById(plId);
-            const items = after?.tracks || after?.playlist_tracks || [];
-            const found = items.some((track: any) => {
-                const keys = [track.id, track.track_id, track.video_id, track.song_id, track?.tracks?.id, track?.tracks?.track_id];
-                return keys.some((k) => k && candidateIds.includes(String(k)));
-            });
-            if (!found) console.warn("[Sheet] NOT FOUND after add (id/track_id mismatch?).");
-        } catch { }
-    }
-
     async function handleAddTo(plId: string) {
         if (!track) return;
         setAddingToId(plId);
         setErr(null);
+        setAlreadyInId(null);
+
         try {
             await addTrackToPlaylist(plId, track);
-            await verifyAdded(plId, [String(track.id)]);
-
             setAddingToId(null);
             setAddedToId(plId);
-
-            setTimeout(() => {
-                setAddedToId(null);
-                onOpenChange(false);
-            }, 1000);
+            onOpenChange(false);
         } catch (e: any) {
-            setErr(e?.message || t("trackActions.addFailed"));
             setAddingToId(null);
+            if (e?.message?.includes("409") || e?.message?.includes("already_in_playlist")) {
+                setAlreadyInId(plId);
+            } else {
+                setErr(e?.message || t("trackActions.addFailed"));
+            }
         }
     }
 
@@ -178,7 +193,6 @@ export default function TrackActionsSheet({
         try {
             const pl = await createPlaylist(name.trim(), desc.trim() || undefined, false);
             await addTrackToPlaylist(pl.id, track);
-            await verifyAdded(pl.id, [String(track.id)]);
             onOpenChange(false);
         } catch (e: any) {
             setErr(e?.message || t("trackActions.createFailed"));
@@ -187,7 +201,6 @@ export default function TrackActionsSheet({
         }
     }
 
-    // flags (por defecto: todo visible)
     const allowAdd = showAddTo !== false && !!track;
     const allowRemove = showRemove !== false && !!playlistId && !!onRemove && !!track;
     const allowShare = showShare !== false && !!track;
@@ -247,6 +260,20 @@ export default function TrackActionsSheet({
                                     onPress={() => setMode("add")}
                                 />
                             )}
+                            {allowGoToArtist && (
+                                <ActionRow
+                                    icon="person-outline"
+                                    label={t("trackActions.goToArtist")}
+                                    onPress={handleGoToArtist}
+                                />
+                            )}
+                            {allowGoToAlbum && (
+                                <ActionRow
+                                    icon="disc-outline"
+                                    label={t("trackActions.goToAlbum")}
+                                    onPress={handleGoToAlbum}
+                                />
+                            )}
                             {allowRemove && (
                                 <ActionRow
                                     icon="remove-circle-outline"
@@ -272,25 +299,31 @@ export default function TrackActionsSheet({
 
                     {mode === "add" && (
                         <ScrollView style={{ maxHeight: 360 }} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-                            {playlists.map((pl) => (
-                                <TouchableOpacity
-                                    key={pl.id}
-                                    style={styles.listRow}
-                                    activeOpacity={0.85}
-                                    onPress={() => handleAddTo(pl.id)}
-                                    disabled={addingToId === pl.id || addedToId === pl.id}
-                                >
-                                    <Ionicons name="musical-notes" size={16} color="#bbb" style={{ marginRight: 10 }} />
-                                    <Text style={styles.listRowText} numberOfLines={1}>{pl.title}</Text>
+                            {playlists.map((pl) => {
+                                const isAlready = alreadyInId === pl.id;
+                                return (
+                                    <TouchableOpacity
+                                        key={pl.id}
+                                        style={styles.listRow}
+                                        activeOpacity={0.85}
+                                        onPress={() => handleAddTo(pl.id)}
+                                        disabled={addingToId === pl.id || addedToId === pl.id}
+                                    >
+                                        <Ionicons name="musical-notes" size={16} color="#bbb" style={{ marginRight: 10 }} />
+                                        <Text style={styles.listRowText} numberOfLines={1}>{pl.title}</Text>
 
-                                    {addingToId === pl.id && (
-                                        <ActivityIndicator size="small" color="#bbb" style={{ marginLeft: "auto" }} />
-                                    )}
-                                    {addedToId === pl.id && (
-                                        <Ionicons name="checkmark-circle" size={20} color="#4ade80" style={{ marginLeft: "auto" }} />
-                                    )}
-                                </TouchableOpacity>
-                            ))}
+                                        {addingToId === pl.id && (
+                                            <ActivityIndicator size="small" color="#bbb" style={{ marginLeft: "auto" }} />
+                                        )}
+                                        {addedToId === pl.id && (
+                                            <Ionicons name="checkmark-circle" size={20} color="#4ade80" style={{ marginLeft: "auto" }} />
+                                        )}
+                                        {isAlready && (
+                                            <Text style={styles.alreadyIn}>{t("trackActions.alreadyInPlaylist")}</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                );
+                            })}
                             <TouchableOpacity
                                 style={[styles.listRow, { marginTop: 8 }]}
                                 onPress={() => setMode("create")}
@@ -382,6 +415,8 @@ const styles = StyleSheet.create({
 
     listRow: { height: 42, flexDirection: "row", alignItems: "center" },
     listRowText: { color: "#ddd", fontSize: 14, marginLeft: 10 },
+
+    alreadyIn: { color: "#f59e0b", fontSize: 12, marginLeft: "auto" },
 
     label: { color: "#ddd", fontSize: 12, marginBottom: 6 },
     input: { backgroundColor: "#1a1a1a", borderColor: "#333", borderWidth: 1, color: "#fff", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },

@@ -21,6 +21,8 @@ interface TrackCardProps {
   width?: number;
   trackId?: string | number;
   track?: any;
+  showGoToArtist?: boolean;
+  showGoToAlbum?: boolean;
 }
 
 export default function TrackCard({
@@ -34,6 +36,8 @@ export default function TrackCard({
   width = 220,
   trackId,
   track,
+  showGoToArtist,
+  showGoToAlbum,
 }: TrackCardProps) {
   const { isLiked } = useLikes();
   const resolvedTrackId = trackId ?? track?.id;
@@ -98,6 +102,8 @@ export default function TrackCard({
           open={actionsOpen}
           onOpenChange={setActionsOpen}
           track={track}
+          showGoToArtist={showGoToArtist}
+          showGoToAlbum={showGoToAlbum}
         />
       )}
     </>
