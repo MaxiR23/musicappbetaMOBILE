@@ -5,6 +5,7 @@ import { usePlayerExpansion } from "@/hooks/use-player-expansion";
 import { usePlayerPanGesture } from "@/hooks/use-player-pan-gesture";
 import { usePlayerTheme } from "@/hooks/use-player-theme";
 import { useRepeatMode } from "@/hooks/use-repeat-mode";
+import { useTrackLikes } from "@/hooks/use-track-likes";
 import { useTrackLyrics } from "@/hooks/use-track-lyrics";
 import { useTrackMetadata } from "@/hooks/use-track-metadata";
 import { useTrackRelated } from "@/hooks/use-track-related";
@@ -73,10 +74,7 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
     collapse: handleCollapse,
   });
 
-  // const { isLiked, liking, toggleLike } = useTrackLikes({ currentSong });
-  const isLiked = false;
-  const liking = false;
-  const toggleLike = () => { };
+  const { isLiked, liking, toggleLike } = useTrackLikes({ currentSong });
   const { lyricsText, lyricsLoading, lyricsError, mainScrollRef, fetchLyrics } = useTrackLyrics({
     currentSong,
     getTrackLyrics,
