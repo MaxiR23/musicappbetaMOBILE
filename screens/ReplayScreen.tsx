@@ -79,6 +79,8 @@ export default function ReplayScreen() {
               thumbnail={song.thumbnail}
               trackId={song.id}
               showIndex={false}
+              showMoreButton={true}
+              track={song}
               onPress={() => handleTrackPress(section.index)}
             />
           </View>

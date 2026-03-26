@@ -13,13 +13,13 @@ interface Props {
   feedKey?: string;
 }
 
-export default function FeedSection({ 
-  title, 
-  items, 
-  type, 
+export default function FeedSection({
+  title,
+  items,
+  type,
   variant = 'grid',
-  onTrackPress, 
-  feedKey 
+  onTrackPress,
+  feedKey
 }: Props) {
   const router = useRouter();
 
@@ -63,6 +63,7 @@ export default function FeedSection({
                   title={item.title ?? item.name}
                   artist={item.artist ?? item.artist_name}
                   thumbnail={extractThumbnail(item)}
+                  track={item}
                   onPress={() => onTrackPress?.(globalIndex, title)}
                 />
               );
@@ -71,8 +72,8 @@ export default function FeedSection({
         )}
         has_more={!!feedKey}
         onPressMore={
-          feedKey 
-            ? () => router.push({ pathname: '/(tabs)/home/feed-list', params: { key: feedKey, title } }) 
+          feedKey
+            ? () => router.push({ pathname: '/(tabs)/home/feed-list', params: { key: feedKey, title } })
             : undefined
         }
         cardWidth={220}
@@ -97,8 +98,8 @@ export default function FeedSection({
       }}
       has_more={!!feedKey}
       onPressMore={
-        feedKey 
-          ? () => router.push({ pathname: '/(tabs)/home/feed-list', params: { key: feedKey, title } }) 
+        feedKey
+          ? () => router.push({ pathname: '/(tabs)/home/feed-list', params: { key: feedKey, title } })
           : undefined
       }
       cardWidth={120}

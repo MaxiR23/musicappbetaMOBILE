@@ -4,6 +4,7 @@ const DB_NAME = "beatly_likes.db";
 const DB_VERSION = 1;
 
 let _db: SQLite.SQLiteDatabase | null = null;
+let _migrated = false;
 
 export interface LikedTrackRow {
   track_id: string;
@@ -19,18 +20,23 @@ export interface LikedTrackRow {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-async function getDb(): Promise<SQLite.SQLiteDatabase> {
+function ensureDb(): SQLite.SQLiteDatabase {
   if (_db) return _db;
+  _db = SQLite.openDatabaseSync(DB_NAME);
+  return _db;
+}
 
-  _db = await SQLite.openDatabaseAsync(DB_NAME);
+async function getDb(): Promise<SQLite.SQLiteDatabase> {
+  const db = ensureDb();
+  if (_migrated) return db;
 
-  const row = await _db.getFirstAsync<{ user_version: number }>(
+  const row = await db.getFirstAsync<{ user_version: number }>(
     "PRAGMA user_version"
   );
   const currentVersion = row?.user_version ?? 0;
 
   if (currentVersion < DB_VERSION) {
-    await _db.execAsync(`
+    await db.execAsync(`
       PRAGMA journal_mode = WAL;
       CREATE TABLE IF NOT EXISTS liked_tracks (
         track_id TEXT PRIMARY KEY NOT NULL,
@@ -50,7 +56,8 @@ async function getDb(): Promise<SQLite.SQLiteDatabase> {
     `);
   }
 
-  return _db;
+  _migrated = true;
+  return db;
 }
 
 // ── WRITE ─────────────────────────────────────────────────────────────────────
@@ -133,7 +140,7 @@ export async function replaceAllLikes(tracks: LikedTrackRow[]): Promise<void> {
 
 export function getLikedTrackIdsSync(): Set<string> {
   try {
-    const db = SQLite.openDatabaseSync(DB_NAME);
+    const db = ensureDb();
     const rows = db.getAllSync<{ track_id: string }>(
       "SELECT track_id FROM liked_tracks"
     );
@@ -147,4 +154,4 @@ export function getLikedTrackIdsSync(): Set<string> {
 export async function clearLikesDb(): Promise<void> {
   const db = await getDb();
   await db.runAsync("DELETE FROM liked_tracks");
-}
+} 
