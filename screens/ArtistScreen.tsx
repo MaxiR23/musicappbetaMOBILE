@@ -159,8 +159,10 @@ export default function ArtistScreen() {
                 title={song.title}
                 thumbnail={getUpgradedThumb(song, 256)}
                 showDuration={false}
-                showMoreButton={false}
+                showMoreButton={true}
+                track={song}
                 trackId={song.id}
+                showGoToArtist={false}
                 onPress={() =>
                   playList(mappedTop, index, {
                     type: "artist",

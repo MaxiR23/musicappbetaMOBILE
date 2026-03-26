@@ -21,8 +21,8 @@ function SimilarToHeaderBase({
   const { t } = useTranslation("home");
   const radius = size / 2;
 
-  const resolvedLabel = label ?? t("similarTo.label");
-  const resolvedName = name ?? t("similarTo.fallbackName");
+  const resolvedLabel = label ?? t("sections.similarTo.label");
+  const resolvedName = name ?? t("sections.similarTo.fallbackName");
 
   return (
     <View style={[styles.row, style]}>

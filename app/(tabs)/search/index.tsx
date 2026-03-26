@@ -1,5 +1,7 @@
 import EmptyState from "@/components/shared/EmptyState";
+import TrackActionsSheet from "@/components/shared/TrackActionsSheet";
 import { useContentPadding } from "@/hooks/use-content-padding";
+import { useLikes } from "@/hooks/use-likes";
 import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
 import { Song } from "@/types/music";
@@ -48,6 +50,7 @@ export default function SearchScreen() {
   const router = useRouter();
   const { searchSongs } = useMusicApi();
   const { playSingle } = useMusic();
+  const { isLiked } = useLikes();
   const contentPadding = useContentPadding();
   const { t } = useTranslation("search");
 
@@ -56,6 +59,9 @@ export default function SearchScreen() {
   const [loading, setLoading] = useState(false);
   const [recents, setRecents] = useState<string[]>([]);
   const [serviceError, setServiceError] = useState(false);
+
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState<any>(null);
 
   const inputRef = useRef<TextInput>(null);
   const fade = useRef(new Animated.Value(0)).current;
@@ -329,7 +335,29 @@ export default function SearchScreen() {
                         : `${typeLabel(item.type)} • ${item.artist_name}`}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color="#9aa0a6" />
+                  {item.type === "song" && isLiked(item.id) && (
+                    <Ionicons name="heart" size={12} color="#888" style={{ marginRight: 4 }} />
+                  )}
+                  {item.type === "song" ? (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSelectedTrack({
+                          id: item.id,
+                          title: item.title,
+                          artist_name: item.artist_name,
+                          artist_id: item.artist_id,
+                          album_id: item.album_id,
+                          thumbnail: item.thumbnail,
+                        });
+                        setActionsOpen(true);
+                      }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Ionicons name="ellipsis-vertical" size={16} color="#9aa0a6" />
+                    </TouchableOpacity>
+                  ) : (
+                    <Ionicons name="chevron-forward" size={18} color="#9aa0a6" />
+                  )}
                 </TouchableOpacity>
               )}
             />
@@ -348,6 +376,12 @@ export default function SearchScreen() {
 
         </Animated.View>
       </SafeAreaView>
+
+      <TrackActionsSheet
+        open={actionsOpen}
+        onOpenChange={setActionsOpen}
+        track={selectedTrack}
+      />
     </>
   );
 }

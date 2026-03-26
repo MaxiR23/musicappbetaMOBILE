@@ -83,7 +83,7 @@ export default function PlaylistScreen() {
           if (mounted) {
             if (result?.ok) {
               const totalMs = (result.tracks || []).reduce(
-                (acc: number, t: any) => acc + (t?.duration_ms ?? 0),
+                (acc: number, t: any) => acc + ((t?.duration_seconds ?? 0) * 1000),
                 0
               );
 
@@ -119,7 +119,7 @@ export default function PlaylistScreen() {
           const rawData = await getPlaylistById(id);
           if (mounted && rawData) {
             const totalMs = (rawData.tracks || []).reduce(
-              (acc: number, t: any) => acc + (t?.duration_ms ?? 0),
+              (acc: number, t: any) => acc + ((t?.duration_seconds ?? 0) * 1000),
               0
             );
 

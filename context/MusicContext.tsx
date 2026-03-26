@@ -16,6 +16,7 @@ export interface MusicContextType {
   isShuffled: boolean;
   autoplayStartIndex: number;
   playbackError: string | null;
+  isPlaying: boolean;
 
   // playback
   playList: (list: Song[], index: number, source?: PlaySource) => Promise<void>;

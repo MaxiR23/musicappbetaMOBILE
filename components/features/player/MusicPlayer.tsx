@@ -47,7 +47,7 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
     playbackError,
   } = useMusic();
 
-  const { likeTrack, unlikeTrack, isTrackLiked, getTrackLyrics, getTrackUpNext, getTrackRelated } =
+  const { getTrackLyrics, getTrackUpNext, getTrackRelated } =
     useMusicApi() as any;
 
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -74,7 +74,7 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
     collapse: handleCollapse,
   });
 
-  const { isLiked, liking, toggleLike } = useTrackLikes({ currentSong, likeTrack, unlikeTrack, isTrackLiked });
+  const { isLiked, liking, toggleLike } = useTrackLikes({ currentSong });
   const { lyricsText, lyricsLoading, lyricsError, mainScrollRef, fetchLyrics } = useTrackLyrics({
     currentSong,
     getTrackLyrics,
@@ -117,7 +117,6 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
 
   const skipTabCloseOnNextSongChange = useRef(false);
   const pathname = usePathname();
-  const navigatingRef = useRef(false);
 
   const hasNext =
     (queueIndex >= 0 && queueIndex < queue.length - 1) ||
@@ -126,7 +125,7 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
 
   const goToArtist = useCallback(
     (aid?: string | null) => {
-      if (!aid || navigatingRef.current) return;
+      if (!aid) return;
       const match = pathname?.match(/\/artist\/([^/]+)/);
       const currentArtistInPath = match?.[1];
 
@@ -135,29 +134,20 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
         return;
       }
 
-      navigatingRef.current = true;
-
       if (pathname && pathname.includes("/artist/")) {
         router.replace(`/(tabs)/home/artist/${aid}`);
       } else {
         router.push(`/(tabs)/home/artist/${aid}`);
       }
 
-      if (isExpanded) {
-        setTimeout(() => collapse(), 100);
-      }
-
-      setTimeout(() => {
-        navigatingRef.current = false;
-      }, 250);
+      if (isExpanded) setTimeout(() => collapse(), 100);
     },
     [pathname, isExpanded, collapse]
   );
 
   const goToAlbum = useCallback(
     (album_id?: string | null) => {
-      if (!album_id || navigatingRef.current) return;
-      navigatingRef.current = true;
+      if (!album_id) return;
 
       if (pathname && pathname.includes("/album/")) {
         router.replace(`/(tabs)/home/album/${album_id}`);
@@ -165,13 +155,7 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
         router.push(`/(tabs)/home/album/${album_id}`);
       }
 
-      if (isExpanded) {
-        setTimeout(() => collapse(), 100);
-      }
-
-      setTimeout(() => {
-        navigatingRef.current = false;
-      }, 250);
+      if (isExpanded) setTimeout(() => collapse(), 100);
     },
     [pathname, isExpanded, collapse]
   );
@@ -320,7 +304,13 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
         accentColor={ACCENT}
       />
 
-      <TrackActionsSheet open={actionsOpen} onOpenChange={setActionsOpen} track={selectedTrack} />
+      <TrackActionsSheet
+        open={actionsOpen}
+        onOpenChange={setActionsOpen}
+        track={selectedTrack}
+        onGoToArtist={goToArtist}
+        onGoToAlbum={goToAlbum}
+      />
 
       {playbackError && (
         <View style={{

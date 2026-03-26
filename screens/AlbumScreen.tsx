@@ -292,6 +292,7 @@ export default function AlbumScreen() {
                 open={actionsOpen}
                 onOpenChange={setActionsOpen}
                 track={selectedTrack}
+                showGoToAlbum={false}
             />
         </>
     );

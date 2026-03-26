@@ -298,6 +298,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
                               thumbnail={track.thumbnail}
                               showIndex={false}
                               showMoreButton={true}
+                              track={track}
                               onPress={() => {
                                 if (isCurrentTrack) return;
                                 onUpNextTrackPress?.({ ...track, __queueIndex: idx }, false);
@@ -351,14 +352,14 @@ export const PlayerTabs = React.memo(function PlayerTabs({
                         }
                         renderItem={({ item: track, index: idx }) => (
                           <TrackRow
-                            key={track.track_id || idx}
                             trackId={track.track_id}
                             index={idx + 1}
                             title={track.title}
                             artist={track.artists?.map((a: any) => a.name).join(", ")}
                             thumbnail={getUpgradedThumb(track, 512)}
                             showIndex={false}
-                            showMoreButton={false}
+                            showMoreButton={true}
+                            track={track}
                             onPress={() => {
                               if (onUpNextTrackPress) {
                                 onUpNextTrackPress(track, true);
@@ -469,7 +470,8 @@ export const PlayerTabs = React.memo(function PlayerTabs({
                               artist={track.artists?.map((a: any) => a.name).join(", ")}
                               thumbnail={getUpgradedThumb(track, 512)}
                               showIndex={false}
-                              showMoreButton={false}
+                              showMoreButton={true}
+                              track={track}
                               onPress={() => onRelatedTrackPress?.(track)}
                             />
                           )}

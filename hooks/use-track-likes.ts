@@ -1,88 +1,46 @@
-import { useEffect, useState } from "react";
+import { LikeInput } from "@/context/LikesContext";
+import { useCallback, useState } from "react";
+import { useLikes, } from "./use-likes";
+
 interface UseTrackLikesParams {
   currentSong: any;
-  likeTrack: (id: string) => Promise<any>;
-  unlikeTrack: (id: string) => Promise<any>;
-  isTrackLiked: (id: string) => Promise<any>;
 }
 
 /**
- * Hook para manejar el estado de like/unlike de un track
- * Sincroniza con el API y maneja estados de carga
+ * Hook para manejar el estado de like/unlike del track actual.
+ * Usa LikesProvider (Set en memoria + SQLite + backend).
+ * El corazon responde instantaneo via optimistic update del provider.
  */
-export function useTrackLikes({
-  currentSong,
-  likeTrack,
-  unlikeTrack,
-  isTrackLiked,
-}: UseTrackLikesParams) {
-  const [isLiked, setIsLiked] = useState<boolean>(false);
-  const [liking, setLiking] = useState<boolean>(false);
+export function useTrackLikes({ currentSong }: UseTrackLikesParams) {
+  const { isLiked: checkLiked, toggleLike: providerToggle } = useLikes();
+  const [liking, setLiking] = useState(false);
 
-  // Función helper para obtener el estado inicial del like desde el objeto currentSong
-  const getInitialLikedState = () => {
-    return (
-      Boolean((currentSong as any)?.liked) ||
-      Boolean((currentSong as any)?.is_liked) ||
-      Boolean((currentSong as any)?.extra?.liked)
-    );
-  };
+  const trackId = currentSong?.id ? String(currentSong.id) : null;
+  const isLiked = trackId ? checkLiked(trackId) : false;
 
-  // Sincronizar estado de liked cuando cambia la canción
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      const id = currentSong?.id ? String(currentSong.id) : null;
-      
-      // Si no hay ID o no hay función para verificar, usar estado inicial
-      if (!id || !isTrackLiked) {
-        const init = getInitialLikedState();
-        if (!cancelled) setIsLiked(init);
-        return;
-      }
-
-      // Intentar obtener estado desde el API
-      try {
-        const resp = await isTrackLiked(id);
-        if (!cancelled) setIsLiked(Boolean(resp?.liked));
-      } catch {
-        // En caso de error, usar estado inicial del objeto
-        const init = getInitialLikedState();
-        if (!cancelled) setIsLiked(init);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentSong?.id, isTrackLiked]);
-
-  // Toggle like/unlike con optimistic update
-  const toggleLike = async () => {
-    if (!currentSong?.id || liking) return;
-
-    const id = String(currentSong.id);
-    const next = !isLiked;
-
-    // Optimistic update
-    setIsLiked(next);
+  const toggleLike = useCallback(async () => {
+    if (!currentSong || !trackId || liking) return;
     setLiking(true);
 
     try {
-      if (next) {
-        await likeTrack(id);
-      } else {
-        await unlikeTrack(id);
-      }
-    } catch (e) {
-      // Revertir en caso de error
-      setIsLiked(!next);
-      console.warn("like/unlike failed:", e);
+      const input: LikeInput = {
+        track_id: trackId,
+        title: currentSong.title ?? "",
+        artist: currentSong.artist_name ?? "",
+        artist_id: currentSong.artist_id ?? "",
+        album: currentSong.album_name ?? "",
+        album_id: currentSong.album_id ?? "",
+        thumbnail_url: currentSong.thumbnail ?? "",
+        duration_seconds: currentSong.duration_seconds ?? 0,
+      };
+
+      await providerToggle(input);
+    } catch (err) {
+      console.warn("[useTrackLikes] toggleLike failed:", err);
     } finally {
       setLiking(false);
     }
-  };
+  }, [currentSong, trackId, liking, providerToggle]);
 
   return {
     isLiked,
