@@ -13,6 +13,8 @@ import MusicPlayer from "@/components/features/player/MusicPlayer";
 import { MusicProvider } from "@/providers/MusicProvider";
 import * as PlayerService from "@/services/PlayerService";
 
+import { LikesProvider } from "@/providers/LikesProvider";
+
 import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
 
@@ -50,9 +52,11 @@ function Gate() {
 
 function AuthedApp() {
   return (
-    <MusicProvider>
-      <InnerLayout />
-    </MusicProvider>
+    <LikesProvider>
+      <MusicProvider>
+        <InnerLayout />
+      </MusicProvider>
+    </LikesProvider>
   );
 }
 

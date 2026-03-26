@@ -47,7 +47,7 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
     playbackError,
   } = useMusic();
 
-  const { likeTrack, unlikeTrack, isTrackLiked, getTrackLyrics, getTrackUpNext, getTrackRelated } =
+  const { getTrackLyrics, getTrackUpNext, getTrackRelated } =
     useMusicApi() as any;
 
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -74,7 +74,7 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
     collapse: handleCollapse,
   });
 
-  const { isLiked, liking, toggleLike } = useTrackLikes({ currentSong, likeTrack, unlikeTrack, isTrackLiked });
+  const { isLiked, liking, toggleLike } = useTrackLikes({ currentSong });
   const { lyricsText, lyricsLoading, lyricsError, mainScrollRef, fetchLyrics } = useTrackLyrics({
     currentSong,
     getTrackLyrics,
