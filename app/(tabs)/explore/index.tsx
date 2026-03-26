@@ -23,10 +23,10 @@ export default function GenresScreen() {
   const insets = useSafeAreaInsets();
   const isMounted = useMounted();
   const contentPadding = useContentPadding();
+  const { t } = useTranslation("explore");
 
   const [genres, setGenres] = useState<Genre[]>([]);
   const [loading, setLoading] = useState(true);
-  const { t } = useTranslation("explore");
 
   useEffect(() => {
     (async () => {
@@ -59,7 +59,7 @@ export default function GenresScreen() {
     <>
       <StatusBar barStyle="light-content" />
       <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
-        <ScreenHeader title="Explorar géneros" />
+        <ScreenHeader title={t("genres.title")} />
 
         {loading ? (
           <LoadingView />
