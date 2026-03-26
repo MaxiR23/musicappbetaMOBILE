@@ -2,19 +2,18 @@ import { usePlayerInsets } from "@/hooks/use-player-insets";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronDown } from "lucide-react-native";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Animated,
   Dimensions,
   Image,
-  ImageBackground,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import TextTicker from "react-native-text-ticker";
 import { usePlayerTabAnimation } from "../../../hooks/use-player-tab-animation";
@@ -145,6 +144,36 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
     tabsTranslateY,
   } = usePlayerTabAnimation({ activeTab: activePlayerTab });
 
+  const prevBgRef = useRef(bgUrl);
+  const prevGradientRef = useRef(gradient);
+  const [prevBg, setPrevBg] = useState<string | null>(null);
+  const [prevGradient, setPrevGradient] = useState<[string, string] | null>(null);
+  const bgFade = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (bgUrl === prevBgRef.current) return;
+
+    setPrevBg(prevBgRef.current);
+    setPrevGradient(prevGradientRef.current);
+    bgFade.setValue(0);
+
+    prevBgRef.current = bgUrl;
+    prevGradientRef.current = gradient;
+
+    Image.prefetch(bgUrl)
+      .catch(() => { })
+      .finally(() => {
+        Animated.timing(bgFade, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        }).start(() => {
+          setPrevBg(null);
+          setPrevGradient(null);
+        });
+      });
+  }, [bgUrl]);
+
   const showTabs = activePlayerTab !== null;
 
   const { height } = Dimensions.get("window");
@@ -169,20 +198,37 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
       pointerEvents={isExpanded ? "auto" : "none"}
       style={[styles.container, { transform: [{ translateY: slideAnim }] }]}
     >
-      <ImageBackground
-        source={{ uri: bgUrl }}
-        style={StyleSheet.absoluteFill}
-        blurRadius={50}
-        resizeMode="cover"
-        imageStyle={{ backgroundColor: "#000" }}
-      >
+      {prevBg && (
+        <View style={StyleSheet.absoluteFill}>
+          <Image
+            source={{ uri: prevBg }}
+            style={StyleSheet.absoluteFill}
+            blurRadius={50}
+            resizeMode="cover"
+          />
+          <LinearGradient
+            colors={prevGradient || gradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+      )}
+
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: bgFade }]}>
+        <Image
+          source={{ uri: bgUrl }}
+          style={StyleSheet.absoluteFill}
+          blurRadius={50}
+          resizeMode="cover"
+        />
         <LinearGradient
           colors={gradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
-      </ImageBackground>
+      </Animated.View>
 
       <StatusBar barStyle="light-content" />
 
