@@ -1,6 +1,7 @@
 import { useIsTrackPlaying } from "@/hooks/use-is-track-playing";
+import { useLikes } from "@/hooks/use-likes";
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useCallback, useState } from "react";
 import {
   Image,
   StyleSheet,
@@ -9,7 +10,7 @@ import {
   View,
 } from "react-native";
 import PlayingIndicator from "./PlayingIndicator";
-
+import TrackActionsSheet from "./TrackActionsSheet";
 
 /**
  * Props del componente TrackRow:
@@ -25,7 +26,8 @@ import PlayingIndicator from "./PlayingIndicator";
  * - showDuration: Mostrar duración (default: false).
  * - showIndex: Mostrar índice (opcional; si no se pasa, depende del componente).
  * - trackId: ID del track (para animación/estado de reproducción).
- * - disabled?: boolean; cuando un ID es deshabilitado. 
+ * - disabled?: boolean; cuando un ID es deshabilitado.
+ * - track?: objeto completo del track para TrackActionsSheet (agregar a playlist, compartir, etc).
  */
 interface TrackRowProps {
   index: number;
@@ -42,8 +44,12 @@ interface TrackRowProps {
   showDuration?: boolean;
   showIndex?: boolean;
 
-  trackId: string | number
+  trackId: string | number;
   disabled?: boolean;
+
+  track?: any;
+  showGoToArtist?: boolean;
+  showGoToAlbum?: boolean;
 }
 
 /**
@@ -64,95 +70,131 @@ export default function TrackRow({
   showIndex = true, //por defecto mostrar indice.
   trackId,
   disabled,
+  track,
+  showGoToArtist,
+  showGoToAlbum,
 }: TrackRowProps) {
 
   const { isCurrentTrack, isPlaying } = useIsTrackPlaying(trackId);
+  const { isLiked } = useLikes();
+  const liked = isLiked(String(trackId));
+
+  const [actionsOpen, setActionsOpen] = useState(false);
+
+  const handleMorePress = useCallback(() => {
+    if (onMorePress) {
+      onMorePress();
+      return;
+    }
+    if (track) {
+      setActionsOpen(true);
+    }
+  }, [onMorePress, track]);
+
+  const showMore = showMoreButton && (!!onMorePress || !!track);
 
   return (
-    <View style={styles.container}>
-      {/* Índice o Thumbnail con overlay */}
-      {showIndex ? (
-        // Caso 1: Mostrar índice (como álbumes/artistas)
-        <>
-          <View style={styles.indexContainer}>
-            {isCurrentTrack ? (
-              <PlayingIndicator color="#b0b0b0" size={14} isPlaying={isPlaying} />
-            ) : (
-              <Text style={styles.index}>{index}</Text>
-            )}
-          </View>
+    <>
+      <View style={styles.container}>
+        {/* Índice o Thumbnail con overlay */}
+        {showIndex ? (
+          // Caso 1: Mostrar índice (como álbumes/artistas)
+          <>
+            <View style={styles.indexContainer}>
+              {isCurrentTrack ? (
+                <PlayingIndicator color="#b0b0b0" size={14} isPlaying={isPlaying} />
+              ) : (
+                <Text style={styles.index}>{index}</Text>
+              )}
+            </View>
 
-          {showThumbnail && (
+            {showThumbnail && (
+              <View style={styles.thumbnailBox}>
+                {thumbnail ? (
+                  <Image source={{ uri: thumbnail }} style={styles.thumbnail} />
+                ) : (
+                  <View style={[styles.thumbnail, styles.thumbnailPlaceholder]} />
+                )}
+              </View>
+            )}
+          </>
+        ) : (
+          // Caso 2: Sin índice, indicador sobre thumbnail (como playlists)
+          showThumbnail && (
             <View style={styles.thumbnailBox}>
               {thumbnail ? (
                 <Image source={{ uri: thumbnail }} style={styles.thumbnail} />
               ) : (
                 <View style={[styles.thumbnail, styles.thumbnailPlaceholder]} />
               )}
+
+              {/* Overlay + Indicador cuando está sonando */}
+              {isCurrentTrack && (
+                <View style={styles.thumbnailOverlay}>
+                  <PlayingIndicator color="#fff" size={16} isPlaying={isPlaying} />
+                </View>
+              )}
             </View>
-          )}
-        </>
-      ) : (
-        // Caso 2: Sin índice, indicador sobre thumbnail (como playlists)
-        showThumbnail && (
-          <View style={styles.thumbnailBox}>
-            {thumbnail ? (
-              <Image source={{ uri: thumbnail }} style={styles.thumbnail} />
-            ) : (
-              <View style={[styles.thumbnail, styles.thumbnailPlaceholder]} />
-            )}
-
-            {/* Overlay + Indicador cuando está sonando */}
-            {isCurrentTrack && (
-              <View style={styles.thumbnailOverlay}>
-                <PlayingIndicator color="#fff" size={16} isPlaying={isPlaying} />
-              </View>
-            )}
-          </View>
-        )
-      )}
-
-      {/* Info (título + artista) - clickeable */}
-      <TouchableOpacity
-        style={styles.infoContainer}
-        onPress={onPress}
-        activeOpacity={0.85}
-        disabled={disabled}
-      >
-        <Text
-          style={[
-            styles.title,
-            isCurrentTrack && styles.titlePlaying,
-            disabled && styles.titleDisabled
-          ]}
-          numberOfLines={1}
-        >
-          {title}
-        </Text>
-
-        {!!artist && (
-          <Text style={styles.artist} numberOfLines={1}>
-            {artist}
-          </Text>
+          )
         )}
-      </TouchableOpacity>
 
-      {/* Duración (opcional) */}
-      {showDuration && !!duration && (
-        <Text style={styles.duration}>{duration}</Text>
-      )}
-
-      {/* Botón más opciones */}
-      {showMoreButton && onMorePress && (
+        {/* Info (título + artista) - clickeable */}
         <TouchableOpacity
-          onPress={onMorePress}
-          style={styles.moreButton}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={styles.infoContainer}
+          onPress={onPress}
+          activeOpacity={0.85}
+          disabled={disabled}
         >
-          <Ionicons name="ellipsis-vertical" size={16} color="#bbb" />
+          <Text
+            style={[
+              styles.title,
+              isCurrentTrack && styles.titlePlaying,
+              disabled && styles.titleDisabled
+            ]}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+
+          {!!artist && (
+            <Text style={styles.artist} numberOfLines={1}>
+              {artist}
+            </Text>
+          )}
         </TouchableOpacity>
+
+        {/* Duración (opcional) */}
+        {showDuration && !!duration && (
+          <Text style={styles.duration}>{duration}</Text>
+        )}
+
+        {/* likes */}
+        {liked && (
+          <Ionicons name="heart" size={12} color="#888" style={{ marginLeft: 6 }} />
+        )}
+
+        {/* Botón más opciones */}
+        {showMore && (
+          <TouchableOpacity
+            onPress={handleMorePress}
+            style={styles.moreButton}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="ellipsis-vertical" size={16} color="#bbb" />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {track && (
+        <TrackActionsSheet
+          open={actionsOpen}
+          onOpenChange={setActionsOpen}
+          track={track}
+          showGoToArtist={showGoToArtist}
+          showGoToAlbum={showGoToAlbum}
+        />
       )}
-    </View>
+    </>
   );
 }
 

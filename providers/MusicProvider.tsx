@@ -3,6 +3,7 @@ import { resolveAudioStream } from "@/services/audioStreamService";
 import { logPlaybackError } from "@/services/errorLogService";
 import { upgradeThumbUrl } from "@/utils/image-helpers";
 import { ReactNode, useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { State, usePlaybackState } from "react-native-track-player";
 import { useCacheInvalidation } from "../hooks/use-cache-invalidation";
 import { useMusicApi } from "../hooks/use-music-api";
 import * as PlayerService from "../services/PlayerService";
@@ -203,6 +204,10 @@ function toTrackInput(song: Song, url?: string | null): PlayerService.TrackInput
 
 export function MusicProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(playerReducer, initialState);
+  const playbackState = usePlaybackState();
+  const isPlaying =
+    playbackState.state === State.Playing ||
+    playbackState.state === State.Buffering;
 
   const { user } = useAuth();
   const userId = user?.id ?? undefined;
@@ -294,9 +299,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     if (ni < queue.length) {
       const song = queue[ni];
       const url = await resolveUrl(String(song.id));
-      await PlayerService.switchTrack(toTrackInput(song, url));
+      /* await PlayerService.switchTrack(toTrackInput(song, url)); */
       dispatch({ type: "SET_INDEX", index: ni });
       lastLoggedTrackIdRef.current = null;
+      await PlayerService.switchTrack(toTrackInput(song, url)); // TESTING
       return;
     }
 
@@ -577,6 +583,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       addToQueueAndPlay,
       setAutoplayProvider,
       setAutoplayEnabled,
+      isPlaying
     }),
     [
       state.currentSong,
@@ -595,6 +602,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       addToQueueAndPlay,
       setAutoplayProvider,
       setAutoplayEnabled,
+      isPlaying
     ],
   );
 

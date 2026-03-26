@@ -1,4 +1,5 @@
 import "@/i18n";
+import "@/lib/db";
 import { DarkTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -12,6 +13,8 @@ import CacheVersionsProvider from "@/providers/CacheVersionsProvider";
 import MusicPlayer from "@/components/features/player/MusicPlayer";
 import { MusicProvider } from "@/providers/MusicProvider";
 import * as PlayerService from "@/services/PlayerService";
+
+import { LikesProvider } from "@/providers/LikesProvider";
 
 import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
@@ -50,9 +53,11 @@ function Gate() {
 
 function AuthedApp() {
   return (
-    <MusicProvider>
-      <InnerLayout />
-    </MusicProvider>
+    <LikesProvider>
+      <MusicProvider>
+        <InnerLayout />
+      </MusicProvider>
+    </LikesProvider>
   );
 }
 

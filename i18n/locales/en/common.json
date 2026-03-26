@@ -36,6 +36,9 @@
     "descriptionLabel": "Description",
     "addFailed": "Couldn't add the track.",
     "removeFailed": "Couldn't remove the track.",
-    "createFailed": "Couldn't create/add."
+    "createFailed": "Couldn't create/add.",
+    "alreadyInPlaylist": "Already in this playlist",
+    "goToArtist": "Go to artist",
+    "goToAlbum": "Go to album"
   }
 }

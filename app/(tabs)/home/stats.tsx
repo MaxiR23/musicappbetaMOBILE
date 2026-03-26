@@ -239,6 +239,8 @@ export default function MonthlyStatsScreen() {
                             thumbnail={item.thumbnail_url}
                             rank={globalIndex + 1}
                             subtitle={t("playCount", { count: item.play_count })}
+                            track={item}
+                            trackId={item.entity_id}
                             onPress={() => playList(mappedTracks, globalIndex, { type: "queue", name: t("queueName") })}
                           />
                         );
