@@ -299,9 +299,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     if (ni < queue.length) {
       const song = queue[ni];
       const url = await resolveUrl(String(song.id));
+      /* await PlayerService.switchTrack(toTrackInput(song, url)); */
       dispatch({ type: "SET_INDEX", index: ni });
       lastLoggedTrackIdRef.current = null;
-      await PlayerService.switchTrack(toTrackInput(song, url));
+      await PlayerService.switchTrack(toTrackInput(song, url)); // TESTING
       return;
     }
 
