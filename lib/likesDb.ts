@@ -1,10 +1,4 @@
-import * as SQLite from "expo-sqlite";
-
-const DB_NAME = "beatly_likes.db";
-const DB_VERSION = 1;
-
-let _db: SQLite.SQLiteDatabase | null = null;
-let _migrated = false;
+import { getDb } from "@/lib/db";
 
 export interface LikedTrackRow {
   track_id: string;
@@ -19,48 +13,8 @@ export interface LikedTrackRow {
   updated_at: string;
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
-function ensureDb(): SQLite.SQLiteDatabase {
-  if (_db) return _db;
-  _db = SQLite.openDatabaseSync(DB_NAME);
-  return _db;
-}
-
-async function getDb(): Promise<SQLite.SQLiteDatabase> {
-  const db = ensureDb();
-  if (_migrated) return db;
-
-  const row = await db.getFirstAsync<{ user_version: number }>(
-    "PRAGMA user_version"
-  );
-  const currentVersion = row?.user_version ?? 0;
-
-  if (currentVersion < DB_VERSION) {
-    await db.execAsync(`
-      PRAGMA journal_mode = WAL;
-      CREATE TABLE IF NOT EXISTS liked_tracks (
-        track_id TEXT PRIMARY KEY NOT NULL,
-        title TEXT NOT NULL,
-        artist TEXT NOT NULL,
-        artist_id TEXT NOT NULL,
-        album TEXT NOT NULL DEFAULT '',
-        album_id TEXT NOT NULL DEFAULT '',
-        thumbnail_url TEXT NOT NULL DEFAULT '',
-        duration_seconds INTEGER NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      );
-      CREATE INDEX IF NOT EXISTS idx_liked_tracks_created
-        ON liked_tracks(created_at DESC);
-      PRAGMA user_version = ${DB_VERSION};
-    `);
-  }
-
-  _migrated = true;
-  return db;
-}
-
 // ── WRITE ─────────────────────────────────────────────────────────────────────
+
 export async function upsertLike(track: LikedTrackRow): Promise<void> {
   const db = await getDb();
   await db.runAsync(
@@ -95,6 +49,7 @@ export async function removeLike(trackId: string): Promise<void> {
 }
 
 // ── READ ──────────────────────────────────────────────────────────────────────
+
 export async function getAllLikes(): Promise<LikedTrackRow[]> {
   const db = await getDb();
   return db.getAllAsync<LikedTrackRow>(
@@ -120,6 +75,7 @@ export async function isLiked(trackId: string): Promise<boolean> {
 }
 
 // ── SYNC HELPERS ──────────────────────────────────────────────────────────────
+
 export async function getLastSyncTimestamp(): Promise<string | null> {
   const db = await getDb();
   const row = await db.getFirstAsync<{ updated_at: string }>(
@@ -138,20 +94,9 @@ export async function replaceAllLikes(tracks: LikedTrackRow[]): Promise<void> {
   });
 }
 
-export function getLikedTrackIdsSync(): Set<string> {
-  try {
-    const db = ensureDb();
-    const rows = db.getAllSync<{ track_id: string }>(
-      "SELECT track_id FROM liked_tracks"
-    );
-    return new Set(rows.map((r) => r.track_id));
-  } catch {
-    return new Set();
-  }
-}
-
 // ── RESET ─────────────────────────────────────────────────────────────────────
+
 export async function clearLikesDb(): Promise<void> {
   const db = await getDb();
   await db.runAsync("DELETE FROM liked_tracks");
-} 
+}

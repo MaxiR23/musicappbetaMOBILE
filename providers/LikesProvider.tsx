@@ -1,6 +1,6 @@
 import { LikeInput, LikesContext } from "@/context/LikesContext";
 import { useAuth } from "@/hooks/use-auth";
-import { getAllLikes, getLikedTrackIds, getLikedTrackIdsSync, LikedTrackRow } from "@/lib/likesDb";
+import { getAllLikes, getLikedTrackIds, LikedTrackRow } from "@/lib/likesDb";
 import { likesService } from "@/services/likesService";
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppState, AppStateStatus } from "react-native";
@@ -8,7 +8,7 @@ import { AppState, AppStateStatus } from "react-native";
 export function LikesProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
 
-  const [likedIds, setLikedIds] = useState<Set<string>>(() => getLikedTrackIdsSync());
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [likedTracks, setLikedTracks] = useState<LikedTrackRow[]>([]);
   const [isReady, setIsReady] = useState(false);
 

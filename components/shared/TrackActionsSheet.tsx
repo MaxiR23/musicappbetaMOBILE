@@ -213,8 +213,10 @@ export default function TrackActionsSheet({
                 : t("trackActions.newPlaylist")
     );
 
+    if (!open) return null;
+
     return (
-        <Modal visible={open} transparent animationType="fade" onRequestClose={() => onOpenChange(false)}>
+         <Modal visible={open} transparent animationType="fade" onRequestClose={() => onOpenChange(false)}>
             <KeyboardAvoidingView
                 style={styles.overlay}
                 behavior={Platform.OS === "ios" ? "padding" : undefined}

@@ -1,4 +1,5 @@
 import { STREAM_CLIENT_NAME, STREAM_CLIENT_VERSION, STREAM_ENDPOINT } from "@/constants/config";
+import { deleteExpiredStreams, getStream, upsertStream } from "@/lib/streamCacheDb";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
@@ -6,10 +7,8 @@ const PLAYER_ENDPOINT = STREAM_ENDPOINT;
 const VISITOR_DATA_KEY = "audio:visitorData";
 const FALLBACK_VISITOR_DATA = "CgtIdHphb3VyaGNFMCjrwd3NBjIKCgJBUhIEGgAgQg%3D%3D";
 
-// Cache en memoria
 let cachedVisitorData = null;
 let visitorDataLoaded = false;
-const streamCache = new Map();
 
 async function loadVisitorData() {
     if (visitorDataLoaded) return cachedVisitorData;
@@ -60,60 +59,68 @@ async function fetchPlayer(videoId, visitorData) {
 }
 
 function pickBestAudio(formats) {
-  // android: ExoPlayer (usado por RNTP) soporta WebM/Opus nativamente — mayor bitrate disponible.
-  // iOS: AVPlayer no soporta el contenedor WebM. Solo audio/mp4 (AAC, itag 140).
-  // TODO: testear Opus/WebM en iOS 17+ — hay indicios de soporte parcial pero sin confirmación oficial.
-  const candidates = Platform.OS === "android"
-    ? formats.filter((f) => f.mimeType?.startsWith("audio/mp4") || f.mimeType?.startsWith("audio/webm"))
-    : formats.filter((f) => f.mimeType?.startsWith("audio/mp4"));
+    const candidates = Platform.OS === "android"
+        ? formats.filter((f) => f.mimeType?.startsWith("audio/mp4") || f.mimeType?.startsWith("audio/webm"))
+        : formats.filter((f) => f.mimeType?.startsWith("audio/mp4"));
 
-  const best = candidates.sort((a, b) => b.bitrate - a.bitrate)[0];
-  if (!best) throw new Error("No audio stream");
-  return { itag: best.itag, url: best.url, mimeType: best.mimeType, bitrate: best.bitrate, audioQuality: best.audioQuality };
+    const best = candidates.sort((a, b) => b.bitrate - a.bitrate)[0];
+    if (!best) throw new Error("No audio stream");
+    return { url: best.url, mimeType: best.mimeType, bitrate: best.bitrate };
 }
 
 export async function resolveAudioStream(videoId) {
-    // cache hit?
-    const cached = streamCache.get(videoId);
-    if (cached && cached.expiresAt > Date.now()) {
-        return { stream: cached.stream };
+    // cache hit en SQLite
+    const cached = await getStream(videoId);
+    if (cached) {
+        return { stream: { url: cached.url, mimeType: cached.mime_type, bitrate: cached.bitrate } };
     }
 
-    // cargar visitorData guardado
     const visitorData = await loadVisitorData();
-
     const data = await fetchPlayer(videoId, visitorData);
 
-    // guardar nuevo visitorData si viene
     if (data.responseContext?.visitorData) {
         saveVisitorData(data.responseContext.visitorData);
     }
 
-    // si funciona, cachear y retornar
     if (data.streamingData) {
         const stream = pickBestAudio(data.streamingData.adaptiveFormats);
-        streamCache.set(videoId, { stream, expiresAt: getExpiry(stream.url) });
+        await upsertStream({
+            video_id: videoId,
+            url: stream.url,
+            mime_type: stream.mimeType,
+            bitrate: stream.bitrate,
+            expires_at: getExpiry(stream.url),
+        });
         return { stream };
     }
 
-    // si falla, limpiar visitorData y reintentar con fallback
     if (data.playabilityStatus?.status === "LOGIN_REQUIRED") {
         clearVisitorData();
-        
+
         const retry = await fetchPlayer(videoId, FALLBACK_VISITOR_DATA);
-        
+
         if (retry.responseContext?.visitorData) {
             saveVisitorData(retry.responseContext.visitorData);
         }
-        
+
         if (retry.streamingData) {
             const stream = pickBestAudio(retry.streamingData.adaptiveFormats);
-            streamCache.set(videoId, { stream, expiresAt: getExpiry(stream.url) });
+            await upsertStream({
+                video_id: videoId,
+                url: stream.url,
+                mime_type: stream.mimeType,
+                bitrate: stream.bitrate,
+                expires_at: getExpiry(stream.url),
+            });
             return { stream };
         }
-        
+
         throw new Error(`LOGIN_REQUIRED: ${retry.playabilityStatus?.reason}`);
     }
 
     throw new Error(`Failed: ${data.playabilityStatus?.status}`);
+}
+
+export async function purgeExpiredStreams() {
+    await deleteExpiredStreams();
 }
