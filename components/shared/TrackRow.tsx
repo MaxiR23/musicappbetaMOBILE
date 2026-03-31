@@ -1,9 +1,9 @@
 import { useIsTrackPlaying } from "@/hooks/use-is-track-playing";
 import { useLikes } from "@/hooks/use-likes";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import React, { useCallback, useState } from "react";
 import {
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -111,7 +111,7 @@ export default function TrackRow({
             {showThumbnail && (
               <View style={styles.thumbnailBox}>
                 {thumbnail ? (
-                  <Image source={{ uri: thumbnail }} style={styles.thumbnail} />
+                  <Image source={thumbnail} style={styles.thumbnail} contentFit="cover" />
                 ) : (
                   <View style={[styles.thumbnail, styles.thumbnailPlaceholder]} />
                 )}
@@ -123,7 +123,7 @@ export default function TrackRow({
           showThumbnail && (
             <View style={styles.thumbnailBox}>
               {thumbnail ? (
-                <Image source={{ uri: thumbnail }} style={styles.thumbnail} />
+                <Image source={thumbnail} style={styles.thumbnail} contentFit="cover" />
               ) : (
                 <View style={[styles.thumbnail, styles.thumbnailPlaceholder]} />
               )}
@@ -227,7 +227,6 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
   },
   thumbnailPlaceholder: {
     backgroundColor: "#333",

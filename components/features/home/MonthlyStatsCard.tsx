@@ -1,7 +1,8 @@
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type Props = {
   artists: any[];
@@ -28,11 +29,11 @@ export default function MonthlyStatsCard({ artists }: Props) {
       <View style={styles.artistsRow}>
         {artists.map((artist, idx) => {
           const { key, name, thumbnail } = getArtistFields(artist, idx);
-          
+
           return (
             <View key={key} style={styles.artistItem}>
               <Image
-                source={thumbnail ? { uri: thumbnail } : undefined}
+                source={thumbnail ?? undefined}
                 style={styles.artistImage}
               />
               <Text style={styles.artist_name} numberOfLines={1}>

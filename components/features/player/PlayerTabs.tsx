@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Platform,
   Pressable,
   StatusBar,
@@ -175,7 +175,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
       {/* HEADER MINIMIZADO */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onCoverPress} activeOpacity={0.8}>
-          <Image source={{ uri: coverUrl }} style={styles.coverThumb} />
+          <Image source={coverUrl} style={styles.coverThumb} />
         </TouchableOpacity>
 
         <View style={styles.headerInfo}>

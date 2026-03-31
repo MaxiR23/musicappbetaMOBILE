@@ -1,5 +1,6 @@
+import { Image } from "expo-image";
 import React from "react";
-import { Image, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 /**
  * Replica del generatePlaylistCover (web) pero en React Native.
@@ -23,7 +24,7 @@ export default function PlaylistCover({
 
   const containerStyle = size
     ? { width: size, height: size, borderRadius }
-    : { width: "100%", height: "100%", borderRadius };
+    : { width: "100%" as const, height: "100%" as const, borderRadius };
 
   // Placeholder sin imágenes
   if (safe.length === 0) {
@@ -42,7 +43,7 @@ export default function PlaylistCover({
   if (safe.length < 4) {
     return (
       <View style={[styles.container, containerStyle]}>
-        <Image source={{ uri: safe[0] }} style={styles.single} />
+        <Image source={safe[0]} style={styles.single} contentFit="cover" />
       </View>
     );
   }
@@ -52,7 +53,7 @@ export default function PlaylistCover({
   return (
     <View style={[styles.container, containerStyle]}>
       {firstFour.map((uri, i) => (
-        <Image key={i} source={{ uri }} style={styles.quad} />
+        <Image key={i} source={uri} style={styles.quad} contentFit="cover" />
       ))}
     </View>
   );
@@ -68,11 +69,9 @@ const styles = StyleSheet.create({
   single: {
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
   },
   quad: {
     width: "50%",
     height: "50%",
-    resizeMode: "cover",
   },
 });

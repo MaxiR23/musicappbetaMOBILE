@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image, ImageStyle } from "expo-image";
 import React, { ReactNode } from "react";
 import {
   FlatList,
-  Image,
-  ImageStyle,
   StyleProp,
   StyleSheet,
   Text,
@@ -114,7 +113,7 @@ export default React.memo(function HorizontalScrollSection<T>({
   circularImage = false,
   imageBorderRadius,
 
-  contentPaddingHorizontal = 8, 
+  contentPaddingHorizontal = 8,
   gap = 16,
   sectionStyle,
   titleStyle,
@@ -220,8 +219,9 @@ export default React.memo(function HorizontalScrollSection<T>({
               >
                 {imageUrl ? (
                   <Image
-                    source={{ uri: imageUrl }}
+                    source={imageUrl}
                     style={[styles.image, { borderRadius: radius }, imageStyle]}
+                    contentFit="cover"
                   />
                 ) : (
                   <View
@@ -291,7 +291,6 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
   },
   imagePlaceholder: {
     backgroundColor: "#333",

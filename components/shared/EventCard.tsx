@@ -1,7 +1,8 @@
 import { formatEventDateTime } from "@/utils/durations";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import React from "react";
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface EventCardProps {
   event: any;
@@ -43,7 +44,7 @@ export default function EventCard({
         activeOpacity={0.9}
         style={styles.featuredCard}
       >
-        {!!poster && <Image source={{ uri: poster }} style={styles.featuredPoster} />}
+        {!!poster && <Image source={poster} style={styles.featuredPoster} />}
         
         <View style={styles.featuredContent}>
           <Text style={styles.featuredTitle} numberOfLines={2}>

@@ -1,11 +1,11 @@
 import { useMusicApi } from "@/hooks/use-music-api";
 import { useReplay } from "@/hooks/use-replay";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -28,7 +28,7 @@ function StatsCard() {
   useEffect(() => {
     getMonthlyStats({ include: "artists", limit: 3 })
       .then((data) => setArtists(data?.artists ?? []))
-      .catch(() => {});
+      .catch(() => { });
   }, [getMonthlyStats]);
 
   if (!artists.length) return null;
@@ -54,17 +54,17 @@ function StatsCard() {
       >
         <View style={[styles.circle, styles.circleLarge, { top: 6, left: 8 }]}>
           {thumb(artists[0]) && (
-            <Image source={{ uri: thumb(artists[0]) }} style={styles.circleLargeImg} />
+            <Image source={thumb(artists[0])} style={styles.circleLargeImg} />
           )}
         </View>
         <View style={[styles.circle, styles.circleMedium, { top: 84, right: 16 }]}>
           {thumb(artists[1]) && (
-            <Image source={{ uri: thumb(artists[1]) }} style={styles.circleMediumImg} />
+            <Image source={thumb(artists[1])} style={styles.circleMediumImg} />
           )}
         </View>
         <View style={[styles.circle, styles.circleSmall, { top: 132, left: 40 }]}>
           {thumb(artists[2]) && (
-            <Image source={{ uri: thumb(artists[2]) }} style={styles.circleSmallImg} />
+            <Image source={thumb(artists[2])} style={styles.circleSmallImg} />
           )}
         </View>
         <View style={styles.cardFooter}>
@@ -151,7 +151,7 @@ function ListenAgainCard() {
   useEffect(() => {
     getListenAgain()
       .then((data) => setAlbum(data?.album ?? null))
-      .catch(() => {});
+      .catch(() => { });
   }, [getListenAgain]);
 
   if (!album) return null;
@@ -165,8 +165,9 @@ function ListenAgainCard() {
       <View style={StyleSheet.absoluteFill}>
         {album.thumbnail_url ? (
           <Image
-            source={{ uri: album.thumbnail_url }}
+            source={album.thumbnail_url}
             style={styles.listenAgainCover}
+            contentFit="cover"
           />
         ) : (
           <View style={[styles.listenAgainCover, { backgroundColor: "#2a2a2a" }]} />
@@ -197,7 +198,7 @@ export default function HomeFeatured() {
   useEffect(() => {
     getMonthlyStats({ include: "artists", limit: 1 })
       .then((data) => setHasStats((data?.artists ?? []).length > 0))
-      .catch(() => {});
+      .catch(() => { });
   }, [getMonthlyStats]);
 
   const showReplay = !loading && hasEnoughData;
@@ -286,7 +287,6 @@ const styles = StyleSheet.create({
   listenAgainCover: {
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
   },
   listenAgainGradient: {
     position: "absolute",

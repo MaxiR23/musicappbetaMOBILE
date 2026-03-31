@@ -1,11 +1,11 @@
 import PlaylistCover from "@/components/features/playlist/PlaylistCover";
+import { Image } from "expo-image";
 import React from "react";
 import {
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 /**
@@ -54,7 +54,7 @@ export default React.memo(function ReleaseCard({
             borderRadius={circular ? 9999 : 0}
           />
         ) : cover ? (
-          <Image source={{ uri: cover }} style={styles.cover} />
+          <Image source={cover} style={styles.cover} contentFit="cover" />
         ) : (
           <View style={[styles.cover, styles.coverPh]} />
         )}
@@ -88,7 +88,6 @@ const styles = StyleSheet.create({
   cover: {
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
   },
   coverPh: {
     backgroundColor: "#333",

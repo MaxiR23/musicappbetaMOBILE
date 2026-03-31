@@ -1,9 +1,9 @@
-// components/NewReleaseCard.tsx
 import { getUpgradedThumb } from "@/utils/image-helpers";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface NewReleaseCardProps {
   release: {
@@ -55,7 +55,7 @@ export default function NewReleaseCard({
         {/* Contenido: cover + info + chevron */}
         <View style={styles.contentRow}>
           {cover && (
-            <Image source={{ uri: cover }} style={styles.cover} />
+            <Image source={cover} style={styles.cover} />
           )}
 
           <View style={styles.infoCol}>

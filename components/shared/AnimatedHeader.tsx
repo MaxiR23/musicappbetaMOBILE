@@ -1,8 +1,9 @@
 import { BlurView } from "expo-blur";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronLeft } from "lucide-react-native";
 import React from "react";
-import { Dimensions, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
     Extrapolation,
     interpolate,
@@ -135,9 +136,9 @@ export default function AnimatedHeader({
     const ListHeader = () => (
         <Animated.View style={[styles.headerContainer, headerAnimatedStyle]}>
             <Image
-                source={{ uri: backgroundImage }}
+                source={backgroundImage}
                 style={styles.backgroundImage}
-                resizeMode="cover"
+                contentFit="cover"
             />
 
             {/* Gradient overlay */}

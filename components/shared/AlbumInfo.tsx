@@ -1,5 +1,6 @@
+import { Image } from "expo-image";
 import React from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 interface AlbumInfoProps {
   title: string;
@@ -26,7 +27,7 @@ export default function AlbumInfo({
       {!!artist_name && (
         <View style={styles.artistRow}>
           {!!artistThumb && (
-            <Image source={{ uri: artistThumb }} style={styles.artistAvatar} />
+            <Image source={artistThumb} style={styles.artistAvatar} />
           )}
           <Text style={styles.artist_name}>{artist_name}</Text>
         </View>

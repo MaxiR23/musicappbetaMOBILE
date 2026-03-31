@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { Image } from "expo-image";
 import { ChevronLeft } from "lucide-react-native";
 import React from "react";
-import { Dimensions, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   Extrapolation,
   interpolate,
@@ -43,7 +44,7 @@ function MosaicCover({ images }: { images: string[] }) {
         return (
           <Image
             key={idx}
-            source={{ uri: img }}
+            source={img}
             style={cellStyle}
             resizeMode="cover"
           />
@@ -114,7 +115,7 @@ export default function AnimatedDetailHeader({
         {isMosaic && mosaicImages ? (
           <MosaicCover images={mosaicImages} />
         ) : (
-          <Image source={{ uri: coverImage }} style={styles.coverImage} resizeMode="cover" />
+          <Image source={coverImage} style={styles.coverImage} contentFit="cover" />
         )}
       </Animated.View>
     </View>

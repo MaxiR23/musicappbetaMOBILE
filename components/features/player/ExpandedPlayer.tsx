@@ -1,5 +1,6 @@
 import { usePlayerInsets } from "@/hooks/use-player-insets";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronDown } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -7,7 +8,6 @@ import { useTranslation } from "react-i18next";
 import {
   Animated,
   Dimensions,
-  Image,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -160,7 +160,7 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
     prevBgRef.current = bgUrl;
     prevGradientRef.current = gradient;
 
-    Image.prefetch(bgUrl)
+    Image.prefetch(bgUrl, "disk")
       .catch(() => { })
       .finally(() => {
         Animated.timing(bgFade, {
@@ -201,10 +201,10 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
       {prevBg && (
         <View style={StyleSheet.absoluteFill}>
           <Image
-            source={{ uri: prevBg }}
+            source={prevBg}
             style={StyleSheet.absoluteFill}
             blurRadius={50}
-            resizeMode="cover"
+            contentFit="cover"
           />
           <LinearGradient
             colors={prevGradient || gradient}
@@ -217,10 +217,10 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
 
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: bgFade }]}>
         <Image
-          source={{ uri: bgUrl }}
+          source={bgUrl}
           style={StyleSheet.absoluteFill}
           blurRadius={50}
-          resizeMode="cover"
+          contentFit="cover"
         />
         <LinearGradient
           colors={gradient}
@@ -288,7 +288,7 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
               },
             ]}
           >
-            <Image source={{ uri: coverUrl }} style={styles.coverImage} resizeMode="cover" />
+            <Image source={coverUrl} style={styles.coverImage} contentFit="cover" />
             <LinearGradient
               pointerEvents="none"
               colors={["rgba(255,255,255,0.06)", "rgba(0,0,0,0)", "rgba(0,0,0,0.35)"]}

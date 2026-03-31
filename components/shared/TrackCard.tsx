@@ -1,8 +1,8 @@
 import { useLikes } from "@/hooks/use-likes";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import React, { useCallback, useState } from "react";
 import {
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -64,7 +64,7 @@ export default function TrackCard({
       >
         <View style={styles.imageContainer}>
           {thumbnail ? (
-            <Image source={{ uri: thumbnail }} style={styles.image} />
+            <Image source={thumbnail} style={styles.image} />
           ) : (
             <View style={[styles.image, styles.placeholder]} />
           )}

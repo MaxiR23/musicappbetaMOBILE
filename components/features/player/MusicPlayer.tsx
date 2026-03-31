@@ -12,6 +12,7 @@ import { useTrackRelated } from "@/hooks/use-track-related";
 import { useTrackUpNext } from "@/hooks/use-track-upnext";
 import { getUpgradedThumb } from "@/utils/image-helpers";
 import { mapGenericTrack } from "@/utils/song-mapper";
+import { Image } from "expo-image";
 import { router, usePathname } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "react-native";
@@ -167,6 +168,12 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
     }
     if (activePlayerTab !== null) {
       setActivePlayerTab(null);
+    }
+
+    const nextTrack = queue[queueIndex + 1];
+    if (nextTrack?.thumbnail) {
+      const hiRes = nextTrack.thumbnail.replace(/=w\d+-h\d+[^=]*/i, "=w600-h600-l90-rj");
+      Image.prefetch(hiRes);
     }
   }, [currentSong?.id]);
 

@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import React, { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Image, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 
 type Props = {
   label?: string;
@@ -27,7 +28,7 @@ function SimilarToHeaderBase({
   return (
     <View style={[styles.row, style]}>
       {thumb ? (
-        <Image source={{ uri: thumb }} style={{ width: size, height: size, borderRadius: radius }} />
+        <Image source={thumb} style={{ width: size, height: size, borderRadius: radius }} />
       ) : (
         <View style={[styles.fallback, { width: size, height: size, borderRadius: radius }]}>
           <Ionicons name="person-outline" size={Math.max(18, size * 0.45)} color="#777" />

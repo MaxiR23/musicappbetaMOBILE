@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import HorizontalScrollSection from './../../shared/HorizontalScrollSection';
 
 type RecentItem = {
@@ -63,7 +64,7 @@ export default function RecentSection({ items }: Props) {
               }}
             >
               {it.thumbnail_url ? (
-                <Image source={{ uri: it.thumbnail_url }} style={{ width: SIZE, height: SIZE }} />
+                <Image source={it.thumbnail_url} style={{ width: SIZE, height: SIZE }} />
               ) : (
                 <Ionicons name="musical-notes-outline" size={22} color="#777" />
               )}

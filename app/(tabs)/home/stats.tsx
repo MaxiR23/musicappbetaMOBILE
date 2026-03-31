@@ -3,6 +3,7 @@ import { useContentPadding } from "@/hooks/use-content-padding";
 import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
@@ -11,7 +12,6 @@ import {
   ActivityIndicator,
   Dimensions,
   FlatList,
-  Image,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -53,9 +53,9 @@ function ArtistCard({ item, index, onPress, playLabel }: { item: StatItem; index
     >
       {item.thumbnail_url ? (
         <Image
-          source={{ uri: item.thumbnail_url }}
+          source={item.thumbnail_url}
           style={StyleSheet.absoluteFillObject}
-          resizeMode="cover"
+          contentFit="cover"
         />
       ) : (
         <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "#2a2a2a" }]} />
@@ -83,9 +83,9 @@ function AlbumCard({ item, index, onPress, playLabel }: { item: StatItem; index:
       <View style={[styles.albumCover, { width: ALBUM_CARD_W, height: ALBUM_CARD_W }]}>
         {item.thumbnail_url ? (
           <Image
-            source={{ uri: item.thumbnail_url }}
+            source={item.thumbnail_url}
             style={{ width: "100%", height: "100%" }}
-            resizeMode="cover"
+            contentFit="cover"
           />
         ) : (
           <View style={{ flex: 1, backgroundColor: "#2a2a2a" }} />

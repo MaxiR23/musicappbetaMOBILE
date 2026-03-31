@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
-import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface MiniPlayerProps {
   thumbUrl: string;
@@ -39,7 +40,7 @@ export const MiniPlayer = React.memo(function MiniPlayer({
       <View style={styles.glassOverlay} />
 
       <View style={styles.container}>
-        <Image source={{ uri: thumbUrl }} style={styles.thumbnail} />
+        <Image source={thumbUrl} style={styles.thumbnail} />
 
         <View style={styles.info}>
           <Pressable onPress={onExpand} hitSlop={6}>

@@ -2,9 +2,10 @@
 import { reorderLog } from "@/utils/reorder-logger";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import DragList, { DragListRenderItemInfo } from "react-native-draglist";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -130,7 +131,7 @@ export default function PlaylistEditView({
         {/* Thumbnail */}
         <View style={styles.thumbBox}>
           {item.albumCover ? (
-            <Image source={{ uri: item.albumCover }} style={styles.thumb} />
+            <Image source={item.albumCover} style={styles.thumb} />
           ) : (
             <View style={[styles.thumb, { backgroundColor: "#2a2a2a" }]} />
           )}

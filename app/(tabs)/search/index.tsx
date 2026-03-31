@@ -8,6 +8,7 @@ import { Song } from "@/types/music";
 import { getUpgradedThumb } from "@/utils/image-helpers";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Image } from "expo-image";
 import { Stack, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -15,7 +16,6 @@ import {
   ActivityIndicator,
   Animated,
   FlatList,
-  Image,
   StyleSheet,
   Text,
   TextInput,
@@ -322,7 +322,7 @@ export default function SearchScreen() {
               renderItem={({ item }) => (
                 <TouchableOpacity style={styles.resultRow} onPress={() => onSelect(item)} activeOpacity={0.8}>
                   {item.thumbnail ? (
-                    <Image source={{ uri: item.thumbnail }} style={styles.thumb} />
+                    <Image source={item.thumbnail} style={styles.thumb} />
                   ) : (
                     <View style={styles.thumbFallback}>
                       <Ionicons name="musical-notes" size={18} color="#9aa0a6" />

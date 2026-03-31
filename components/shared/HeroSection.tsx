@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { ReactNode } from "react";
 import {
-  Image,
   ImageBackground,
   StyleSheet,
   TouchableOpacity,
@@ -21,17 +21,17 @@ interface HeroSectionProps {
   children: ReactNode;
   useDirectImage?: boolean;
   contentPosition?: "flex-start" | "center" | "flex-end";
-  
+
   /**
    * Padding bottom del container (default: 12)
    */
   paddingBottom?: number;
-  
+
   /**
    * Padding top del container (default: 0)
    */
   paddingTop?: number;
-  
+
   /**
    * Estilos adicionales para el container principal
    */
@@ -58,11 +58,11 @@ export default function HeroSection({
   containerStyle,
 }: HeroSectionProps) {
   return (
-    <View 
+    <View
       style={[
-        styles.container, 
-        { 
-          height, 
+        styles.container,
+        {
+          height,
           justifyContent: contentPosition,
           paddingBottom,
           paddingTop,
@@ -75,8 +75,9 @@ export default function HeroSection({
         useDirectImage ? (
           <>
             <Image
-              source={{ uri: backgroundImage }}
+              source={backgroundImage}
               style={styles.backgroundImage}
+              contentFit="cover"
             />
             <LinearGradient
               colors={gradientColors}
@@ -127,7 +128,6 @@ const styles = StyleSheet.create({
   backgroundImage: {
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
     position: "absolute",
   },
   gradient: {
