@@ -282,6 +282,7 @@ export default function HomeScreen() {
               }))}
               type="album"
               feedKey="upcoming-releases"
+              disablePress
             />
           </ProList>
 

@@ -11,6 +11,7 @@ interface Props {
   variant?: 'grid' | 'compact';
   onTrackPress?: (index: number, queueName: string) => void;
   feedKey?: string;
+  disablePress?: boolean;
 }
 
 export default function FeedSection({
@@ -19,7 +20,8 @@ export default function FeedSection({
   type,
   variant = 'grid',
   onTrackPress,
-  feedKey
+  feedKey,
+  disablePress
 }: Props) {
   const router = useRouter();
 
@@ -89,13 +91,17 @@ export default function FeedSection({
       imageExtractor={extractThumbnail}
       titleExtractor={(item) => item.title ?? item.name}
       subtitleExtractor={(item) => item.artist ?? item.artist_name}
-      onItemPress={(item, index) => {
-        if (isTrack && onTrackPress) {
-          onTrackPress(index, title);
-        } else {
-          router.push(`/(tabs)/home/album/${encodeURIComponent(item.id)}`);
-        }
-      }}
+      onItemPress={
+        disablePress
+          ? undefined
+          : (item, index) => {
+            if (isTrack && onTrackPress) {
+              onTrackPress(index, title);
+            } else {
+              router.push(`/(tabs)/home/album/${encodeURIComponent(item.id)}`);
+            }
+          }
+      }
       has_more={!!feedKey}
       onPressMore={
         feedKey
