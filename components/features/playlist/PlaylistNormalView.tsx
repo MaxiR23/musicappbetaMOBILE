@@ -1,7 +1,6 @@
-// components/playlist/PlaylistNormalView.tsx
 import PlaybackButtons from "@/components/features/player/PlaybackButtons";
 import TrackRow from "@/components/shared/TrackRow";
-import React from "react";
+import React, { useMemo } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import PlaylistHeader from "./PlaylistHeader";
 
@@ -35,6 +34,19 @@ export default function PlaylistNormalView({
   onTrackMorePress,
   onMenuPress,
 }: PlaylistNormalViewProps) {
+
+  const listHeader = useMemo(() => (
+    <>
+      <PlaylistHeader
+        playlist={playlist}
+        mosaicImages={mosaicImages}
+        onMenuPress={onMenuPress}
+        />
+      <PlaybackButtons onPlay={onPlayAll} onShuffle={onShuffleAll} />
+    </>
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [playlist, mosaicImages]);
+
   return (
     <FlatList
       style={styles.container}
@@ -55,16 +67,7 @@ export default function PlaylistNormalView({
           />
         </View>
       )}
-      ListHeaderComponent={
-        <>
-          <PlaylistHeader
-            playlist={playlist}
-            mosaicImages={mosaicImages}
-            onMenuPress={onMenuPress}
-          />
-          <PlaybackButtons onPlay={onPlayAll} onShuffle={onShuffleAll} />
-        </>
-      }
+      ListHeaderComponent={listHeader}
     />
   );
 }
