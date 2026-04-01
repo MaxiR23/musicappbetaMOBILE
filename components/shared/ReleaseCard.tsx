@@ -20,7 +20,7 @@ import {
  * Nota: normalmente se usa `cover` O `thumbnails`. Si vienen ambos, `cover` suele tener prioridad.
  */
 interface ReleaseCardProps {
-  cover?: string | null;
+  cover?: string | number | null;
   thumbnails?: string[];
   title: string;
   subtitle?: string;

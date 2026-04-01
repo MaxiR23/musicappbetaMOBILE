@@ -1,4 +1,7 @@
 {
+  "liked": {
+    "title": "Canciones que te gustan"
+  },
   "error": {
     "notFound": "No se encontró la playlist",
     "loadFailed": "Error al cargar playlist"

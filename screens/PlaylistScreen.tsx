@@ -38,6 +38,7 @@ export default function PlaylistScreen() {
 
   const {
     getPlaylistById,
+    getLikedPlaylist,
     getGenrePlaylistTracks,
     prefetchSongs,
     deletePlaylist,
@@ -48,6 +49,8 @@ export default function PlaylistScreen() {
   const { invalidatePlaylists } = useCacheInvalidation(userId);
 
   const isGenrePlaylist = segments.includes('genre-playlist');
+  const isLikedPlaylist = id === "liked";
+  const isReadOnly = isGenrePlaylist || isLikedPlaylist;
   const { t } = useTranslation("playlist");
   const { t: tCommon } = useTranslation("common");
 
@@ -115,6 +118,41 @@ export default function PlaylistScreen() {
               setError(result?.error || t("error.loadFailed"));
             }
           }
+        } else if (isLikedPlaylist) {
+          const rawData = await getLikedPlaylist();
+          if (mounted && rawData) {
+            const totalMs = (rawData.tracks || []).reduce(
+              (acc: number, t: any) => acc + ((t?.duration_seconds ?? 0) * 1000),
+              0
+            );
+
+            const songs = (rawData.tracks || []).map((t: any, idx: number) => ({
+              id: t.track_id,
+              internalId: t.id,
+              title: t.title,
+              artist: t.artist,
+              artist_id: t.artist_id,
+              album_id: t.album_id,
+              album_name: t.album_name,
+              duration: t.duration_seconds != null
+                ? `${Math.floor(t.duration_seconds / 60)}:${String(
+                  t.duration_seconds % 60
+                ).padStart(2, "0")}`
+                : "--:--",
+              albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
+              _i: idx + 1,
+            }));
+
+            setPlaylist({
+              id: "liked",
+              name: t("liked.title"),
+              description: null,
+              isPublic: false,
+              songCount: songs.length,
+              duration: formatDurationCustom(totalMs, { format: 'compact', round: true }),
+              songs,
+            });
+          }
         } else {
           const rawData = await getPlaylistById(id);
           if (mounted && rawData) {
@@ -160,7 +198,7 @@ export default function PlaylistScreen() {
     })();
 
     return () => { mounted = false; };
-  }, [id, isGenrePlaylist, getPlaylistById, getGenrePlaylistTracks]);
+  }, [id, isGenrePlaylist, isLikedPlaylist, getPlaylistById, getLikedPlaylist, getGenrePlaylistTracks]);
 
   useEffect(() => {
     if (!playlist?.songs?.length) return;
@@ -218,7 +256,7 @@ export default function PlaylistScreen() {
   };
 
   const confirmDelete = () => {
-    if (!playlist || isGenrePlaylist) return;
+    if (!playlist || isReadOnly) return;
     Alert.alert(
       t("delete.title"),
       t("delete.message", { name: playlist.name }),
@@ -345,7 +383,7 @@ export default function PlaylistScreen() {
     );
   }
 
-  if (editMode && !isGenrePlaylist) {
+  if (editMode && !isReadOnly) {
     return (
       <>
         <PlaylistEditView
@@ -380,7 +418,7 @@ export default function PlaylistScreen() {
               {section.data.name}
             </Text>
 
-            {section.data.isPublic !== undefined && (
+            {section.data.isPublic !== undefined && !isLikedPlaylist && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>
                   {section.data.isPublic ? t("info.public") : t("info.private")}
@@ -428,11 +466,11 @@ export default function PlaylistScreen() {
         sections={sections}
         renderSection={renderSection}
         onBackPress={() => router.back()}
-        onMenuPress={isGenrePlaylist ? undefined : () => setMenuOpen(true)}
+        onMenuPress={isReadOnly ? undefined : () => setMenuOpen(true)}
         contentContainerStyle={contentPadding}
       />
 
-      {!isGenrePlaylist && (
+      {!isReadOnly && (
         <PlaylistOptionsSheet
           open={menuOpen}
           onOpenChange={setMenuOpen}
@@ -446,24 +484,26 @@ export default function PlaylistScreen() {
       <TrackActionsSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
-        playlistId={!isGenrePlaylist ? playlist.id : undefined}
+        playlistId={!isReadOnly ? playlist.id : undefined}
         track={selectedTrack}
-        onRemove={!isGenrePlaylist ? (_, trackId) => handleRemoveFromSheet(playlist.id, trackId) : undefined}
-        showAddTo={!isGenrePlaylist}
-        showRemove={!isGenrePlaylist}
+        onRemove={!isReadOnly ? (_, trackId) => handleRemoveFromSheet(playlist.id, trackId) : undefined}
+        showAddTo={!isReadOnly}
+        showRemove={!isReadOnly}
       />
 
-      <CreatePlaylistModal
-        open={editDetailsOpen}
-        onOpenChange={setEditDetailsOpen}
-        onUpdated={handleUpdated}
-        initialData={{
-          id: playlist.id,
-          name: playlist.name,
-          description: playlist.description,
-          isPublic: playlist.isPublic,
-        }}
-      />
+      {!isReadOnly && (
+        <CreatePlaylistModal
+          open={editDetailsOpen}
+          onOpenChange={setEditDetailsOpen}
+          onUpdated={handleUpdated}
+          initialData={{
+            id: playlist.id,
+            name: playlist.name,
+            description: playlist.description,
+            isPublic: playlist.isPublic,
+          }}
+        />
+      )}
     </>
   );
 }

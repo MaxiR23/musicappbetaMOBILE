@@ -80,7 +80,9 @@ export default function AnimatedDetailHeader({
   onEndReached,
 }: AnimatedDetailHeaderProps) {
   const scrollY = useSharedValue(0);
-  const isMosaic = !coverImage && mosaicImages && mosaicImages.length > 0;
+  const uniqueImages = mosaicImages ? [...new Set(mosaicImages)] : [];
+  const isMosaic = !coverImage && uniqueImages.length >= 4;
+  const effectiveCover = coverImage || (!isMosaic && uniqueImages.length > 0 ? uniqueImages[0] : null);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -114,12 +116,14 @@ export default function AnimatedDetailHeader({
       <Animated.View style={[styles.coverContainer, coverAnimatedStyle]}>
         {isMosaic && mosaicImages ? (
           <MosaicCover images={mosaicImages} />
+        ) : effectiveCover ? (
+          <Image source={effectiveCover} style={styles.coverImage} contentFit="cover" />
         ) : (
-          <Image source={coverImage} style={styles.coverImage} contentFit="cover" />
+          <View style={[styles.coverImage, { backgroundColor: "#333" }]} />
         )}
       </Animated.View>
     </View>
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   ), [coverImage, mosaicImages, isMosaic]);
 
   return (

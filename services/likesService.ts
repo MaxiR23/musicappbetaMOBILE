@@ -1,13 +1,14 @@
 import { API_URL } from "@/constants/config";
 import {
-    getAllLikes,
-    getLastSyncTimestamp,
-    LikedTrackRow,
-    removeLike,
-    replaceAllLikes,
-    upsertLike,
+  getAllLikes,
+  getLastSyncTimestamp,
+  LikedTrackRow,
+  removeLike,
+  replaceAllLikes,
+  upsertLike,
 } from "@/lib/likesDb";
 import { supabase } from "@/lib/supabase";
+import { cacheClearPrefix } from "@/utils/cache";
 
 // ── AUTH FETCH (mismo patron que musicService) ────────────────────────────────
 
@@ -96,6 +97,8 @@ export const likesService = {
       method: "POST",
       body: JSON.stringify(payload),
     });
+
+    await cacheClearPrefix("playlist:liked");
   },
 
   unlike: async (trackId: string): Promise<void> => {
@@ -106,6 +109,8 @@ export const likesService = {
     await authFetch(`${API_URL}/likes/${encodeURIComponent(trackId)}`, {
       method: "DELETE",
     });
+
+    await cacheClearPrefix("playlist:liked");
   },
 
   fetchAll: async (): Promise<LikedTrackRow[]> => {

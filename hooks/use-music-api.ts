@@ -87,6 +87,11 @@ export function useMusicApi() {
     [versions]
   );
 
+  const getLikedPlaylist = useCallback(
+    () => musicService.getLikedPlaylist(versions),
+    [versions]
+  );
+
   const createPlaylist = useCallback(
     (title: string, description?: string, is_public?: boolean) =>
       musicService.createPlaylist(title, description, is_public),
@@ -216,6 +221,7 @@ export function useMusicApi() {
     getGenrePlaylistTracks,
     getPlaylists,
     getPlaylistById,
+    getLikedPlaylist,
     createPlaylist,
     updatePlaylist,
     addTrackToPlaylist,

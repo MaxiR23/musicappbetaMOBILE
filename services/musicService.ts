@@ -235,6 +235,18 @@ export const musicService = {
     );
   },
 
+  getLikedPlaylist: async (versions: CacheVersions): Promise<any> => {
+    return cacheWrap(
+      "playlist:liked",
+      async () => {
+        const data = await authFetch(`${API_URL}/playlists/liked`);
+        if (!data?.id) throw new Error("liked_playlist_incomplete");
+        return data;
+      },
+      { version: versions["liked-tracks"] }
+    );
+  },
+
   createPlaylist: async (title: string, description?: string, is_public?: boolean) => {
     const result = await authFetch(`${API_URL}/playlists/`, {
       method: "POST",

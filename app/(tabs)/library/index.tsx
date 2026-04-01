@@ -7,7 +7,7 @@ import { useHomePlaylists } from "@/hooks/use-home-playlists";
 import { useUserProfile } from "@/hooks/use-user-profile";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FlatList, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,13 +23,32 @@ export default function LibraryScreen() {
 
   const playlists = playlistsWithCreate.filter(pl => !pl.isCreateButton);
 
+  const data = useMemo(() => {
+    const likedItem = {
+      id: "liked",
+      title: t("liked"),
+      isLiked: true,
+    };
+    return [likedItem, ...playlists];
+  }, [playlists, t]);
+
   const renderPlaylist = useCallback(
     ({ item }: { item: any }) => {
+      if (item.isLiked) {
+        return (
+          <ReleaseCard
+            cover={require("@/assets/images/liked-cover.png")}
+            title={item.title}
+            onPress={() => router.push("/(tabs)/library/playlist/liked")}
+          />
+        );
+      }
+
       const imagesFromTracks = (item?.playlist_tracks || [])
         .map((t: any) => t?.tracks?.thumbnail_url || t?.thumbnail_url)
         .filter(Boolean);
-      const thumbnails = item?.cover_url 
-        ? [item.cover_url, ...imagesFromTracks] 
+      const thumbnails = item?.cover_url
+        ? [item.cover_url, ...imagesFromTracks]
         : imagesFromTracks;
 
       return (
@@ -41,7 +60,7 @@ export default function LibraryScreen() {
         />
       );
     },
-    [router]
+    [router, t]
   );
 
   const keyExtractor = useCallback((item: any) => item.id, []);
@@ -57,13 +76,13 @@ export default function LibraryScreen() {
         <ScreenHeader title={t("header")} />
 
         <FlatList
-          data={playlists}
+          data={data}
           keyExtractor={keyExtractor}
           numColumns={2}
           columnWrapperStyle={{ gap: 12, justifyContent: "space-between" }}
-           contentContainerStyle={[
+          contentContainerStyle={[
             { padding: 12, gap: 12 },
-            contentPadding 
+            contentPadding
           ]}
           renderItem={renderPlaylist}
           removeClippedSubviews={true}
@@ -103,7 +122,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#4facfe", 
+    backgroundColor: "#4facfe",
     alignItems: "center",
     justifyContent: "center",
     elevation: 8,

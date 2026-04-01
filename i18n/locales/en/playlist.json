@@ -1,4 +1,7 @@
 {
+  "liked": {
+    "title": "Liked Songs"
+  },
   "error": {
     "notFound": "Playlist not found",
     "loadFailed": "Failed to load playlist"
