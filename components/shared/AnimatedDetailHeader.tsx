@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { ChevronLeft } from "lucide-react-native";
-import React from "react";
+import React, { useMemo } from "react";
 import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   Extrapolation,
@@ -46,7 +46,7 @@ function MosaicCover({ images }: { images: string[] }) {
             key={idx}
             source={img}
             style={cellStyle}
-            resizeMode="cover"
+            contentFit="cover"
           />
         );
       })}
@@ -109,7 +109,7 @@ export default function AnimatedDetailHeader({
     return { opacity };
   });
 
-  const ListHeader = () => (
+  const listHeader = useMemo(() => (
     <View style={styles.heroSpace}>
       <Animated.View style={[styles.coverContainer, coverAnimatedStyle]}>
         {isMosaic && mosaicImages ? (
@@ -119,7 +119,8 @@ export default function AnimatedDetailHeader({
         )}
       </Animated.View>
     </View>
-  );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [coverImage, mosaicImages, isMosaic]);
 
   return (
     <View style={styles.container}>
@@ -152,7 +153,7 @@ export default function AnimatedDetailHeader({
         onEndReachedThreshold={0.6}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={ListHeader}
+        ListHeaderComponent={listHeader}
         ListFooterComponent={ListFooterComponent}
         contentContainerStyle={[styles.contentContainer, contentContainerStyle]}
         removeClippedSubviews={true}

@@ -2,7 +2,7 @@ import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronLeft } from "lucide-react-native";
-import React from "react";
+import React, { useMemo } from "react";
 import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
     Extrapolation,
@@ -28,15 +28,15 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
  * - contentContainerStyle: Estilos extra para el contentContainerStyle
  */
 interface AnimatedHeaderProps {
-  backgroundImage: string;
-  title: string;
-  sections: any[];
-  renderSection: (section: any, index: number) => React.ReactElement | null;
-  headerHeight?: number;
-  collapsedHeight?: number;
-  onBackPress?: () => void;
-  contentPaddingHorizontal?: number;
-  contentContainerStyle?: any;
+    backgroundImage: string;
+    title: string;
+    sections: any[];
+    renderSection: (section: any, index: number) => React.ReactElement | null;
+    headerHeight?: number;
+    collapsedHeight?: number;
+    onBackPress?: () => void;
+    contentPaddingHorizontal?: number;
+    contentContainerStyle?: any;
 }
 
 export default function AnimatedHeader({
@@ -132,28 +132,29 @@ export default function AnimatedHeader({
         };
     });
 
-    // Componente del header (para ListHeaderComponent)
-    const ListHeader = () => (
+    const listHeader = useMemo(() => (
         <Animated.View style={[styles.headerContainer, headerAnimatedStyle]}>
             <Image
                 source={backgroundImage}
                 style={styles.backgroundImage}
                 contentFit="cover"
-            />
+                />
 
             {/* Gradient overlay */}
             <LinearGradient
                 colors={["transparent", "rgba(14, 14, 14, 0.8)", "#0e0e0e"]}
                 style={styles.gradient}
                 locations={[0, 0.7, 1]}
-            />
+                />
 
             {/* Título grande (abajo) */}
             <Animated.View style={[styles.heroInfo, largeTitleStyle]}>
                 <Text style={styles.artist_name}>{title}</Text>
             </Animated.View>
         </Animated.View>
-    );
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ), [backgroundImage, title]);
 
     return (
         <View style={styles.container}>
@@ -184,7 +185,7 @@ export default function AnimatedHeader({
                 onScroll={scrollHandler}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
-                ListHeaderComponent={ListHeader}
+                ListHeaderComponent={listHeader}
                 contentContainerStyle={[styles.contentContainer, contentContainerStyle]}
                 removeClippedSubviews={true}
                 maxToRenderPerBatch={3}
@@ -192,8 +193,8 @@ export default function AnimatedHeader({
                 initialNumToRender={2}
                 scrollsToTop={false}
                 bounces={true}
-                decelerationRate="normal"               
-                disableIntervalMomentum={true}          
+                decelerationRate="normal"
+                disableIntervalMomentum={true}
                 overScrollMode="never"
             />
 
