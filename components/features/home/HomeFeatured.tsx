@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   },
   listenAgainGradient: {
     position: "absolute",
-    bottom: 0,
+    bottom: -1,
     left: 0,
     right: 0,
     height: "55%",
