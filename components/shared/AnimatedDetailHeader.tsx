@@ -55,7 +55,7 @@ function MosaicCover({ images }: { images: string[] }) {
 }
 
 interface AnimatedDetailHeaderProps {
-  coverImage?: string;
+  coverImage?: string | number;
   mosaicImages?: string[];
   title: string;
   sections: any[];

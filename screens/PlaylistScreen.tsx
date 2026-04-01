@@ -461,7 +461,8 @@ export default function PlaylistScreen() {
       <StatusBar barStyle="light-content" />
 
       <AnimatedDetailHeader
-        mosaicImages={mosaicImages}
+        coverImage={isLikedPlaylist ? require("@/assets/images/liked-cover.png") : undefined}
+        mosaicImages={isLikedPlaylist ? undefined : mosaicImages}
         title={playlist.name}
         sections={sections}
         renderSection={renderSection}
