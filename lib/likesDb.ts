@@ -53,7 +53,7 @@ export async function removeLike(trackId: string): Promise<void> {
 export async function getAllLikes(): Promise<LikedTrackRow[]> {
   const db = await getDb();
   return db.getAllAsync<LikedTrackRow>(
-    "SELECT * FROM liked_tracks ORDER BY created_at DESC"
+    "SELECT * FROM liked_tracks ORDER BY created_at ASC"
   );
 }
 

@@ -8,6 +8,7 @@ import TrackRow from "@/components/shared/TrackRow";
 import { PlaylistSkeletonLayout } from "@/components/shared/skeletons/Skeleton";
 import { useCacheInvalidation } from "@/hooks/use-cache-invalidation";
 import { useContentPadding } from "@/hooks/use-content-padding";
+import { useLikes } from "@/hooks/use-likes";
 import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
 import { usePlaylistEditor } from "@/hooks/use-playlist-editor";
@@ -47,6 +48,7 @@ export default function PlaylistScreen() {
   const { playList } = useMusic();
   const { userId } = useUserProfile();
   const { invalidatePlaylists } = useCacheInvalidation(userId);
+  const { likedIds } = useLikes();
 
   const isGenrePlaylist = segments.includes('genre-playlist');
   const isLikedPlaylist = id === "liked";
@@ -208,8 +210,11 @@ export default function PlaylistScreen() {
 
   const mappedSongs = useMemo(() => {
     if (!playlist) return [];
-    return mapPlaylistSongs(playlist.songs);
-  }, [playlist]);
+    const songs = isLikedPlaylist
+      ? (playlist.songs || []).filter((s: any) => likedIds.has(s.id))
+      : (playlist.songs || []);
+    return mapPlaylistSongs(songs);
+  }, [playlist, likedIds, isLikedPlaylist]);
 
   const mosaicImages = useMemo(() => {
     return (playlist?.songs || []).map((s: any) => s.albumCover).filter(Boolean);
@@ -217,23 +222,15 @@ export default function PlaylistScreen() {
 
   const sections = useMemo(() => {
     if (!playlist) return [];
-
+    const songs = isLikedPlaylist
+      ? (playlist.songs || []).filter((s: any) => likedIds.has(s.id))
+      : (playlist.songs || []);
     return [
-      {
-        type: 'info',
-        data: playlist,
-      },
-      {
-        type: 'buttons',
-        data: null,
-      },
-      ...(playlist.songs || []).map((song: any, index: number) => ({
-        type: 'track',
-        data: song,
-        index,
-      })),
+      { type: 'info', data: { ...playlist, songCount: songs.length } },
+      { type: 'buttons', data: null },
+      ...songs.map((song: any, index: number) => ({ type: 'track', data: song, index })),
     ];
-  }, [playlist]);
+  }, [playlist, likedIds, isLikedPlaylist]);
 
   const handlePlayAll = () => {
     if (!mappedSongs.length) return;
