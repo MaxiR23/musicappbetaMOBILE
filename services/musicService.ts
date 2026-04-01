@@ -373,7 +373,10 @@ export const musicService = {
     const query = params.toString();
     const url = `${API_URL}/stats/weekly${query ? `?${query}` : ""}`;
     const cacheKey = `weekly-stats${query ? `:${query}` : ""}`;
-    return cacheWrap(cacheKey, () => authFetch(url), { userId: 'me' });
+    return cacheWrap(cacheKey, () => authFetch(url), {
+      userId: 'me',
+      version: `v-${new Date().toISOString().slice(0, 7)}`,
+    });
   },
 
   getMonthlyStats: async (options?: {
@@ -391,7 +394,10 @@ export const musicService = {
     const query = params.toString();
     const url = `${API_URL}/stats/monthly${query ? `?${query}` : ""}`;
     const cacheKey = `monthly-stats${query ? `:${query}` : ""}`;
-    return cacheWrap(cacheKey, () => authFetch(url), { userId: 'me' });
+    return cacheWrap(cacheKey, () => authFetch(url), {
+      userId: 'me',
+      version: `v-${new Date().toISOString().slice(0, 7)}`,
+    });
   },
 
   getRecentPlays: async (limit = 20): Promise<{ items: RecentItem[] }> => {
