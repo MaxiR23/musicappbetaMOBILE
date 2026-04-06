@@ -144,35 +144,29 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
     tabsTranslateY,
   } = usePlayerTabAnimation({ activeTab: activePlayerTab });
 
-  const prevBgRef = useRef(bgUrl);
-  const prevGradientRef = useRef(gradient);
-  const [prevBg, setPrevBg] = useState<string | null>(null);
+  // Crossfade solo para el gradient (la imagen la maneja expo-image con transition)
   const [prevGradient, setPrevGradient] = useState<[string, string] | null>(null);
-  const bgFade = useRef(new Animated.Value(1)).current;
+  const gradientFade = useRef(new Animated.Value(0)).current;
+  const currentGradientRef = useRef(gradient);
 
   useEffect(() => {
-    if (bgUrl === prevBgRef.current) return;
+    if (
+      gradient[0] === currentGradientRef.current[0] &&
+      gradient[1] === currentGradientRef.current[1]
+    ) return;
 
-    setPrevBg(prevBgRef.current);
-    setPrevGradient(prevGradientRef.current);
-    bgFade.setValue(0);
+    setPrevGradient(currentGradientRef.current);
+    currentGradientRef.current = gradient;
+    gradientFade.setValue(1);
 
-    prevBgRef.current = bgUrl;
-    prevGradientRef.current = gradient;
-
-    Image.prefetch(bgUrl, "disk")
-      .catch(() => { })
-      .finally(() => {
-        Animated.timing(bgFade, {
-          toValue: 1,
-          duration: 1200,
-          useNativeDriver: true,
-        }).start(() => {
-          setPrevBg(null);
-          setPrevGradient(null);
-        });
-      });
-  }, [bgUrl]);
+    Animated.timing(gradientFade, {
+      toValue: 0,
+      duration: 1200,
+      useNativeDriver: true,
+    }).start(() => {
+      setPrevGradient(null);
+    });
+  }, [gradient]);
 
   const showTabs = activePlayerTab !== null;
 
@@ -198,37 +192,36 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
       pointerEvents={isExpanded ? "auto" : "none"}
       style={[styles.container, { transform: [{ translateY: slideAnim }] }]}
     >
-      {prevBg && (
-        <View style={StyleSheet.absoluteFill}>
-          <Image
-            source={prevBg}
-            style={StyleSheet.absoluteFill}
-            blurRadius={50}
-            contentFit="cover"
-          />
+      {/* Fondo: expo-image maneja el crossfade de la imagen nativamente
+         SEE: https://docs.expo.dev/versions/latest/sdk/image/#transition */}
+      <Image
+        source={bgUrl}
+        style={StyleSheet.absoluteFill}
+        blurRadius={50}
+        contentFit="cover"
+        transition={1200}
+        cachePolicy="memory-disk"
+      />
+
+      {/* Gradient actual */}
+      <LinearGradient
+        colors={gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* Gradient anterior fadeouteandose */}
+      {prevGradient && (
+        <Animated.View style={[StyleSheet.absoluteFill, { opacity: gradientFade }]}>
           <LinearGradient
-            colors={prevGradient || gradient}
+            colors={prevGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
-        </View>
+        </Animated.View>
       )}
-
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: bgFade }]}>
-        <Image
-          source={bgUrl}
-          style={StyleSheet.absoluteFill}
-          blurRadius={50}
-          contentFit="cover"
-        />
-        <LinearGradient
-          colors={gradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
 
       <StatusBar barStyle="light-content" />
 
@@ -288,7 +281,7 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
               },
             ]}
           >
-            <Image source={coverUrl} style={styles.coverImage} contentFit="cover" />
+            <Image source={coverUrl} style={styles.coverImage} contentFit="cover" transition={500} />
             <LinearGradient
               pointerEvents="none"
               colors={["rgba(255,255,255,0.06)", "rgba(0,0,0,0)", "rgba(0,0,0,0.35)"]}
