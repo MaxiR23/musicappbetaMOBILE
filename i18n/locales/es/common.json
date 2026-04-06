@@ -17,7 +17,9 @@
     "cancel": "Cancelar"
   },
   "newRelease": {
-    "badge": "Nuevo lanzamiento"
+    "badge": "Nuevo lanzamiento",
+    "trackCount_one": "{{count}} canción",
+    "trackCount_other": "{{count}} canciones"
   },
   "playback": {
     "play": "Reproducir",

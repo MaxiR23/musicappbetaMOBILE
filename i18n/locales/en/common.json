@@ -17,7 +17,9 @@
     "signOut": "Sign out"
   },
   "newRelease": {
-    "badge": "New release"
+    "badge": "New release",
+    "trackCount_one": "{{count}} track",
+    "trackCount_other": "{{count}} tracks"
   },
   "playback": {
     "play": "Play",
