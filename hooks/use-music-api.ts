@@ -175,8 +175,8 @@ export function useMusicApi() {
   );
 
   const getReplaySongs = useCallback(
-    () => musicService.getReplaySongs(),
-    []
+    () => musicService.getReplaySongs(versions),
+    [versions]
   );
 
   const getListenAgain = useCallback(

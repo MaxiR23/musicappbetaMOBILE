@@ -407,7 +407,7 @@ export const musicService = {
     );
   },
 
-  getReplaySongs: async (): Promise<MappedSong[]> => {
+  getReplaySongs: async (versions: CacheVersions): Promise<MappedSong[]> => {
     return cacheWrap(
       "feed:replay",
       async () => {
@@ -422,7 +422,8 @@ export const musicService = {
           thumbnail: song.thumbnail_url,
           duration_seconds: song.duration_seconds,
         }));
-      }
+      },
+      { version: versions["replay"] }
     );
   },
 
