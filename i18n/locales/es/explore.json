@@ -1,5 +1,18 @@
 {
   "genres": {
-    "title": "Explorar géneros"
+    "title": "Explorar géneros",
+    "playlists": {
+      "loading": "Cargando...",
+      "loadingPlaylists": "Cargando playlists...",
+      "fallbackTitle": "Género",
+      "errorCategories": "Error al cargar categorías",
+      "errorPlaylists": "Error al cargar playlists",
+      "retry": "Reintentar",
+      "emptyTitle": "No hay playlists disponibles",
+      "emptyWithCategory": "en la categoría \"{{category}}\"",
+      "emptyWithoutCategory": "en este género",
+      "trackCount_one": "{{count}} canción",
+      "trackCount_other": "{{count}} canciones"
+    }
   }
 }

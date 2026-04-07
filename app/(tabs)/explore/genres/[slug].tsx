@@ -8,6 +8,7 @@ import { useMusicApi } from "@/hooks/use-music-api";
 import { upgradeThumbUrl } from "@/utils/image-helpers";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FlatList, StatusBar, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -17,6 +18,7 @@ export default function GenrePlaylistsScreen() {
   const { getGenrePlaylists, getGenreCategories } = useMusicApi();
   const insets = useSafeAreaInsets();
   const contentPadding = useContentPadding();
+  const { t } = useTranslation("explore");
 
   const getGenreCategoriesRef = useRef(getGenreCategories);
   getGenreCategoriesRef.current = getGenreCategories;
@@ -51,13 +53,13 @@ export default function GenrePlaylistsScreen() {
             setActiveCategory(cats[0]);
           }
         } else {
-          setError("Error al cargar categorias");
+          setError(t("genres.playlists.errorCategories"));
           setInitialLoading(false);
         }
       } catch (err) {
         console.error("[genres] Error cargando categorias:", err);
         if (!cancelled) {
-          setError("Error al cargar categorias");
+          setError(t("genres.playlists.errorCategories"));
           setInitialLoading(false);
         }
       } finally {
@@ -68,7 +70,7 @@ export default function GenrePlaylistsScreen() {
     })();
 
     return () => { cancelled = true; };
-  }, [slug, retryCount]);
+  }, [slug, retryCount, t]);
 
   // -- Effect 2: Cargar playlists (cuando categorias terminaron de cargar o cambia tab) --
   useEffect(() => {
@@ -92,12 +94,12 @@ export default function GenrePlaylistsScreen() {
           setGenre(result.genre);
           setPlaylists(result.playlists || []);
         } else {
-          setError(result?.error || "Error al cargar playlists");
+          setError(t("genres.playlists.errorPlaylists"));
         }
       } catch (err) {
         console.error("[genres] Error cargando playlists:", err);
         if (!cancelled) {
-          setError("Error al cargar playlists");
+          setError(t("genres.playlists.errorPlaylists"));
         }
       } finally {
         if (!cancelled) {
@@ -107,7 +109,7 @@ export default function GenrePlaylistsScreen() {
     })();
 
     return () => { cancelled = true; };
-  }, [slug, activeCategory, categoriesLoaded, retryCount]);
+  }, [slug, activeCategory, categoriesLoaded, retryCount, t]);
 
   const tabs = useMemo<Tab[]>(
     () => categories.map((cat) => ({ id: cat, label: cat })),
@@ -127,7 +129,8 @@ export default function GenrePlaylistsScreen() {
 
   const renderCard = useCallback(
     ({ item }: { item: any }) => {
-      const subtitle = `${item.track_count || 0} canciones`;
+      const count = item.track_count || 0;
+      const subtitle = t("genres.playlists.trackCount", { count });
 
       const thumbnails = (item.thumbnails || [])
         .map((url: string) => upgradeThumbUrl(url, 512) || url)
@@ -143,7 +146,7 @@ export default function GenrePlaylistsScreen() {
         />
       );
     },
-    [router]
+    [router, t]
   );
 
   const keyExtractor = useCallback(
@@ -151,7 +154,8 @@ export default function GenrePlaylistsScreen() {
     []
   );
 
-  const headerTitle = genre?.name || (initialLoading ? "Cargando..." : "Genero");
+  const headerTitle = genre?.name
+    || (initialLoading ? t("genres.playlists.loading") : t("genres.playlists.fallbackTitle"));
 
   return (
     <>
@@ -168,22 +172,22 @@ export default function GenrePlaylistsScreen() {
         )}
 
         {initialLoading ? (
-          <LoadingView message="Cargando playlists..." />
+          <LoadingView message={t("genres.playlists.loadingPlaylists")} />
         ) : error ? (
           <EmptyState
             icon="alert-circle-outline"
             message={error}
-            actionLabel="Reintentar"
+            actionLabel={t("genres.playlists.retry")}
             onAction={handleRetry}
           />
         ) : playlists.length === 0 ? (
           <EmptyState
             icon="musical-notes-outline"
-            message="No hay playlists disponibles"
+            message={t("genres.playlists.emptyTitle")}
             submessage={
               activeCategory
-                ? `en la categoria "${activeCategory}"`
-                : "en este genero"
+                ? t("genres.playlists.emptyWithCategory", { category: activeCategory })
+                : t("genres.playlists.emptyWithoutCategory")
             }
           />
         ) : (

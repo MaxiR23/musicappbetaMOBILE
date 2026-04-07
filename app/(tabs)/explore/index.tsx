@@ -2,13 +2,13 @@ import GenreCard from "@/components/shared/GenreCard";
 import LoadingView from "@/components/shared/LoadingView";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import { useContentPadding } from "@/hooks/use-content-padding";
-import { useMounted } from "@/hooks/use-mounted";
 import { useMusicApi } from "@/hooks/use-music-api";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FlatList, StatusBar, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 interface Genre {
   id: string;
   name: string;
@@ -21,32 +21,39 @@ export default function GenresScreen() {
   const router = useRouter();
   const { getGenres } = useMusicApi();
   const insets = useSafeAreaInsets();
-  const isMounted = useMounted();
   const contentPadding = useContentPadding();
   const { t } = useTranslation("explore");
+
+  const getGenresRef = useRef(getGenres);
+  getGenresRef.current = getGenres;
 
   const [genres, setGenres] = useState<Genre[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
       try {
-        const result = await getGenres();
-        if (isMounted() && result?.ok && result?.genres) {
+        const result = await getGenresRef.current();
+        if (!cancelled && result?.ok && result?.genres) {
           setGenres(result.genres);
         }
       } catch (err) {
-        console.warn("[genres] Error cargando géneros:", err);
+        console.warn("[genres] Error cargando generos:", err);
       } finally {
-        if (isMounted()) setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, [getGenres, isMounted]);
+
+    return () => { cancelled = true; };
+  }, []);
 
   const renderGenre = useCallback(
     ({ item }: { item: Genre }) => (
       <GenreCard
         name={item.name}
+        slug={item.slug}
         onPress={() => router.push(`/(tabs)/explore/genres/${encodeURIComponent(item.slug)}`)}
       />
     ),
@@ -68,7 +75,9 @@ export default function GenresScreen() {
             data={genres}
             keyExtractor={keyExtractor}
             renderItem={renderGenre}
-            contentContainerStyle={[styles.listContent, contentPadding]} 
+            numColumns={2}
+            columnWrapperStyle={styles.row}
+            contentContainerStyle={[styles.listContent, contentPadding]}
             showsVerticalScrollIndicator={false}
           />
         )}
@@ -83,7 +92,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#0e0e0e",
   },
   listContent: {
+    paddingHorizontal: 12,
     paddingTop: 4,
     paddingBottom: 24,
+    gap: 12,
+  },
+  row: {
+    gap: 12,
   },
 });
