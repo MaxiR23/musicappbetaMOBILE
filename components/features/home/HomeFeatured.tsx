@@ -1,5 +1,5 @@
 import { useMusicApi } from "@/hooks/use-music-api";
-import { useReplay } from "@/hooks/use-replay";
+import { MappedSong } from "@/utils/song-mapper";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -20,18 +20,15 @@ import Animated, {
 } from "react-native-reanimated";
 
 // -- Replay weekly palettes --
-// Cada viernes rota a la siguiente. Todas testeadas con texto blanco.
-// base: gradiente inicial (visible durante el fade-in del overlay)
-// overlay: gradiente final (aparece con la animacion)
 const REPLAY_PALETTES = [
-  { base: ["#008c6a", "#009e8e", "#006b5b"], overlay: ["#00b894", "#00cec9", "#007a6e"] },   // esmeralda
-  { base: ["#6c3483", "#8e44ad", "#512e5f"], overlay: ["#a569bd", "#c39bd3", "#7d3c98"] },   // violeta
-  { base: ["#1a5276", "#2980b9", "#154360"], overlay: ["#3498db", "#5dade2", "#2471a3"] },   // oceano
-  { base: ["#b9770e", "#d4ac0d", "#7d6608"], overlay: ["#f1c40f", "#f4d03f", "#d4ac0d"] },   // ambar
-  { base: ["#8e3a5e", "#c2185b", "#6a1b4d"], overlay: ["#e91e63", "#f06292", "#ad1457"] },   // rosa
-  { base: ["#0e6655", "#148f77", "#0b5345"], overlay: ["#1abc9c", "#48c9b0", "#17a589"] },   // teal
-  { base: ["#b84e2a", "#d35400", "#a04000"], overlay: ["#e67e22", "#f0b27a", "#d35400"] },   // coral
-  { base: ["#283593", "#3949ab", "#1a237e"], overlay: ["#5c6bc0", "#7986cb", "#3f51b5"] },   // indigo
+  { base: ["#008c6a", "#009e8e", "#006b5b"], overlay: ["#00b894", "#00cec9", "#007a6e"] },
+  { base: ["#6c3483", "#8e44ad", "#512e5f"], overlay: ["#a569bd", "#c39bd3", "#7d3c98"] },
+  { base: ["#1a5276", "#2980b9", "#154360"], overlay: ["#3498db", "#5dade2", "#2471a3"] },
+  { base: ["#b9770e", "#d4ac0d", "#7d6608"], overlay: ["#f1c40f", "#f4d03f", "#d4ac0d"] },
+  { base: ["#8e3a5e", "#c2185b", "#6a1b4d"], overlay: ["#e91e63", "#f06292", "#ad1457"] },
+  { base: ["#0e6655", "#148f77", "#0b5345"], overlay: ["#1abc9c", "#48c9b0", "#17a589"] },
+  { base: ["#b84e2a", "#d35400", "#a04000"], overlay: ["#e67e22", "#f0b27a", "#d35400"] },
+  { base: ["#283593", "#3949ab", "#1a237e"], overlay: ["#5c6bc0", "#7986cb", "#3f51b5"] },
 ] as const;
 
 function getWeeklyPalette() {
@@ -44,6 +41,7 @@ function getWeeklyPalette() {
 }
 
 // -- Cards --
+
 function StatsCard() {
   const { t } = useTranslation("home");
   const router = useRouter();
@@ -53,7 +51,7 @@ function StatsCard() {
   useEffect(() => {
     getMonthlyStats({ include: "artists", limit: 3 })
       .then((data) => setArtists(data?.artists ?? []))
-      .catch(() => { });
+      .catch(() => {});
   }, [getMonthlyStats]);
 
   if (!artists.length) return null;
@@ -101,10 +99,9 @@ function StatsCard() {
   );
 }
 
-function ReplayCard() {
+function ReplayCard({ songs }: { songs: MappedSong[] }) {
   const { t } = useTranslation("home");
   const router = useRouter();
-  const { songs, loading, hasEnoughData } = useReplay();
   const overlay = useSharedValue(0);
   const textOpacity = useSharedValue(0);
   const palette = getWeeklyPalette();
@@ -122,10 +119,10 @@ function ReplayCard() {
     opacity: textOpacity.value,
   }));
 
-  if (loading || !hasEnoughData) return null;
+  if (!songs.length) return null;
 
-  const topSongs = songs.slice(0, 5);
-  const trackNames = topSongs
+  const trackNames = songs
+    .slice(0, 5)
     .map((s) => s.title ?? "")
     .filter(Boolean)
     .join(", ");
@@ -168,17 +165,9 @@ function ReplayCard() {
   );
 }
 
-function ListenAgainCard() {
+function ListenAgainCard({ album }: { album: any }) {
   const { t } = useTranslation("home");
   const router = useRouter();
-  const { getListenAgain } = useMusicApi();
-  const [album, setAlbum] = useState<any>(null);
-
-  useEffect(() => {
-    getListenAgain()
-      .then((data) => setAlbum(data?.album ?? null))
-      .catch(() => { });
-  }, [getListenAgain]);
 
   if (!album) return null;
 
@@ -216,19 +205,17 @@ function ListenAgainCard() {
   );
 }
 
-export default function HomeFeatured() {
-  const { songs, loading, hasEnoughData } = useReplay();
-  const { getMonthlyStats } = useMusicApi();
-  const [hasStats, setHasStats] = useState(false);
+type HomeFeaturedProps = {
+  replaySongs: MappedSong[];
+  replayLoading: boolean;
+  listenAgainAlbum: any;
+};
 
-  useEffect(() => {
-    getMonthlyStats({ include: "artists", limit: 1 })
-      .then((data) => setHasStats((data?.artists ?? []).length > 0))
-      .catch(() => { });
-  }, [getMonthlyStats]);
-
-  const showReplay = !loading && hasEnoughData;
-
+export default function HomeFeatured({
+  replaySongs,
+  replayLoading,
+  listenAgainAlbum,
+}: HomeFeaturedProps) {
   return (
     <ScrollView
       horizontal
@@ -236,9 +223,9 @@ export default function HomeFeatured() {
       contentContainerStyle={styles.scroll}
       style={styles.container}
     >
-      {hasStats && <StatsCard />}
-      {showReplay && <ReplayCard />}
-      <ListenAgainCard />
+      <StatsCard />
+      {!replayLoading && <ReplayCard songs={replaySongs} />}
+      <ListenAgainCard album={listenAgainAlbum} />
     </ScrollView>
   );
 }

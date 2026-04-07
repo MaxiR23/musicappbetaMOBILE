@@ -2,13 +2,12 @@ import { fetchFeed } from '@/services/feedService';
 import { musicService } from '@/services/musicService';
 import { fetchRecommendations } from '@/services/recommendService';
 import { cacheWrap, DAY_MS } from '@/utils/cache';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useAuth } from './use-auth';
+import { MappedSong } from '@/utils/song-mapper';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useCacheVersions } from './use-cache-versions';
 
 export function useHomeFeed(userId: string) {
   const { versions } = useCacheVersions();
-  const { fetchWithAuth } = useAuth();
 
   const [newReleases, setNewReleases] = useState<any[]>([]);
   const [topAlbums, setTopAlbums] = useState<any[]>([]);
@@ -19,145 +18,176 @@ export function useHomeFeed(userId: string) {
   const [recoAlbums, setRecoAlbums] = useState<any[]>([]);
   const [upcomingReleases, setUpcomingReleases] = useState<any[]>([]);
   const [listenAgainAlbum, setListenAgainAlbum] = useState<any>(null);
+  const [replaySongs, setReplaySongs] = useState<MappedSong[]>([]);
+  const [replayLoading, setReplayLoading] = useState(true);
   const [feedReady, setFeedReady] = useState(false);
 
-  const refreshNewReleases = useCallback(async () => {
-    try {
-      const albums = await cacheWrap(
-        `home:feed:new_releases:AR:albums:20:v1`,
-        () => fetchFeed({ kind: "new_releases", type: "album", store: "AR", limit: 20 }),
-        { userId, ttl: DAY_MS, version: versions['new-releases'] }
-      );
-      setNewReleases(albums);
-      setFeedReady(true);
-    } catch (e: any) {
-      console.warn("[useHomeFeed] new_releases error:", e?.message || e);
-      setNewReleases([]);
-      setFeedReady(true);
-    }
-  }, [userId, versions]);
+  // -- Ref estable para userId y versions (evita recrear callbacks) --
+  const ctxRef = useRef({ userId, versions });
+  ctxRef.current = { userId, versions };
 
-  const refreshTopAlbums = useCallback(async () => {
-    try {
-      const albums = await cacheWrap(
-        `home:feed:most_played:albums:20:v1`,
-        () => fetchFeed({ kind: "most_played", type: "album", limit: 20 }),
-        { userId, ttl: DAY_MS, version: versions['top-albums'] }
-      );
-      setTopAlbums(albums);
-    } catch (e: any) {
-      console.warn("[API] most_played/albums error:", e?.message || e);
-      setTopAlbums([]);
-    }
-  }, [userId, versions]);
+  const fetchFns = useRef({
+    refreshNewReleases: async () => {
+      const { userId, versions } = ctxRef.current;
+      try {
+        const albums = await cacheWrap(
+          'home:feed:new_releases:AR:albums:20:v1',
+          () => fetchFeed({ kind: 'new_releases', type: 'album', store: 'AR', limit: 20 }),
+          { userId, ttl: DAY_MS, version: versions['new-releases'] }
+        );
+        setNewReleases(albums);
+        setFeedReady(true);
+      } catch (e: any) {
+        console.warn('[useHomeFeed] new_releases error:', e?.message || e);
+        setNewReleases([]);
+        setFeedReady(true);
+      }
+    },
 
-  const refreshTopTracks = useCallback(async () => {
-    try {
-      const tracks = await cacheWrap(
-        `home:feed:most_played:tracks:20:v1`,
-        () => fetchFeed({ kind: "most_played", type: "track", limit: 20 }),
-        { userId, ttl: DAY_MS, version: versions['top-tracks'] }
-      );
-      setTopTracks(tracks);
-    } catch (e: any) {
-      console.warn("[API] most_played/tracks error:", e?.message || e);
-      setTopTracks([]);
-    }
-  }, [userId, versions]);
+    refreshTopAlbums: async () => {
+      const { userId, versions } = ctxRef.current;
+      try {
+        const albums = await cacheWrap(
+          'home:feed:most_played:albums:20:v1',
+          () => fetchFeed({ kind: 'most_played', type: 'album', limit: 20 }),
+          { userId, ttl: DAY_MS, version: versions['top-albums'] }
+        );
+        setTopAlbums(albums);
+      } catch (e: any) {
+        console.warn('[useHomeFeed] most_played/albums error:', e?.message || e);
+        setTopAlbums([]);
+      }
+    },
 
-  const refreshNewSingles = useCallback(async () => {
-    try {
-      const tracks = await cacheWrap(
-        `home:feed:new_singles:tracks:20:v1`,
-        () => fetchFeed({ kind: "new_singles", type: "track", limit: 20 }),
-        { userId, ttl: DAY_MS, version: versions['new-singles'] }
-      );
-      setNewSingles(tracks);
-    } catch (e: any) {
-      console.warn("[API] new_singles error:", e?.message || e);
-      setNewSingles([]);
-    }
-  }, [userId, versions]);
+    refreshTopTracks: async () => {
+      const { userId, versions } = ctxRef.current;
+      try {
+        const tracks = await cacheWrap(
+          'home:feed:most_played:tracks:20:v1',
+          () => fetchFeed({ kind: 'most_played', type: 'track', limit: 20 }),
+          { userId, ttl: DAY_MS, version: versions['top-tracks'] }
+        );
+        setTopTracks(tracks);
+      } catch (e: any) {
+        console.warn('[useHomeFeed] most_played/tracks error:', e?.message || e);
+        setTopTracks([]);
+      }
+    },
 
-  const refreshSeedTracks = useCallback(async () => {
-    try {
-      const tracks = await cacheWrap(
-        `home:feed:seed_tracks:tracks:20:v1`,
-        () => fetchFeed({ kind: "seed_tracks", type: "track", limit: 20 }),
-        { userId, ttl: DAY_MS, version: versions['seed-tracks'] }
-      );
-      setSeedTracks(tracks);
-    } catch (e: any) {
-      console.warn("[API] seed_tracks error:", e?.message || e);
-      setSeedTracks([]);
-    }
-  }, [userId, versions]);
+    refreshNewSingles: async () => {
+      const { userId, versions } = ctxRef.current;
+      try {
+        const tracks = await cacheWrap(
+          'home:feed:new_singles:tracks:20:v1',
+          () => fetchFeed({ kind: 'new_singles', type: 'track', limit: 20 }),
+          { userId, ttl: DAY_MS, version: versions['new-singles'] }
+        );
+        setNewSingles(tracks);
+      } catch (e: any) {
+        console.warn('[useHomeFeed] new_singles error:', e?.message || e);
+        setNewSingles([]);
+      }
+    },
 
-  // TODO: fix 502 — deshabilitado temporalmente CHECK: commit 66358fb9eb89faa94851153c7f6aba6d5449c5be in backend
-  const refreshRecommendations = useCallback(async () => {
-    try {
-      const data = await cacheWrap(
-        `home:recommendations:v1`,
-        () => fetchRecommendations(),
-        { userId, ttl: DAY_MS, version: versions['user-recommendations'] }
-      );
-      setRecoArtists(Array.isArray(data.artists) ? data.artists : []);
-      setRecoAlbums(Array.isArray(data.albums) ? data.albums : []);
-    } catch (e: any) {
-      console.warn("[API] recommendations error:", e?.message || e);
-      setRecoArtists([]);
-      setRecoAlbums([]);
-    }
-  }, [userId, versions]);
+    refreshSeedTracks: async () => {
+      const { userId, versions } = ctxRef.current;
+      try {
+        const tracks = await cacheWrap(
+          'home:feed:seed_tracks:tracks:20:v1',
+          () => fetchFeed({ kind: 'seed_tracks', type: 'track', limit: 20 }),
+          { userId, ttl: DAY_MS, version: versions['seed-tracks'] }
+        );
+        setSeedTracks(tracks);
+      } catch (e: any) {
+        console.warn('[useHomeFeed] seed_tracks error:', e?.message || e);
+        setSeedTracks([]);
+      }
+    },
 
-  const refreshUpcomingReleases = useCallback(async () => {
-    try {
-      const resp = await musicService.getUpcomingReleases(versions);
-      setUpcomingReleases(resp?.releases ?? []);
-    } catch (e: any) {
-      console.warn("[useHomeFeed] upcoming_releases error:", e?.message || e);
-      setUpcomingReleases([]);
-    }
-  }, [versions]);
+    refreshRecommendations: async () => {
+      const { userId, versions } = ctxRef.current;
+      try {
+        const data = await cacheWrap(
+          'home:recommendations:v1',
+          () => fetchRecommendations(),
+          { userId, ttl: DAY_MS, version: versions['user-recommendations'] }
+        );
+        setRecoArtists(Array.isArray(data.artists) ? data.artists : []);
+        setRecoAlbums(Array.isArray(data.albums) ? data.albums : []);
+      } catch (e: any) {
+        console.warn('[useHomeFeed] recommendations error:', e?.message || e);
+        setRecoArtists([]);
+        setRecoAlbums([]);
+      }
+    },
 
-  const refreshListenAgain = useCallback(async () => {
-    try {
-      const resp = await musicService.getListenAgain(versions);
-      setListenAgainAlbum(resp?.album ?? null);
-    } catch (e: any) {
-      console.warn("[useHomeFeed] listen_again error:", e?.message || e);
-      setListenAgainAlbum(null);
-    }
-  }, [versions]);
+    refreshUpcomingReleases: async () => {
+      const { versions } = ctxRef.current;
+      try {
+        const resp = await musicService.getUpcomingReleases(versions);
+        setUpcomingReleases(resp?.releases ?? []);
+      } catch (e: any) {
+        console.warn('[useHomeFeed] upcoming_releases error:', e?.message || e);
+        setUpcomingReleases([]);
+      }
+    },
+
+    refreshListenAgain: async () => {
+      const { versions } = ctxRef.current;
+      try {
+        const resp = await musicService.getListenAgain(versions);
+        setListenAgainAlbum(resp?.album ?? null);
+      } catch (e: any) {
+        console.warn('[useHomeFeed] listen_again error:', e?.message || e);
+        setListenAgainAlbum(null);
+      }
+    },
+
+    refreshReplay: async () => {
+      const { versions } = ctxRef.current;
+      try {
+        const resp = await musicService.getReplaySongs(versions);
+        setReplaySongs(resp || []);
+      } catch (e: any) {
+        console.warn('[useHomeFeed] replay error:', e?.message || e);
+        setReplaySongs([]);
+      } finally {
+        setReplayLoading(false);
+      }
+    },
+  });
 
   const recoBySeed = useMemo(() => {
     const map = new Map<string, any[]>();
     for (const a of recoArtists || []) {
-      const sid = a?.similar_to?.id || "__no_seed__";
+      const sid = a?.similar_to?.id || '__no_seed__';
       if (!map.has(sid)) map.set(sid, []);
       map.get(sid)!.push(a);
     }
     return Array.from(map.entries());
   }, [recoArtists]);
 
-  const ready = !!userId;
+  // Solo dispara cuando userId esta listo Y versions fueron cargadas
+  const ready = !!userId && Object.keys(versions).length > 0;
 
   useEffect(() => {
     if (!ready) return;
 
+    const fns = fetchFns.current;
     const timer = setTimeout(() => {
-      refreshNewReleases();
-      refreshTopAlbums();
-      refreshTopTracks();
-      refreshNewSingles();
-      refreshSeedTracks();
-      refreshRecommendations(); // TODO: fix ALBUM RECO CHECK: commit 66358fb9eb89faa94851153c7f6aba6d5449c5be in backend
-      refreshUpcomingReleases();
-      refreshListenAgain();
+      fns.refreshNewReleases();
+      fns.refreshTopAlbums();
+      fns.refreshTopTracks();
+      fns.refreshNewSingles();
+      fns.refreshSeedTracks();
+      fns.refreshRecommendations();
+      fns.refreshUpcomingReleases();
+      fns.refreshListenAgain();
+      fns.refreshReplay();
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [ready, refreshNewReleases, refreshTopAlbums, refreshTopTracks, refreshNewSingles, refreshSeedTracks, refreshRecommendations, refreshUpcomingReleases, refreshListenAgain]);
+  }, [ready]);
 
   return {
     newReleases,
@@ -169,6 +199,9 @@ export function useHomeFeed(userId: string) {
     recoAlbums,
     recoBySeed,
     upcomingReleases,
+    listenAgainAlbum,
+    replaySongs,
+    replayLoading,
     feedReady,
   };
 }

@@ -4,11 +4,10 @@ import ReleaseCard from "@/components/shared/ReleaseCard";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import TabBar, { Tab } from "@/components/shared/TabBar";
 import { useContentPadding } from "@/hooks/use-content-padding";
-import { useMounted } from "@/hooks/use-mounted";
 import { useMusicApi } from "@/hooks/use-music-api";
 import { upgradeThumbUrl } from "@/utils/image-helpers";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, StatusBar, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -17,76 +16,98 @@ export default function GenrePlaylistsScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { getGenrePlaylists, getGenreCategories } = useMusicApi();
   const insets = useSafeAreaInsets();
-  const isMounted = useMounted();
   const contentPadding = useContentPadding();
+
+  const getGenreCategoriesRef = useRef(getGenreCategories);
+  getGenreCategoriesRef.current = getGenreCategories;
+  const getGenrePlaylistsRef = useRef(getGenrePlaylists);
+  getGenrePlaylistsRef.current = getGenrePlaylists;
 
   const [genre, setGenre] = useState<any>(null);
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
+  // -- Effect 1: Cargar categorias (solo cuando cambia slug o retry) --
   useEffect(() => {
+    if (!slug) return;
+    let cancelled = false;
+
+    setCategoriesLoaded(false);
+
     (async () => {
-      if (!slug) return;
-
       try {
-        const result = await getGenreCategories(slug);
+        const result = await getGenreCategoriesRef.current(slug);
+        if (cancelled) return;
 
-        if (isMounted() && result?.ok) {
+        if (result?.ok) {
           const cats = result.categories || [];
           setCategories(cats);
-
           if (cats.length > 0) {
             setActiveCategory(cats[0]);
           }
+        } else {
+          setError("Error al cargar categorias");
+          setInitialLoading(false);
         }
       } catch (err) {
-        console.error("[genres] Error cargando categorías:", err);
-        if (isMounted()) {
-          setError("Error al cargar categorías");
+        console.error("[genres] Error cargando categorias:", err);
+        if (!cancelled) {
+          setError("Error al cargar categorias");
+          setInitialLoading(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setCategoriesLoaded(true);
         }
       }
     })();
-  }, [slug, getGenreCategories, isMounted]);
 
+    return () => { cancelled = true; };
+  }, [slug, retryCount]);
+
+  // -- Effect 2: Cargar playlists (cuando categorias terminaron de cargar o cambia tab) --
   useEffect(() => {
+    if (!slug || !categoriesLoaded) return;
+    let cancelled = false;
+
+    setError(null);
+    if (!genre) {
+      setInitialLoading(true);
+    }
+
     (async () => {
-      if (!slug) return;
-
-      if (playlists.length === 0) {
-        setInitialLoading(true);
-      }
-      setError(null);
-
       try {
-        const result = await getGenrePlaylists(
+        const result = await getGenrePlaylistsRef.current(
           slug,
           activeCategory || undefined
         );
+        if (cancelled) return;
 
-        if (isMounted()) {
-          if (result?.ok) {
-            setGenre(result.genre);
-            setPlaylists(result.playlists || []);
-          } else {
-            console.error("[genres] API retornó ok=false:", result);
-            setError(result?.error || "Error al cargar playlists");
-          }
+        if (result?.ok) {
+          setGenre(result.genre);
+          setPlaylists(result.playlists || []);
+        } else {
+          setError(result?.error || "Error al cargar playlists");
         }
       } catch (err) {
         console.error("[genres] Error cargando playlists:", err);
-        if (isMounted()) {
+        if (!cancelled) {
           setError("Error al cargar playlists");
         }
       } finally {
-        if (isMounted()) {
+        if (!cancelled) {
           setInitialLoading(false);
         }
       }
     })();
-  }, [slug, activeCategory, getGenrePlaylists, isMounted, playlists.length]);
+
+    return () => { cancelled = true; };
+  }, [slug, activeCategory, categoriesLoaded, retryCount]);
 
   const tabs = useMemo<Tab[]>(
     () => categories.map((cat) => ({ id: cat, label: cat })),
@@ -96,7 +117,12 @@ export default function GenrePlaylistsScreen() {
   const handleRetry = useCallback(() => {
     setError(null);
     setInitialLoading(true);
-    setActiveCategory((prev) => prev);
+    setPlaylists([]);
+    setCategories([]);
+    setActiveCategory(null);
+    setCategoriesLoaded(false);
+    setGenre(null);
+    setRetryCount((c) => c + 1);
   }, []);
 
   const renderCard = useCallback(
@@ -125,7 +151,7 @@ export default function GenrePlaylistsScreen() {
     []
   );
 
-  const headerTitle = genre?.name || (initialLoading ? "Cargando..." : "Género");
+  const headerTitle = genre?.name || (initialLoading ? "Cargando..." : "Genero");
 
   return (
     <>
@@ -156,8 +182,8 @@ export default function GenrePlaylistsScreen() {
             message="No hay playlists disponibles"
             submessage={
               activeCategory
-                ? `en la categoría "${activeCategory}"`
-                : "en este género"
+                ? `en la categoria "${activeCategory}"`
+                : "en este genero"
             }
           />
         ) : (

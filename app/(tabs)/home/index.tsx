@@ -13,8 +13,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useReplay } from "@/hooks/use-replay";
-
 import { cleanExpiredCache } from '@/utils/cache';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -51,11 +49,13 @@ export default function HomeScreen() {
     recoAlbums,
     recoBySeed,
     upcomingReleases,
+    listenAgainAlbum,
+    replaySongs,
+    replayLoading,
     feedReady,
   } = useHomeFeed(userId);
 
   const { t } = useTranslation("home");
-  const { loading: replayLoading } = useReplay();
 
   useEffect(() => {
     const task = InteractionManager.runAfterInteractions(async () => {
@@ -168,7 +168,11 @@ export default function HomeScreen() {
             blockSize={2}
             initialBlocks={6}
           >
-            <HomeFeatured />
+            <HomeFeatured
+              replaySongs={replaySongs}
+              replayLoading={replayLoading}
+              listenAgainAlbum={listenAgainAlbum}
+            />
 
             <RecentSection items={recentVisible} />
 

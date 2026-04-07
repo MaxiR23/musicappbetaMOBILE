@@ -168,7 +168,7 @@ export const musicService = {
     );
   },
 
-  getGenrePlaylists: async (slug: string, versions: CacheVersions, category?: string): Promise<{ ok: boolean; genre: any; playlists: any[] }> => {
+  getGenrePlaylists: async (slug: string, versions: CacheVersions, category?: string) => {
     const url = category
       ? `${API_URL}/genres/${encodeURIComponent(slug)}/playlists?category=${encodeURIComponent(category)}`
       : `${API_URL}/genres/${encodeURIComponent(slug)}/playlists`;
@@ -177,19 +177,19 @@ export const musicService = {
       `genre:${slug}:playlists${category ? `:${category}` : ''}`,
       async () => {
         const data = await authFetch(url);
-        if (!data?.playlists?.length) throw new Error("genre_playlists_incomplete");
+        if (!data?.ok) throw new Error("genre_playlists_failed");
         return data;
       },
       { version: versions['genre-playlists'] }
     );
   },
 
-  getGenreCategories: async (slug: string, versions: CacheVersions): Promise<{ ok: boolean; genre: any; categories: string[] }> => {
+  getGenreCategories: async (slug: string, versions: CacheVersions) => {
     return cacheWrap(
       `genre:${slug}:categories`,
       async () => {
         const data = await authFetch(`${API_URL}/genres/${encodeURIComponent(slug)}/categories`);
-        if (!data?.categories?.length) throw new Error("genre_categories_incomplete");
+        if (!data?.ok) throw new Error("genre_categories_failed");
         return data;
       },
       { version: versions['genre-playlists'] }

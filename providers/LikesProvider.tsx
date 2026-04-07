@@ -7,17 +7,19 @@ import { AppState, AppStateStatus } from "react-native";
 
 export function LikesProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
 
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [likedTracks, setLikedTracks] = useState<LikedTrackRow[]>([]);
   const [isReady, setIsReady] = useState(false);
 
   const syncingRef = useRef(false);
+  const likedIdsRef = useRef(likedIds);
+  likedIdsRef.current = likedIds;
 
-  // ── LOAD LOCAL (instantaneo, sin red) ─────────────────────────────────────
-
+  // -- LOAD LOCAL (instantaneo, sin red) --
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setLikedIds(new Set());
       setLikedTracks([]);
       setIsReady(false);
@@ -42,12 +44,11 @@ export function LikesProvider({ children }: { children: ReactNode }) {
 
     loadLocal();
     return () => { cancelled = true; };
-  }, [user]);
+  }, [userId]);
 
-  // ── BACKGROUND SYNC ──────────────────────────────────────────────────────
-
+  // -- BACKGROUND SYNC (estable, sin deps inestables) --
   const runSync = useCallback(async () => {
-    if (!user || syncingRef.current) return;
+    if (syncingRef.current) return;
     syncingRef.current = true;
 
     try {
@@ -61,17 +62,17 @@ export function LikesProvider({ children }: { children: ReactNode }) {
     } finally {
       syncingRef.current = false;
     }
-  }, [user]);
+  }, []);
 
   // Sync al montar (despues del load local)
   useEffect(() => {
-    if (!isReady || !user) return;
+    if (!isReady || !userId) return;
     runSync();
-  }, [isReady, user, runSync]);
+  }, [isReady, userId, runSync]);
 
   // Sync al volver de background
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     function handleAppState(nextState: AppStateStatus) {
       if (nextState === "active") {
@@ -81,14 +82,13 @@ export function LikesProvider({ children }: { children: ReactNode }) {
 
     const sub = AppState.addEventListener("change", handleAppState);
     return () => sub.remove();
-  }, [user, runSync]);
+  }, [userId, runSync]);
 
-  // ── TOGGLE LIKE ──────────────────────────────────────────────────────────
-
+  // -- TOGGLE LIKE (estable, lee likedIds desde ref) --
   const toggleLike = useCallback(
     async (track: LikeInput) => {
       const trackId = track.track_id;
-      const wasLiked = likedIds.has(trackId);
+      const wasLiked = likedIdsRef.current.has(trackId);
 
       // 1. Optimistic update (instantaneo)
       setLikedIds((prev) => {
@@ -127,17 +127,14 @@ export function LikesProvider({ children }: { children: ReactNode }) {
         });
       }
     },
-    [likedIds],
+    [],
   );
 
-  // ── IS LIKED ─────────────────────────────────────────────────────────────
-
+  // -- IS LIKED --
   const isLiked = useCallback(
     (trackId: string) => likedIds.has(trackId),
     [likedIds],
   );
-
-  // ── CONTEXT VALUE ────────────────────────────────────────────────────────
 
   const value = useMemo(
     () => ({
