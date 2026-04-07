@@ -51,7 +51,7 @@ function StatsCard() {
   useEffect(() => {
     getMonthlyStats({ include: "artists", limit: 3 })
       .then((data) => setArtists(data?.artists ?? []))
-      .catch(() => {});
+      .catch(() => { });
   }, [getMonthlyStats]);
 
   if (!artists.length) return null;
@@ -62,6 +62,12 @@ function StatsCard() {
     .join(", ");
 
   const thumb = (a: any) => a?.thumbnail_url ?? a?.thumbnail ?? null;
+
+  const circles = [
+    { size: styles.circleLg, position: { top: 6, left: 8 } },
+    { size: styles.circleMd, position: { top: 82, right: 16 } },
+    { size: styles.circleSm, position: { top: 130, left: 30 } },
+  ];
 
   return (
     <TouchableOpacity
@@ -75,21 +81,13 @@ function StatsCard() {
         end={{ x: 1, y: 1 }}
         style={styles.cardGradient}
       >
-        <View style={[styles.circle, styles.circleLarge, { top: 6, left: 8 }]}>
-          {thumb(artists[0]) && (
-            <Image source={thumb(artists[0])} style={styles.circleLargeImg} />
-          )}
-        </View>
-        <View style={[styles.circle, styles.circleMedium, { top: 84, right: 16 }]}>
-          {thumb(artists[1]) && (
-            <Image source={thumb(artists[1])} style={styles.circleMediumImg} />
-          )}
-        </View>
-        <View style={[styles.circle, styles.circleSmall, { top: 132, left: 40 }]}>
-          {thumb(artists[2]) && (
-            <Image source={thumb(artists[2])} style={styles.circleSmallImg} />
-          )}
-        </View>
+        {circles.map((c, i) => (
+          <View key={i} style={[styles.circle, c.size, c.position]}>
+            {thumb(artists[i]) && (
+              <Image source={thumb(artists[i])} style={c.size} />
+            )}
+          </View>
+        ))}
         <View style={styles.cardFooter}>
           <Text style={styles.cardSubtitle} numberOfLines={2}>{artistNames}</Text>
           <Text style={styles.cardTitle}>{t("sections.featured.statsTitle")}</Text>
@@ -230,8 +228,8 @@ export default function HomeFeatured({
   );
 }
 
-const CARD_WIDTH = 175;
-const CARD_HEIGHT = 280;
+const CARD_WIDTH = 195;
+const CARD_HEIGHT = 270;
 
 const styles = StyleSheet.create({
   container: { marginVertical: 12 },
@@ -253,12 +251,9 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.12)",
     backgroundColor: "#333",
   },
-  circleLarge: { width: 100, height: 100, borderRadius: 50 },
-  circleLargeImg: { width: 100, height: 100, borderRadius: 50 },
-  circleMedium: { width: 72, height: 72, borderRadius: 36 },
-  circleMediumImg: { width: 72, height: 72, borderRadius: 36 },
-  circleSmall: { width: 58, height: 58, borderRadius: 29 },
-  circleSmallImg: { width: 58, height: 58, borderRadius: 29 },
+  circleLg: { width: 100, height: 100, borderRadius: 50 },
+  circleMd: { width: 82, height: 82, borderRadius: 41 },
+  circleSm: { width: 64, height: 64, borderRadius: 32 },
   cardFooter: {
     position: "absolute",
     bottom: 14,
