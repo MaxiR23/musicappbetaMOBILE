@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Text, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInRight, LinearTransition } from 'react-native-reanimated';
 import HorizontalScrollSection from './../../shared/HorizontalScrollSection';
 
 type RecentItem = {
@@ -20,6 +21,17 @@ interface Props {
 export default function RecentSection({ items }: Props) {
   const { t } = useTranslation("home");
   const router = useRouter();
+
+  // Track previos items para animar solo los nuevos.
+  // SEE: https://docs.swmansion.com/react-native-reanimated/docs/layout-animations/list-layout-animations/
+  // SEE: https://github.com/software-mansion/react-native-reanimated/discussions/6748
+  const mountedRef = useRef(false);
+  const prevPlayedAtsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    mountedRef.current = true;
+    prevPlayedAtsRef.current = new Set(items.map((it) => it.played_at));
+  }, [items]);
 
   if (items.length === 0) return null;
 
@@ -39,8 +51,9 @@ export default function RecentSection({ items }: Props) {
         const SIZE = 120;
         const isArtist = it.type === "artist";
         const radius = isArtist ? SIZE / 2 : 16;
+        const isNew = mountedRef.current && !prevPlayedAtsRef.current.has(it.played_at);
 
-        return (
+        const content = (
           <TouchableOpacity
             style={{ width: SIZE }}
             onPress={() =>
@@ -79,6 +92,15 @@ export default function RecentSection({ items }: Props) {
               {isArtist ? t("sections.recents.artistLabel") : t("sections.recents.albumLabel")}
             </Text>
           </TouchableOpacity>
+        );
+
+        return (
+          <Animated.View
+            layout={LinearTransition.duration(400)}
+            entering={isNew ? FadeInRight.duration(500) : undefined}
+          >
+            {content}
+          </Animated.View>
         );
       }}
     />
