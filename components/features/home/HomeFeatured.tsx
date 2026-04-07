@@ -19,6 +19,31 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+// -- Replay weekly palettes --
+// Cada viernes rota a la siguiente. Todas testeadas con texto blanco.
+// base: gradiente inicial (visible durante el fade-in del overlay)
+// overlay: gradiente final (aparece con la animacion)
+const REPLAY_PALETTES = [
+  { base: ["#008c6a", "#009e8e", "#006b5b"], overlay: ["#00b894", "#00cec9", "#007a6e"] },   // esmeralda
+  { base: ["#6c3483", "#8e44ad", "#512e5f"], overlay: ["#a569bd", "#c39bd3", "#7d3c98"] },   // violeta
+  { base: ["#1a5276", "#2980b9", "#154360"], overlay: ["#3498db", "#5dade2", "#2471a3"] },   // oceano
+  { base: ["#b9770e", "#d4ac0d", "#7d6608"], overlay: ["#f1c40f", "#f4d03f", "#d4ac0d"] },   // ambar
+  { base: ["#8e3a5e", "#c2185b", "#6a1b4d"], overlay: ["#e91e63", "#f06292", "#ad1457"] },   // rosa
+  { base: ["#0e6655", "#148f77", "#0b5345"], overlay: ["#1abc9c", "#48c9b0", "#17a589"] },   // teal
+  { base: ["#b84e2a", "#d35400", "#a04000"], overlay: ["#e67e22", "#f0b27a", "#d35400"] },   // coral
+  { base: ["#283593", "#3949ab", "#1a237e"], overlay: ["#5c6bc0", "#7986cb", "#3f51b5"] },   // indigo
+] as const;
+
+function getWeeklyPalette() {
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return REPLAY_PALETTES[week % REPLAY_PALETTES.length];
+}
+
+// -- Cards --
 function StatsCard() {
   const { t } = useTranslation("home");
   const router = useRouter();
@@ -82,6 +107,7 @@ function ReplayCard() {
   const { songs, loading, hasEnoughData } = useReplay();
   const overlay = useSharedValue(0);
   const textOpacity = useSharedValue(0);
+  const palette = getWeeklyPalette();
 
   useEffect(() => {
     overlay.value = withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.ease) });
@@ -111,14 +137,14 @@ function ReplayCard() {
       style={styles.card}
     >
       <LinearGradient
-        colors={["#008c6a", "#009e8e", "#006b5b"]}
+        colors={[...palette.base]}
         start={{ x: 0, y: 1 }}
         end={{ x: 1, y: 0 }}
         style={StyleSheet.absoluteFill}
       />
       <Animated.View style={[StyleSheet.absoluteFill, overlayStyle]}>
         <LinearGradient
-          colors={["#00b894", "#00cec9", "#007a6e"]}
+          colors={[...palette.overlay]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
