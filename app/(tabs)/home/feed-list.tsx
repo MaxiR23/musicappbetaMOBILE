@@ -49,6 +49,7 @@ export default function FeedListScreen() {
             title: r.album,
             artist: r.artist,
             thumbnail_url: r.thumbnail,
+            _isUpcoming: true,
           }));
           setItems(mapped);
         } else {
@@ -90,12 +91,14 @@ export default function FeedListScreen() {
                 title={item.title || item.name}
                 subtitle={item.artist || item.artist_name || (isArtist ? "Artista" : "Álbum")}
                 circular={isArtist}
-                onPress={() =>
-                  router.push(
-                    isArtist
-                      ? `/(tabs)/home/artist/${item.id}`
-                      : `/(tabs)/home/album/${item.id}`
-                  )
+                onPress={
+                  item._isUpcoming
+                    ? () => { }
+                    : () => router.push(
+                      isArtist
+                        ? `/(tabs)/home/artist/${item.id}`
+                        : `/(tabs)/home/album/${item.id}`
+                    )
                 }
               />
             );

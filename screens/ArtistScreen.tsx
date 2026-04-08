@@ -2,7 +2,7 @@ import { ArtistSkeletonLayout } from "@/components/shared/skeletons/Skeleton";
 import { useDetailScreen } from "@/hooks/use-detail-screen";
 import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
-import { useLocalSearchParams, useRouter, useSegments } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import { StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -18,19 +18,19 @@ import { normalizeRelatedArtists } from "@/utils/data-helpers";
 import { getUpgradedThumb, upgradeThumbUrl } from "@/utils/image-helpers";
 import { formatReleaseSubtitle } from "@/utils/subtitle-helpers";
 import { useTranslation } from "react-i18next";
+interface ArtistScreenProps {
+  currentTab?: 'home' | 'search';
+}
 
-export default function ArtistScreen() {
+export default function ArtistScreen({ currentTab = 'home' }: ArtistScreenProps) {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { currentSong, playList } = useMusic();
   const { getArtist } = useMusicApi();
   const router = useRouter();
-  const segments = useSegments();
   const contentPadding = useContentPadding();
   const { t } = useTranslation("artist");
   const { t: tCommon } = useTranslation("common");
-
-  const currentTab = segments[1] as 'home' | 'search';
 
   const { data: artist, loading, error } = useDetailScreen({
     id,

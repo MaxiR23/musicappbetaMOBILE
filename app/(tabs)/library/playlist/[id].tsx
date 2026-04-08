@@ -1,1 +1,4 @@
-export { default } from '@/screens/PlaylistScreen';
+import PlaylistScreen from '@/screens/PlaylistScreen';
+export default function LibraryPlaylistRoute() {
+  return <PlaylistScreen />;
+}

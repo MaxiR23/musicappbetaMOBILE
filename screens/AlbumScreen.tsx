@@ -3,7 +3,7 @@ import TrackActionsSheet from "@/components/shared/TrackActionsSheet";
 import { useDetailScreen } from "@/hooks/use-detail-screen";
 import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
-import { useLocalSearchParams, useRouter, useSegments } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -21,19 +21,20 @@ import { getUpgradedThumb } from "@/utils/image-helpers";
 import { formatAlbumMeta, formatReleaseSubtitle } from "@/utils/subtitle-helpers";
 import { useTranslation } from "react-i18next";
 
+interface AlbumScreenProps {
+  currentTab?: 'home' | 'search';
+}
 
-export default function AlbumScreen() {
+export default function AlbumScreen({ currentTab = 'home' }: AlbumScreenProps) {
     const { id } = useLocalSearchParams<{ id: string }>();
 
     const { playList } = useMusic();
     const { getAlbum } = useMusicApi();
     const router = useRouter();
-    const segments = useSegments();
+    
     const contentPadding = useContentPadding();
     const { t } = useTranslation("album");
     const { t: tCommon } = useTranslation("common");
-
-    const currentTab = segments[1] as 'home' | 'search';
 
     const [actionsOpen, setActionsOpen] = useState(false);
     const [selectedTrack, setSelectedTrack] = useState<any | null>(null);

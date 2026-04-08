@@ -7,7 +7,7 @@ import { useMounted } from "@/hooks/use-mounted";
 import { useMusicApi } from "@/hooks/use-music-api";
 import { usePaginatedData } from "@/hooks/use-paginated-data";
 import { getUpgradedThumb } from "@/utils/image-helpers";
-import { useLocalSearchParams, useRouter, useSegments } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FlatList, StatusBar, StyleSheet, View } from "react-native";
@@ -16,8 +16,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 type TabKey = "albums" | "singles";
 
 const ITEMS_PER_PAGE = 20;
+interface ArtistReleasesScreenProps {
+  currentTab?: 'home' | 'search';
+}
 
-export default function ArtistReleasesScreen() {
+export default function ArtistReleasesScreen({ currentTab = 'home' }: ArtistReleasesScreenProps) {
   const router = useRouter();
   const { id, tab, name } = useLocalSearchParams<{
     id: string;
@@ -26,8 +29,6 @@ export default function ArtistReleasesScreen() {
   }>();
 
   const contentPadding = useContentPadding();
-  
-  const segments = useSegments();
 
   const initialTab: TabKey = tab === "singles" ? "singles" : "albums";
   const artist_id = String(id);
@@ -93,11 +94,11 @@ export default function ArtistReleasesScreen() {
           cover={cover}
           title={item.title}
           subtitle={subtitle}
-          onPress={() => router.push(`/(tabs)/${segments[1]}/album/${item.id}`)}
+          onPress={() => router.push(`/(tabs)/${currentTab}/album/${item.id}`)}
         />
       );
     },
-    [activeTab, router, t]
+    [activeTab, router, t, currentTab]
   );
 
   const keyExtractor = useCallback(

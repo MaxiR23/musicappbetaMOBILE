@@ -18,7 +18,7 @@ import { upgradeThumbUrl } from "@/utils/image-helpers";
 import { applyServerOrder } from "@/utils/reorder-logger";
 import { mapPlaylistSongs } from "@/utils/song-mapper";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter, useSegments } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -31,10 +31,13 @@ import {
   View
 } from "react-native";
 
-export default function PlaylistScreen() {
+interface PlaylistScreenProps {
+  isGenrePlaylist?: boolean;
+}
+
+export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScreenProps) {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const segments = useSegments() as string[];
   const contentPadding = useContentPadding();
 
   const {
@@ -50,7 +53,6 @@ export default function PlaylistScreen() {
   const { invalidatePlaylists } = useCacheInvalidation(userId);
   const { likedIds } = useLikes();
 
-  const isGenrePlaylist = segments.includes('genre-playlist');
   const isLikedPlaylist = id === "liked";
   const isReadOnly = isGenrePlaylist || isLikedPlaylist;
   const { t } = useTranslation("playlist");
