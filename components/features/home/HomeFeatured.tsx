@@ -6,12 +6,14 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  Dimensions, // SEE: https://reactnative.dev/docs/dimensions
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -41,7 +43,6 @@ function getWeeklyPalette() {
 }
 
 // -- Cards --
-
 function StatsCard() {
   const { t } = useTranslation("home");
   const router = useRouter();
@@ -65,7 +66,7 @@ function StatsCard() {
 
   const circles = [
     { size: styles.circleLg, position: { top: 6, left: 8 } },
-    { size: styles.circleMd, position: { top: 82, right: 16 } },
+    { size: styles.circleMd, position: { top: 80, right: 16 } },
     { size: styles.circleSm, position: { top: 130, left: 30 } },
   ];
 
@@ -228,8 +229,9 @@ export default function HomeFeatured({
   );
 }
 
-const CARD_WIDTH = 195;
-const CARD_HEIGHT = 270;
+const { width: SCREEN_W } = Dimensions.get("window");
+const CARD_WIDTH = SCREEN_W * 0.49;
+const CARD_HEIGHT = CARD_WIDTH * 1.46;
 
 const styles = StyleSheet.create({
   container: { marginVertical: 12 },
