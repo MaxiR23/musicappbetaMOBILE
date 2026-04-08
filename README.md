@@ -108,17 +108,17 @@ beatly/
 
 ## Autor
 
-**Tu Nombre**
+**Maxi Rebolo**
 - GitHub: [@MaxiR23](https://github.com/MaxiR23)
 - Email: maximilianorebolo@gmail.com
 
 ---
 
 ## Agradecimientos
-- Inspiración de diseño: Spotify, Apple Music
+- Inspiración de diseño: Spotify, Apple Music, YT Music
 - Comunidad de React Native y Expo
 ---
 
 <div align="center">
-  <strong>Hecho con ❤️ y mucha música 🎵</strong>
+  <strong> Hecho de ❤️ y mucha música 🎵</strong>
 </div>
