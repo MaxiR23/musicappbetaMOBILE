@@ -98,6 +98,50 @@ function StatsCard() {
   );
 }
 
+function FeaturedReleaseCard({ release }: { release: any }) {
+  const { t } = useTranslation("home");
+  const router = useRouter();
+
+  if (!release) return null;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={() =>
+        release.album_id
+          ? router.push(`/(tabs)/home/album/${encodeURIComponent(release.album_id)}`)
+          : router.push(`/(tabs)/home/artist/${encodeURIComponent(release.artist_id)}`)
+      }
+      style={styles.card}
+    >
+      <View style={StyleSheet.absoluteFill}>
+        {release.thumbnail_url ? (
+          <Image
+            source={release.thumbnail_url}
+            style={styles.listenAgainCover}
+            contentFit="cover"
+          />
+        ) : (
+          <View style={[styles.listenAgainCover, { backgroundColor: "#2a2a2a" }]} />
+        )}
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.85)"]}
+          style={styles.listenAgainGradient}
+        />
+      </View>
+      <View style={styles.cardFooter}>
+        <Text style={styles.listenAgainLabel}>{t("sections.featured.newReleaseLabel")}</Text>
+        <Text style={styles.listenAgainTitle} numberOfLines={2}>
+          {release.album_name}
+        </Text>
+        <Text style={styles.cardSubtitle} numberOfLines={1}>
+          {release.artist_name}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 function ReplayCard({ songs }: { songs: MappedSong[] }) {
   const { t } = useTranslation("home");
   const router = useRouter();
@@ -208,12 +252,14 @@ type HomeFeaturedProps = {
   replaySongs: MappedSong[];
   replayLoading: boolean;
   listenAgainAlbum: any;
+  featuredRelease: any;
 };
 
 export default function HomeFeatured({
   replaySongs,
   replayLoading,
   listenAgainAlbum,
+  featuredRelease,
 }: HomeFeaturedProps) {
   return (
     <ScrollView
@@ -223,6 +269,7 @@ export default function HomeFeatured({
       style={styles.container}
     >
       <StatsCard />
+      <FeaturedReleaseCard release={featuredRelease} />
       {!replayLoading && <ReplayCard songs={replaySongs} />}
       <ListenAgainCard album={listenAgainAlbum} />
     </ScrollView>
@@ -296,7 +343,7 @@ const styles = StyleSheet.create({
   },
   listenAgainCover: {
     width: "100%",
-    height: "100%",
+    aspectRatio: 1,
   },
   listenAgainGradient: {
     position: "absolute",

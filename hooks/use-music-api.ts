@@ -189,6 +189,11 @@ export function useMusicApi() {
     [versions]
   );
 
+  const getFeaturedRelease = useCallback(
+    () => musicService.getFeaturedRelease(versions),
+    [versions]
+  );
+
   const moveTrackInPlaylist = useCallback(
     (playlistId: string, oldPosition: number, newPosition: number) =>
       musicService.moveTrackInPlaylist(playlistId, oldPosition, newPosition),
@@ -242,6 +247,7 @@ export function useMusicApi() {
     getRecentPlays,
     getReplaySongs,
     getListenAgain,
+    getFeaturedRelease,
     moveTrackInPlaylist,
     getTrackLyrics,
     getTrackUpNext,

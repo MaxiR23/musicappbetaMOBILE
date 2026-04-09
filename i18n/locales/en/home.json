@@ -3,7 +3,8 @@
     "featured": {
       "statsTitle": "Your month\nin music",
       "replaySubtitle": "Your most repeated songs",
-      "listenAgainLabel": "Listen again"
+      "listenAgainLabel": "Listen again",
+      "newReleaseLabel": "New Release"
     },
     "recents": {
       "title": "Recently played",

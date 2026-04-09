@@ -79,6 +79,17 @@ export type ListenAgainAlbum = {
   last_played_at: string;
 };
 
+export type FeaturedRelease = {
+  album_id: string | null;
+  album_name: string;
+  artist_id: string | null;
+  artist_name: string;
+  release_date: string | null;
+  thumbnail_url: string | null;
+  track_count: number | null;
+  play_count: number;
+};
+
 type CacheVersions = Record<string, string>;
 
 export const musicService = {
@@ -461,6 +472,20 @@ export const musicService = {
         return data;
       },
       { version: versions["listen-again"] }
+    );
+  },
+
+  getFeaturedRelease: async (
+    versions: CacheVersions
+  ): Promise<{ ok: boolean; featured: FeaturedRelease | null }> => {
+    return cacheWrap(
+      "feed:featured-new-release",
+      async () => {
+        const data = await authFetch(`${API_URL}/feed/featured`);
+        if (!data?.ok) throw new Error("featured_release_failed");
+        return data;
+      },
+      { version: versions["featured-new-release"] }
     );
   },
 

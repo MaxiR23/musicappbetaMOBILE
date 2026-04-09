@@ -53,6 +53,7 @@ export default function HomeScreen() {
     replaySongs,
     replayLoading,
     feedReady,
+    featuredRelease
   } = useHomeFeed(userId);
 
   const { t } = useTranslation("home");
@@ -172,6 +173,7 @@ export default function HomeScreen() {
               replaySongs={replaySongs}
               replayLoading={replayLoading}
               listenAgainAlbum={listenAgainAlbum}
+              featuredRelease={featuredRelease}
             />
 
             <RecentSection items={recentVisible} />

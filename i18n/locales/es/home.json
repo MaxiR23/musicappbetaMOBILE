@@ -3,7 +3,8 @@
     "featured": {
       "statsTitle": "Tu mes\nen música",
       "replaySubtitle": "Tus canciones más repetidas",
-      "listenAgainLabel": "Volvé a escuchar"
+      "listenAgainLabel": "Volvé a escuchar",
+      "newReleaseLabel": "Nuevo Lanzamiento"
     },
     "recents": {
       "title": "Escuchados recientemente",

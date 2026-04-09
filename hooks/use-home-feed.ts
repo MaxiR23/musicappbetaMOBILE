@@ -18,6 +18,7 @@ export function useHomeFeed(userId: string) {
   const [recoAlbums, setRecoAlbums] = useState<any[]>([]);
   const [upcomingReleases, setUpcomingReleases] = useState<any[]>([]);
   const [listenAgainAlbum, setListenAgainAlbum] = useState<any>(null);
+  const [featuredRelease, setFeaturedRelease] = useState<any>(null);
   const [replaySongs, setReplaySongs] = useState<MappedSong[]>([]);
   const [replayLoading, setReplayLoading] = useState(true);
   const [feedReady, setFeedReady] = useState(false);
@@ -140,6 +141,17 @@ export function useHomeFeed(userId: string) {
       }
     },
 
+    refreshFeaturedRelease: async () => {
+      const { versions } = ctxRef.current;
+      try {
+        const resp = await musicService.getFeaturedRelease(versions);
+        setFeaturedRelease(resp?.featured ?? null);
+      } catch (e: any) {
+        console.warn('[useHomeFeed] featured_release error:', e?.message || e);
+        setFeaturedRelease(null);
+      }
+    },
+
     refreshReplay: async () => {
       const { versions } = ctxRef.current;
       try {
@@ -180,6 +192,7 @@ export function useHomeFeed(userId: string) {
       fns.refreshRecommendations();
       fns.refreshUpcomingReleases();
       fns.refreshListenAgain();
+      fns.refreshFeaturedRelease();
       fns.refreshReplay();
     }, 100);
 
@@ -197,6 +210,7 @@ export function useHomeFeed(userId: string) {
     recoBySeed,
     upcomingReleases,
     listenAgainAlbum,
+    featuredRelease,
     replaySongs,
     replayLoading,
     feedReady,
