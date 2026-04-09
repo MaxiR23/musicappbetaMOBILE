@@ -33,6 +33,11 @@ export function useMusicApi() {
     [versions]
   );
 
+  const getNewReleases = useCallback(
+    () => musicService.getNewReleases(versions),
+    [versions]
+  );
+
   const getArtist = useCallback(
     (id: string): Promise<Artist> => musicService.getArtist(id, versions),
     [versions]
@@ -211,6 +216,7 @@ export function useMusicApi() {
     prefetchSongs,
     getReleases,
     getUpcomingReleases,
+    getNewReleases,
     getArtist,
     getAlbum,
     getArtistAlbums,

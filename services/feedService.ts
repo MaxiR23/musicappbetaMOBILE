@@ -3,13 +3,13 @@ import { supabase } from "@/lib/supabase";
 
 export async function fetchFeed({ kind = "most_played", type = "album", store = "AR", limit = 25 } = {}) {
   const url =
-    kind === "new_releases"
-      ? `${API_URL}/feed/db/new-releases?limit=${encodeURIComponent(limit)}`
-      : kind === "new_singles"
-        ? `${API_URL}/feed/db/new-singles?limit=${encodeURIComponent(limit)}`
-        : kind === "seed_tracks"
-          ? `${API_URL}/feed/db/seed-tracks?limit=${encodeURIComponent(limit)}`
-          : `${API_URL}/feed/most-played?limit=${encodeURIComponent(limit)}`;
+    /* kind === "new_singles"
+      ? `${API_URL}/feed/db/new-singles?limit=${encodeURIComponent(limit)}`
+      : */ // temporalmente deshabilitado.
+
+    kind === "seed_tracks"
+      ? `${API_URL}/feed/db/seed-tracks?limit=${encodeURIComponent(limit)}`
+      : `${API_URL}/feed/most-played?limit=${encodeURIComponent(limit)}`;
   console.log("[feed] GET", url);
 
   // auth como en authFetch
@@ -76,12 +76,7 @@ export async function fetchFeed({ kind = "most_played", type = "album", store = 
     release_date: t.release_date || null,
   });
 
-  if (kind === "new_releases") {
-    const albums = Array.isArray(json.new_releases) ? json.new_releases : [];
-    return albums.map(toAlbum).slice(0, limit);
-  } else {
-    const albums = Array.isArray(json.albums) ? json.albums.map(toAlbum) : [];
-    const tracks = Array.isArray(json.tracks) ? json.tracks.map(toTrack) : [];
-    return (type === "track" ? tracks : albums).slice(0, limit);
-  }
+  const albums = Array.isArray(json.albums) ? json.albums.map(toAlbum) : [];
+  const tracks = Array.isArray(json.tracks) ? json.tracks.map(toTrack) : [];
+  return (type === "track" ? tracks : albums).slice(0, limit);
 }

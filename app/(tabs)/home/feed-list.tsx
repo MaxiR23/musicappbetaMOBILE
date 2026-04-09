@@ -15,7 +15,7 @@ const FEED_CONFIG: Record<string, { kind: string; type: "album" | "track" }> = {
   "new-releases": { kind: "new_releases", type: "album" },
   "top-albums": { kind: "most_played", type: "album" },
   "top-tracks": { kind: "most_played", type: "track" },
-  "new-singles": { kind: "new_singles", type: "track" },
+  // "new-singles": { kind: "new_singles", type: "track" }, temporalmente deshabilitado
   "seed-tracks": { kind: "seed_tracks", type: "track" },
 };
 
@@ -23,7 +23,7 @@ export default function FeedListScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const contentPadding = useContentPadding();
-  const { getRecentPlays, getUpcomingReleases } = useMusicApi();
+  const { getRecentPlays, getUpcomingReleases, getNewReleases } = useMusicApi();
 
   const { key, title } = useLocalSearchParams<{ key: string; title: string }>();
 
@@ -39,9 +39,11 @@ export default function FeedListScreen() {
         if (key === "recents") {
           const resp = await getRecentPlays(30);
           setItems(resp?.items ?? []);
+        
         } else if (key === "reco-albums") {
           const resp = await fetchRecommendations();
           setItems(resp?.albums ?? []);
+        
         } else if (key === "upcoming-releases") {
           const resp = await getUpcomingReleases();
           const mapped = (resp?.releases ?? []).map((r) => ({
@@ -52,6 +54,17 @@ export default function FeedListScreen() {
             _isUpcoming: true,
           }));
           setItems(mapped);
+
+        } else if (key === "new-releases") {
+          const resp = await getNewReleases();
+          const mapped = (resp?.releases ?? []).map((r) => ({
+            id: r.album_id,
+            title: r.album,
+            artist: r.artist,
+            thumbnail_url: r.thumbnail,
+          }));
+          setItems(mapped);
+
         } else {
           const config = FEED_CONFIG[key];
           if (config) {

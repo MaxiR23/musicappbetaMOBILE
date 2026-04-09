@@ -44,7 +44,7 @@ export default function HomeScreen() {
     newReleases,
     topAlbums,
     topTracks,
-    newSingles,
+    //newSingles,
     seedTracks,
     recoAlbums,
     recoBySeed,
@@ -98,7 +98,7 @@ export default function HomeScreen() {
   }, []);
 
   const mappedTopTracks = useMemo(() => mapTracksForPlayer(topTracks), [topTracks, mapTracksForPlayer]);
-  const mappedNewSingles = useMemo(() => mapTracksForPlayer(newSingles), [newSingles, mapTracksForPlayer]);
+  // const mappedNewSingles = useMemo(() => mapTracksForPlayer(newSingles), [newSingles, mapTracksForPlayer]);
   const mappedSeedTracks = useMemo(() => mapTracksForPlayer(seedTracks), [seedTracks, mapTracksForPlayer]);
 
   const items1 = useMemo(() => (recoBySeed[0]?.[1] || []), [recoBySeed]);
@@ -178,7 +178,14 @@ export default function HomeScreen() {
 
             <FeedSection
               title={t("sections.newReleases.title")}
-              items={newReleases}
+              items={newReleases.map((r) => ({
+                id: r.album_id,
+                title: r.album,
+                artist: r.artist,
+                thumbnail: r.thumbnail,
+                artist_id: r.artist_id,
+                release_date: r.release_date,
+              }))}
               type="album"
               feedKey="new-releases"
             />
@@ -247,7 +254,7 @@ export default function HomeScreen() {
               </>
             )}
 
-            <FeedSection
+            {/* <FeedSection
               title={t("sections.newSingles.title")}
               items={newSingles}
               type="track"
@@ -256,7 +263,7 @@ export default function HomeScreen() {
               onTrackPress={(index, queueName) => {
                 playList(mappedNewSingles, index, { type: "queue", name: queueName });
               }}
-            />
+            /> */}
 
             <FeedSection
               title={t("sections.fromSeed.title")}

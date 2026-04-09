@@ -12,7 +12,7 @@ export function useHomeFeed(userId: string) {
   const [newReleases, setNewReleases] = useState<any[]>([]);
   const [topAlbums, setTopAlbums] = useState<any[]>([]);
   const [topTracks, setTopTracks] = useState<any[]>([]);
-  const [newSingles, setNewSingles] = useState<any[]>([]);
+  // const [newSingles, setNewSingles] = useState<any[]>([]); // temporalmente deshabilitado
   const [seedTracks, setSeedTracks] = useState<any[]>([]);
   const [recoArtists, setRecoArtists] = useState<any[]>([]);
   const [recoAlbums, setRecoAlbums] = useState<any[]>([]);
@@ -28,14 +28,10 @@ export function useHomeFeed(userId: string) {
 
   const fetchFns = useRef({
     refreshNewReleases: async () => {
-      const { userId, versions } = ctxRef.current;
+      const { versions } = ctxRef.current;
       try {
-        const albums = await cacheWrap(
-          'home:feed:new_releases:AR:albums:20:v1',
-          () => fetchFeed({ kind: 'new_releases', type: 'album', store: 'AR', limit: 20 }),
-          { userId, ttl: DAY_MS, version: versions['new-releases'] }
-        );
-        setNewReleases(albums);
+        const resp = await musicService.getNewReleases(versions);
+        setNewReleases(resp?.releases ?? []);
         setFeedReady(true);
       } catch (e: any) {
         console.warn('[useHomeFeed] new_releases error:', e?.message || e);
@@ -74,20 +70,21 @@ export function useHomeFeed(userId: string) {
       }
     },
 
-    refreshNewSingles: async () => {
-      const { userId, versions } = ctxRef.current;
-      try {
-        const tracks = await cacheWrap(
-          'home:feed:new_singles:tracks:20:v1',
-          () => fetchFeed({ kind: 'new_singles', type: 'track', limit: 20 }),
-          { userId, ttl: DAY_MS, version: versions['new-singles'] }
-        );
-        setNewSingles(tracks);
-      } catch (e: any) {
-        console.warn('[useHomeFeed] new_singles error:', e?.message || e);
-        setNewSingles([]);
-      }
-    },
+    // --- refreshNewSingles (temporalmente deshabilitado) ---
+    // refreshNewSingles: async () => {
+    //   const { userId, versions } = ctxRef.current;
+    //   try {
+    //     const tracks = await cacheWrap(
+    //       'home:feed:new_singles:tracks:20:v1',
+    //       () => fetchFeed({ kind: 'new_singles', type: 'track', limit: 20 }),
+    //       { userId, ttl: DAY_MS, version: versions['new-singles'] }
+    //     );
+    //     setNewSingles(tracks);
+    //   } catch (e: any) {
+    //     console.warn('[useHomeFeed] new_singles error:', e?.message || e);
+    //     setNewSingles([]);
+    //   }
+    // },
 
     refreshSeedTracks: async () => {
       const { userId, versions } = ctxRef.current;
@@ -178,7 +175,7 @@ export function useHomeFeed(userId: string) {
       fns.refreshNewReleases();
       fns.refreshTopAlbums();
       fns.refreshTopTracks();
-      fns.refreshNewSingles();
+      // fns.refreshNewSingles(); // temporalmente deshabilitado
       fns.refreshSeedTracks();
       fns.refreshRecommendations();
       fns.refreshUpcomingReleases();
@@ -193,7 +190,7 @@ export function useHomeFeed(userId: string) {
     newReleases,
     topAlbums,
     topTracks,
-    newSingles,
+    // newSingles, // temporalmente deshabilitado
     seedTracks,
     recoArtists,
     recoAlbums,

@@ -60,6 +60,15 @@ export type UpcomingRelease = {
   artist_id: string | null;
 };
 
+export type NewRelease = {
+  album_id: string | null;
+  release_date: string | null;
+  artist: string | null;
+  album: string | null;
+  thumbnail: string | null;
+  artist_id: string | null;
+};
+
 export type ListenAgainAlbum = {
   album_id: string;
   album_name: string;
@@ -104,6 +113,20 @@ export const musicService = {
         return data;
       },
       { version: versions["upcoming-releases"] }
+    );
+  },
+
+  getNewReleases: async (
+    versions: CacheVersions
+  ): Promise<{ ok: boolean; count: number; releases: NewRelease[] }> => {
+    return cacheWrap(
+      "feed:new-releases",
+      async () => {
+        const data = await authFetch(`${API_URL}/feed/new-releases`);
+        if (!data?.ok) throw new Error("new_releases_failed");
+        return data;
+      },
+      { version: versions["new-releases"] }
     );
   },
 
