@@ -14,6 +14,7 @@ import EventsList from "@/components/shared/EventList";
 import HorizontalScrollSection from "@/components/shared/HorizontalScrollSection";
 import TrackRow from "@/components/shared/TrackRow";
 import { useContentPadding } from "@/hooks/use-content-padding";
+import { useImageDominantColor } from "@/hooks/use-image-dominant-color";
 import { normalizeRelatedArtists } from "@/utils/data-helpers";
 import { getUpgradedThumb, upgradeThumbUrl } from "@/utils/image-helpers";
 import { formatReleaseSubtitle } from "@/utils/subtitle-helpers";
@@ -38,7 +39,10 @@ export default function ArtistScreen({ currentTab = 'home' }: ArtistScreenProps)
   });
 
   const newRelease = artist?.new_releases?.[0];
-  const upcomingReleases = artist?.upcoming_album ? [artist.upcoming_album] : [];
+  const upcomingReleases = useMemo(
+    () => artist?.upcoming_album ? [artist.upcoming_album] : [],
+    [artist?.upcoming_album]
+  );
 
   const mappedTop = useMemo(() => {
     if (!artist?.top_songs) return [];
@@ -86,6 +90,9 @@ export default function ArtistScreen({ currentTab = 'home' }: ArtistScreenProps)
     ].filter(Boolean);
   }, [artist, upcomingReleases, newRelease, related]);
 
+  const heroUrl = getUpgradedThumb(artist?.header, 1200) || "";
+  const { color: dominantColor } = useImageDominantColor(heroUrl);
+
   if (loading) {
     return (
       <>
@@ -113,8 +120,6 @@ export default function ArtistScreen({ currentTab = 'home' }: ArtistScreenProps)
       </>
     );
   }
-
-  const heroUrl = getUpgradedThumb(artist?.header, 1200);
 
   const renderSection = (section: any) => {
     switch (section.type) {
@@ -270,6 +275,7 @@ export default function ArtistScreen({ currentTab = 'home' }: ArtistScreenProps)
 
       <AnimatedHeader
         backgroundImage={heroUrl}
+        dominantColor={dominantColor}
         title={artist?.header?.name || ""}
         sections={sections}
         renderSection={renderSection}

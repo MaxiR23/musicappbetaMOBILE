@@ -29,6 +29,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
  */
 interface AnimatedHeaderProps {
     backgroundImage: string;
+    dominantColor?: string;
     title: string;
     sections: any[];
     renderSection: (section: any, index: number) => React.ReactElement | null;
@@ -41,6 +42,7 @@ interface AnimatedHeaderProps {
 
 export default function AnimatedHeader({
     backgroundImage,
+    dominantColor,
     title,
     sections,
     renderSection,
@@ -159,8 +161,8 @@ export default function AnimatedHeader({
     return (
         <View style={styles.container}>
             {/* Header colapsado (sticky) */}
-            <Animated.View style={[styles.collapsedHeader, collapsedHeaderStyle]}>
-                <BlurView intensity={80} style={StyleSheet.absoluteFillObject} tint="dark" />
+            <Animated.View style={[styles.collapsedHeader, collapsedHeaderStyle, dominantColor ? { backgroundColor: dominantColor } : undefined]}>
+                {!dominantColor && <BlurView intensity={80} style={StyleSheet.absoluteFillObject} tint="dark" />}
                 <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
                     <View style={styles.collapsedContent}>
                         <Pressable onPress={onBackPress} style={styles.backButton}>

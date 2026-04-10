@@ -3,6 +3,7 @@ import AnimatedDetailHeader from "@/components/shared/AnimatedDetailHeader";
 import TrackRow from "@/components/shared/TrackRow";
 import { PlaylistSkeletonLayout } from "@/components/shared/skeletons/Skeleton";
 import { useContentPadding } from "@/hooks/use-content-padding";
+import { useImageDominantColor } from "@/hooks/use-image-dominant-color";
 import { useMusic } from "@/hooks/use-music";
 import { useReplay } from "@/hooks/use-replay";
 import { formatDurationCustom } from "@/utils/durations";
@@ -23,6 +24,8 @@ export default function ReplayScreen() {
     () => songs.map((s) => s.thumbnail).filter(Boolean) as string[],
     [songs]
   );
+
+  const { color: dominantColor } = useImageDominantColor(mosaicImages[0] ?? null);
 
   const totalDuration = useMemo(() => {
     const totalMs = songs.reduce(
@@ -108,6 +111,7 @@ export default function ReplayScreen() {
       <AnimatedDetailHeader
         mosaicImages={mosaicImages}
         title="Replay"
+        dominantColor={dominantColor}
         sections={sections}
         renderSection={renderSection}
         onBackPress={() => router.back()}

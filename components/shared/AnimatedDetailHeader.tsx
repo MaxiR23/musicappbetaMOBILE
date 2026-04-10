@@ -56,6 +56,7 @@ function MosaicCover({ images }: { images: string[] }) {
 
 interface AnimatedDetailHeaderProps {
   coverImage?: string | number;
+  dominantColor?: string;
   mosaicImages?: string[];
   title: string;
   sections: any[];
@@ -69,6 +70,7 @@ interface AnimatedDetailHeaderProps {
 
 export default function AnimatedDetailHeader({
   coverImage,
+  dominantColor,
   mosaicImages,
   title,
   sections,
@@ -128,8 +130,8 @@ export default function AnimatedDetailHeader({
 
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.collapsedHeader, collapsedHeaderStyle]}>
-        <BlurView intensity={80} style={StyleSheet.absoluteFillObject} tint="dark" />
+      <Animated.View style={[styles.collapsedHeader, collapsedHeaderStyle, dominantColor ? { backgroundColor: dominantColor } : undefined]}>
+        {!dominantColor && <BlurView intensity={80} style={StyleSheet.absoluteFillObject} tint="dark" />}
         <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
           <View style={styles.collapsedContent}>
             <Pressable onPress={onBackPress} style={styles.backButton}>

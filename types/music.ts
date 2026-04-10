@@ -9,10 +9,16 @@ export interface Artist {
   singles_eps?: Single[];
   related: RelatedArtist[];
   new_releases?: NewRelease[];
+  upcoming_album?: any;
+  upcoming_events?: any[];
+  has_more?: {
+    albums?: boolean;
+    singles?: boolean;
+  };
 }
 
 export interface TopSong {
-  id: string;  
+  id: string;
   title: string;
   artist_name?: string | null;
   artist_id?: string | null;
@@ -53,7 +59,7 @@ export interface Song {
   album_name?: string;
   duration?: string;
   duration_seconds?: number;
-  thumbnail: string; 
+  thumbnail: string;
   url: string;
 }
 export interface AlbumDetails {
@@ -77,7 +83,7 @@ export interface AlbumDetails {
 }
 
 export interface NewRelease {
-  id: string; 
+  id: string;
   title: string;
   artist: string;
   artist_id?: string;
