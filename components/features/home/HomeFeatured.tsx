@@ -6,7 +6,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Dimensions, // SEE: https://reactnative.dev/docs/dimensions
+  Dimensions,
   ScrollView,
   StyleSheet,
   Text,
@@ -45,6 +45,15 @@ function getWeeklyPalette() {
   return REPLAY_PALETTES[week % REPLAY_PALETTES.length];
 }
 
+// -- Layout constants --
+const { width: SCREEN_W } = Dimensions.get("window");
+const CARD_WIDTH = SCREEN_W * 0.49;
+const CARD_HEIGHT = CARD_WIDTH * 1.46;
+
+const CIRCLE_LG = CARD_WIDTH * 0.52;
+const CIRCLE_MD = CARD_WIDTH * 0.42;
+const CIRCLE_SM = CARD_WIDTH * 0.33;
+
 // -- Cards --
 function StatsCard() {
   const { t } = useTranslation("home");
@@ -57,7 +66,7 @@ function StatsCard() {
   useEffect(() => {
     getMonthlyStats({ include: "artists", limit: 3 })
       .then((data) => setArtists(data?.artists ?? []))
-      .catch(() => { });
+      .catch(() => {});
   }, [getMonthlyStats]);
 
   if (!artists.length) return null;
@@ -70,9 +79,9 @@ function StatsCard() {
   const thumb = (a: any) => a?.thumbnail_url ?? a?.thumbnail ?? null;
 
   const circles = [
-    { size: styles.circleLg, position: { top: 6, left: 8 } },
-    { size: styles.circleMd, position: { top: 80, right: 16 } },
-    { size: styles.circleSm, position: { top: 130, left: 30 } },
+    { size: CIRCLE_LG, top: CARD_HEIGHT * 0.03, left: CARD_WIDTH * 0.04 },
+    { size: CIRCLE_MD, top: CARD_HEIGHT * 0.33, right: CARD_WIDTH * 0.08 },
+    { size: CIRCLE_SM, top: CARD_HEIGHT * 0.55, left: CARD_WIDTH * 0.15 },
   ];
 
   return (
@@ -87,13 +96,32 @@ function StatsCard() {
         end={{ x: 1, y: 1 }}
         style={styles.cardGradient}
       >
-        {circles.map((c, i) => (
-          <View key={i} style={[styles.circle, c.size, c.position]}>
-            {thumb(artists[i]) && (
-              <Image source={thumb(artists[i])} style={c.size} />
-            )}
-          </View>
-        ))}
+        {circles.map((c, i) => {
+          const radius = c.size / 2;
+          return (
+            <View
+              key={i}
+              style={[
+                styles.circle,
+                {
+                  width: c.size,
+                  height: c.size,
+                  borderRadius: radius,
+                  top: c.top,
+                  ...(c.left != null ? { left: c.left } : {}),
+                  ...(c.right != null ? { right: c.right } : {}),
+                },
+              ]}
+            >
+              {thumb(artists[i]) && (
+                <Image
+                  source={thumb(artists[i])}
+                  style={{ width: "100%", height: "100%", borderRadius: radius }}
+                />
+              )}
+            </View>
+          );
+        })}
         <View style={styles.cardFooter}>
           <Text style={styles.cardSubtitle} numberOfLines={2}>{artistNames}</Text>
           <Text style={styles.cardTitle}>{t("sections.featured.statsTitle")}</Text>
@@ -224,10 +252,6 @@ export default function HomeFeatured({
   );
 }
 
-const { width: SCREEN_W } = Dimensions.get("window");
-const CARD_WIDTH = SCREEN_W * 0.49;
-const CARD_HEIGHT = CARD_WIDTH * 1.46;
-
 const styles = StyleSheet.create({
   container: { marginVertical: 12 },
   scroll: { paddingHorizontal: 10, gap: 12 },
@@ -248,9 +272,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.12)",
     backgroundColor: "#333",
   },
-  circleLg: { width: 100, height: 100, borderRadius: 50 },
-  circleMd: { width: 82, height: 82, borderRadius: 41 },
-  circleSm: { width: 64, height: 64, borderRadius: 32 },
   cardFooter: {
     position: "absolute",
     bottom: 14,
