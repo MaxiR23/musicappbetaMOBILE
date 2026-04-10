@@ -80,8 +80,8 @@ function StatsCard() {
 
   const circles = [
     { size: CIRCLE_LG, top: CARD_HEIGHT * 0.03, left: CARD_WIDTH * 0.04 },
-    { size: CIRCLE_MD, top: CARD_HEIGHT * 0.33, right: CARD_WIDTH * 0.08 },
-    { size: CIRCLE_SM, top: CARD_HEIGHT * 0.55, left: CARD_WIDTH * 0.15 },
+    { size: CIRCLE_MD, top: CARD_HEIGHT * 0.30, right: CARD_WIDTH * 0.08 },
+    { size: CIRCLE_SM, top: CARD_HEIGHT * 0.50, left: CARD_WIDTH * 0.15 },
   ];
 
   return (
