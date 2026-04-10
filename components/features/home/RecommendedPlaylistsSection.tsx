@@ -10,7 +10,6 @@ import { Text, TouchableOpacity } from "react-native";
 // {p.total_tracks} {t("sections.recommendedPlaylists.tracks")} -> "72 tracks"
 //   + agregar key "tracks" en i18n: en/home.json y es/home.json
 // {'Beatly Music'} -> branding fijo, no necesita i18n
-
 export default function RecommendedPlaylistsSection({ playlists }: { playlists: any[] }) {
   const { t } = useTranslation("home");
   const router = useRouter();
@@ -23,7 +22,7 @@ export default function RecommendedPlaylistsSection({ playlists }: { playlists: 
       items={playlists}
       keyExtractor={(p, idx) => `${p.playlist_id}-${idx}`}
       cardWidth={120}
-      renderItem={(p) => (
+      renderItem={(p: any) => (
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => router.push(`/(tabs)/home/genre-playlist/${encodeURIComponent(p.playlist_id)}`)}
