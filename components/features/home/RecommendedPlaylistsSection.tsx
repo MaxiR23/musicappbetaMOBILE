@@ -20,7 +20,7 @@ export default function RecommendedPlaylistsSection({ playlists }: { playlists: 
     <HorizontalScrollSection
       title={t("sections.recommendedPlaylists.title")}
       items={playlists}
-      keyExtractor={(p, idx) => `${p.playlist_id}-${idx}`}
+      keyExtractor={(p: any, idx) => `${p.playlist_id}-${idx}`}
       cardWidth={120}
       renderItem={(p: any) => (
         <TouchableOpacity
