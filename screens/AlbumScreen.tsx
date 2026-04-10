@@ -16,6 +16,7 @@ import EventCard from "@/components/shared/EventCard";
 import HorizontalScrollSection from "@/components/shared/HorizontalScrollSection";
 import TrackRow from "@/components/shared/TrackRow";
 import { useContentPadding } from "@/hooks/use-content-padding";
+import { useImageDominantColor } from "@/hooks/use-image-dominant-color";
 import { extractIncludedArtists } from "@/utils/data-helpers";
 import { getUpgradedThumb } from "@/utils/image-helpers";
 import { formatAlbumMeta, formatReleaseSubtitle } from "@/utils/subtitle-helpers";
@@ -45,6 +46,7 @@ export default function AlbumScreen({ currentTab = 'home' }: AlbumScreenProps) {
     });
 
     const coverUrl = getUpgradedThumb(album?.info, 512) || "";
+    const { color: dominantColor } = useImageDominantColor(coverUrl);
 
     const mappedSongs = useMemo(() => {
         if (!album) return [];
@@ -279,6 +281,7 @@ export default function AlbumScreen({ currentTab = 'home' }: AlbumScreenProps) {
         <>
             <AnimatedDetailHeader
                 coverImage={coverUrl}
+                dominantColor={dominantColor}
                 title={album.info?.title || ""}
                 sections={sections}
                 renderSection={renderSection}

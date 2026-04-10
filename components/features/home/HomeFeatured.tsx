@@ -21,6 +21,9 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import DynamicCoverCard from "@/components/shared/DynamicCoverCard";
+import { useImageDominantColor } from "@/hooks/use-image-dominant-color";
+
 // -- Replay weekly palettes --
 const REPLAY_PALETTES = [
   { base: ["#008c6a", "#009e8e", "#006b5b"], overlay: ["#00b894", "#00cec9", "#007a6e"] },
@@ -48,6 +51,8 @@ function StatsCard() {
   const router = useRouter();
   const { getMonthlyStats } = useMusicApi();
   const [artists, setArtists] = useState<any[]>([]);
+  const firstThumb = artists[0] ? (artists[0]?.thumbnail_url ?? artists[0]?.thumbnail ?? null) : null;
+  const { color: dominantColor } = useImageDominantColor(firstThumb);
 
   useEffect(() => {
     getMonthlyStats({ include: "artists", limit: 3 })
@@ -77,7 +82,7 @@ function StatsCard() {
       style={styles.card}
     >
       <LinearGradient
-        colors={["#2a2a3e", "#1a1a2e", "#111120"]}
+        colors={[dominantColor, "#000000"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.cardGradient}
@@ -94,50 +99,6 @@ function StatsCard() {
           <Text style={styles.cardTitle}>{t("sections.featured.statsTitle")}</Text>
         </View>
       </LinearGradient>
-    </TouchableOpacity>
-  );
-}
-
-function FeaturedReleaseCard({ release }: { release: any }) {
-  const { t } = useTranslation("home");
-  const router = useRouter();
-
-  if (!release) return null;
-
-  return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={() =>
-        release.album_id
-          ? router.push(`/(tabs)/home/album/${encodeURIComponent(release.album_id)}`)
-          : router.push(`/(tabs)/home/artist/${encodeURIComponent(release.artist_id)}`)
-      }
-      style={styles.card}
-    >
-      <View style={StyleSheet.absoluteFill}>
-        {release.thumbnail_url ? (
-          <Image
-            source={release.thumbnail_url}
-            style={styles.listenAgainCover}
-            contentFit="cover"
-          />
-        ) : (
-          <View style={[styles.listenAgainCover, { backgroundColor: "#2a2a2a" }]} />
-        )}
-        <LinearGradient
-          colors={["transparent", "rgba(0,0,0,0.85)"]}
-          style={styles.listenAgainGradient}
-        />
-      </View>
-      <View style={styles.cardFooter}>
-        <Text style={styles.listenAgainLabel}>{t("sections.featured.newReleaseLabel")}</Text>
-        <Text style={styles.listenAgainTitle} numberOfLines={2}>
-          {release.album_name}
-        </Text>
-        <Text style={styles.cardSubtitle} numberOfLines={1}>
-          {release.artist_name}
-        </Text>
-      </View>
     </TouchableOpacity>
   );
 }
@@ -208,46 +169,6 @@ function ReplayCard({ songs }: { songs: MappedSong[] }) {
   );
 }
 
-function ListenAgainCard({ album }: { album: any }) {
-  const { t } = useTranslation("home");
-  const router = useRouter();
-
-  if (!album) return null;
-
-  return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={() => router.push(`/(tabs)/home/album/${encodeURIComponent(album.album_id)}`)}
-      style={styles.card}
-    >
-      <View style={StyleSheet.absoluteFill}>
-        {album.thumbnail_url ? (
-          <Image
-            source={album.thumbnail_url}
-            style={styles.listenAgainCover}
-            contentFit="cover"
-          />
-        ) : (
-          <View style={[styles.listenAgainCover, { backgroundColor: "#2a2a2a" }]} />
-        )}
-        <LinearGradient
-          colors={["transparent", "rgba(0,0,0,0.85)"]}
-          style={styles.listenAgainGradient}
-        />
-      </View>
-      <View style={styles.cardFooter}>
-        <Text style={styles.listenAgainLabel}>{t("sections.featured.listenAgainLabel")}</Text>
-        <Text style={styles.listenAgainTitle} numberOfLines={2}>
-          {album.album_name}
-        </Text>
-        <Text style={styles.cardSubtitle} numberOfLines={1}>
-          {album.artist_name}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
 type HomeFeaturedProps = {
   replaySongs: MappedSong[];
   replayLoading: boolean;
@@ -261,6 +182,9 @@ export default function HomeFeatured({
   listenAgainAlbum,
   featuredRelease,
 }: HomeFeaturedProps) {
+  const { t } = useTranslation("home");
+  const router = useRouter();
+
   return (
     <ScrollView
       horizontal
@@ -269,9 +193,33 @@ export default function HomeFeatured({
       style={styles.container}
     >
       <StatsCard />
-      <FeaturedReleaseCard release={featuredRelease} />
+      {featuredRelease && (
+        <DynamicCoverCard
+          thumbnailUrl={featuredRelease.thumbnail_url}
+          label={t("sections.featured.newReleaseLabel")}
+          title={featuredRelease.album_name}
+          subtitle={featuredRelease.artist_name}
+          onPress={() =>
+            featuredRelease.album_id
+              ? router.push(`/(tabs)/home/album/${encodeURIComponent(featuredRelease.album_id)}`)
+              : router.push(`/(tabs)/home/artist/${encodeURIComponent(featuredRelease.artist_id)}`)
+          }
+          width={CARD_WIDTH}
+          height={CARD_HEIGHT}
+        />
+      )}
       {!replayLoading && <ReplayCard songs={replaySongs} />}
-      <ListenAgainCard album={listenAgainAlbum} />
+      {listenAgainAlbum && (
+        <DynamicCoverCard
+          thumbnailUrl={listenAgainAlbum.thumbnail_url}
+          label={t("sections.featured.listenAgainLabel")}
+          title={listenAgainAlbum.album_name}
+          subtitle={listenAgainAlbum.artist_name}
+          onPress={() => router.push(`/(tabs)/home/album/${encodeURIComponent(listenAgainAlbum.album_id)}`)}
+          width={CARD_WIDTH}
+          height={CARD_HEIGHT}
+        />
+      )}
     </ScrollView>
   );
 }
@@ -340,29 +288,5 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.7)",
     fontSize: 10,
     fontWeight: "400",
-  },
-  listenAgainCover: {
-    width: "100%",
-    aspectRatio: 1,
-  },
-  listenAgainGradient: {
-    position: "absolute",
-    bottom: -1,
-    left: 0,
-    right: 0,
-    height: "55%",
-  },
-  listenAgainLabel: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 10,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  listenAgainTitle: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "700",
-    lineHeight: 18,
   },
 });

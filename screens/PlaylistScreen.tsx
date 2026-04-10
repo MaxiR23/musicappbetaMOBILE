@@ -8,6 +8,7 @@ import TrackRow from "@/components/shared/TrackRow";
 import { PlaylistSkeletonLayout } from "@/components/shared/skeletons/Skeleton";
 import { useCacheInvalidation } from "@/hooks/use-cache-invalidation";
 import { useContentPadding } from "@/hooks/use-content-padding";
+import { useImageDominantColor } from "@/hooks/use-image-dominant-color";
 import { useLikes } from "@/hooks/use-likes";
 import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
@@ -221,6 +222,8 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
   const mosaicImages = useMemo(() => {
     return (playlist?.songs || []).map((s: any) => s.albumCover).filter(Boolean);
   }, [playlist]);
+
+  const { color: dominantColor } = useImageDominantColor(mosaicImages[0] ?? null);
 
   const sections = useMemo(() => {
     if (!playlist) return [];
@@ -463,6 +466,7 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
         coverImage={isLikedPlaylist ? require("@/assets/images/liked-cover.png") : undefined}
         mosaicImages={isLikedPlaylist ? undefined : mosaicImages}
         title={playlist.name}
+        dominantColor={dominantColor}
         sections={sections}
         renderSection={renderSection}
         onBackPress={() => router.back()}
