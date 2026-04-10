@@ -489,6 +489,20 @@ export const musicService = {
     );
   },
 
+  getRecommendedPlaylists: async (
+    versions: CacheVersions
+  ): Promise<{ ok: boolean; playlists: any[] }> => {
+    return cacheWrap(
+      "feed:recommended-playlists",
+      async () => {
+        const data = await authFetch(`${API_URL}/feed/recommended-playlists`);
+        if (!data?.ok) throw new Error("recommended_playlists_failed");
+        return data;
+      },
+      { version: versions["recommended-playlists"] }
+    );
+  },
+
   moveTrackInPlaylist: async (playlistId: string, oldPosition: number, newPosition: number) => {
     const result = await authFetch(
       `${API_URL}/playlists/${encodeURIComponent(playlistId)}/move-track`,

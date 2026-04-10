@@ -1,4 +1,4 @@
 import AlbumScreen from '@/screens/AlbumScreen';
-export default function HomeAlbumRoute() {
-  return <AlbumScreen currentTab="home" />;
+export default function ExploreAlbumRoute() {
+  return <AlbumScreen currentTab="explore" />;
 }

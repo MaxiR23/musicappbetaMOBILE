@@ -1,4 +1,4 @@
 import ArtistReleasesScreen from '@/screens/ArtistReleasesScreen';
-export default function HomeArtistReleasesRoute() {
-  return <ArtistReleasesScreen currentTab="home" />;
+export default function ExploreArtistReleasesRoute() {
+  return <ArtistReleasesScreen currentTab="explore" />;
 }

@@ -17,7 +17,7 @@ type TabKey = "albums" | "singles";
 
 const ITEMS_PER_PAGE = 20;
 interface ArtistReleasesScreenProps {
-  currentTab?: 'home' | 'search';
+  currentTab?: 'home' | 'explore' | 'search';
 }
 
 export default function ArtistReleasesScreen({ currentTab = 'home' }: ArtistReleasesScreenProps) {

@@ -19,6 +19,7 @@ export function useHomeFeed(userId: string) {
   const [upcomingReleases, setUpcomingReleases] = useState<any[]>([]);
   const [listenAgainAlbum, setListenAgainAlbum] = useState<any>(null);
   const [featuredRelease, setFeaturedRelease] = useState<any>(null);
+  const [recommendedPlaylists, setRecommendedPlaylists] = useState<any[]>([]);
   const [replaySongs, setReplaySongs] = useState<MappedSong[]>([]);
   const [replayLoading, setReplayLoading] = useState(true);
   const [feedReady, setFeedReady] = useState(false);
@@ -164,6 +165,17 @@ export function useHomeFeed(userId: string) {
         setReplayLoading(false);
       }
     },
+
+    refreshRecommendedPlaylists: async () => {
+      const { versions } = ctxRef.current;
+      try {
+        const resp = await musicService.getRecommendedPlaylists(versions);
+        setRecommendedPlaylists(resp?.playlists ?? []);
+      } catch (e: any) {
+        console.warn('[useHomeFeed] recommended_playlists error:', e?.message || e);
+        setRecommendedPlaylists([]);
+      }
+    },
   });
 
   const recoBySeed = useMemo(() => {
@@ -194,6 +206,7 @@ export function useHomeFeed(userId: string) {
       fns.refreshListenAgain();
       fns.refreshFeaturedRelease();
       fns.refreshReplay();
+      fns.refreshRecommendedPlaylists();
     }, 100);
 
     return () => clearTimeout(timer);
@@ -212,6 +225,7 @@ export function useHomeFeed(userId: string) {
     listenAgainAlbum,
     featuredRelease,
     replaySongs,
+    recommendedPlaylists,
     replayLoading,
     feedReady,
   };

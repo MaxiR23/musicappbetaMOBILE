@@ -35,6 +35,10 @@
     "similarTo": {
       "label": "More like",
       "fallbackName": "Artist"
+    },
+    "recommendedPlaylists": {
+      "title": "Playlists for you",
+      "artistsMatch": "artists you listen to"
     }
   },
   "labels": {

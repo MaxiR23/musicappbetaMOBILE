@@ -23,7 +23,7 @@ import { formatAlbumMeta, formatReleaseSubtitle } from "@/utils/subtitle-helpers
 import { useTranslation } from "react-i18next";
 
 interface AlbumScreenProps {
-  currentTab?: 'home' | 'search';
+  currentTab?: 'home' | 'explore' | 'search';
 }
 
 export default function AlbumScreen({ currentTab = 'home' }: AlbumScreenProps) {
