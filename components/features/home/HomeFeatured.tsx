@@ -21,6 +21,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import BeatlyLogo from "@/components/shared/BeatlyLogo";
 import DynamicCoverCard from "@/components/shared/DynamicCoverCard";
 import { useImageDominantColor } from "@/hooks/use-image-dominant-color";
 
@@ -66,7 +67,7 @@ function StatsCard() {
   useEffect(() => {
     getMonthlyStats({ include: "artists", limit: 3 })
       .then((data) => setArtists(data?.artists ?? []))
-      .catch(() => {});
+      .catch(() => { });
   }, [getMonthlyStats]);
 
   if (!artists.length) return null;
@@ -180,6 +181,9 @@ function ReplayCard({ songs }: { songs: MappedSong[] }) {
         />
       </Animated.View>
       <Animated.View style={[styles.cardGradient, textStyle]}>
+        <View style={styles.appLogo}>
+          <BeatlyLogo size={22} />
+        </View>
         <View style={styles.replayContent}>
           <Text style={styles.replayLabel}>Replay</Text>
           <Text style={styles.replayTitle}>Mix</Text>
@@ -309,5 +313,10 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.7)",
     fontSize: 10,
     fontWeight: "400",
+  },
+  appLogo: {
+    position: "absolute",
+    top: CARD_HEIGHT * 0.03,
+    right: CARD_WIDTH * 0.05,
   },
 });
