@@ -95,10 +95,10 @@ export default function SearchScreen() {
     } else if (res && typeof res === "object") {
       if (res.artist) artistsSrc.push(res.artist);
       if (Array.isArray(res.artists)) artistsSrc.push(...res.artists);
-      if (Array.isArray(res.artistSongs)) songsSrc.push(...res.artistSongs);
+      if (Array.isArray(res.artist_songs)) songsSrc.push(...res.artist_songs);
       if (Array.isArray(res.songs)) songsSrc.push(...res.songs);
       if (Array.isArray(res.search?.songs)) songsSrc.push(...res.search.songs);
-      if (Array.isArray(res.artistAlbums)) albumsSrc.push(...res.artistAlbums);
+      if (Array.isArray(res.artist_albums)) albumsSrc.push(...res.artist_albums);
       if (Array.isArray(res.search?.albums)) albumsSrc.push(...res.search.albums);
     }
 
