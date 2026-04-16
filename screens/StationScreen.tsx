@@ -181,7 +181,7 @@ export default function StationScreen({
 
       <AnimatedDetailHeader
         coverImage={thumbUrl ?? undefined}
-        title={initialName ?? ""}
+        title={t("meta.basedOn", { name: initialName ?? "" })}
         dominantColor={dominantColor}
         sections={sections}
         renderSection={renderSection}
