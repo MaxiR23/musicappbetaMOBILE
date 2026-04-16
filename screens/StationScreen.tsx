@@ -1,5 +1,5 @@
 import PlaybackButtons from "@/components/features/player/PlaybackButtons";
-import AnimatedDetailHeader from "@/components/shared/AnimatedDetailHeader";
+import StationHeroHeader from "@/components/shared/StationHeroHeader";
 import TrackActionsSheet from "@/components/shared/TrackActionsSheet";
 import TrackRow from "@/components/shared/TrackRow";
 import { PlaylistSkeletonLayout } from "@/components/shared/skeletons/Skeleton";
@@ -48,7 +48,7 @@ export default function StationScreen({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<any | null>(null);
 
-  const thumbUrl = upgradeThumbUrl(initialThumb ?? undefined, 512);
+  const thumbUrl = upgradeThumbUrl(initialThumb ?? undefined, 2048);
   const { color: dominantColor } = useImageDominantColor(thumbUrl ?? null);
 
   useEffect(() => {
@@ -78,11 +78,10 @@ export default function StationScreen({
 
   const sections = useMemo(() => {
     return [
-      { type: "info", data: { name: initialName, count: tracks.length } },
       { type: "buttons", data: null },
       ...tracks.map((track: any, index: number) => ({ type: "track", data: track, index })),
     ];
-  }, [initialName, tracks]);
+  }, [tracks]);
 
   const handlePlayAll = () => {
     if (!tracks.length) return;
@@ -139,18 +138,6 @@ export default function StationScreen({
 
   const renderSection = (section: any) => {
     switch (section.type) {
-      case "info":
-        return (
-          <View style={styles.infoSection}>
-            <Text style={styles.title} numberOfLines={2}>
-              {t("meta.basedOn", { name: section.data.name ?? "" })}
-            </Text>
-            <Text style={styles.meta}>
-              {t("meta.label")} • {t("meta.songCount", { count: section.data.count })}
-            </Text>
-          </View>
-        );
-
       case "buttons":
         return <PlaybackButtons onPlay={handlePlayAll} />;
 
@@ -175,14 +162,19 @@ export default function StationScreen({
     }
   };
 
+  const heroTitle = t("meta.basedOn", { name: initialName ?? "" });
+  const heroSubtitle = `${t("meta.label")} • ${t("meta.songCount", { count: tracks.length })}`;
+
   return (
     <>
       <StatusBar barStyle="light-content" />
 
-      <AnimatedDetailHeader
+      <StationHeroHeader
         coverImage={thumbUrl ?? undefined}
-        title={t("meta.basedOn", { name: initialName ?? "" })}
         dominantColor={dominantColor}
+        title={heroTitle}
+        heroTitle={heroTitle}
+        heroSubtitle={heroSubtitle}
         sections={sections}
         renderSection={renderSection}
         onBackPress={() => router.back()}
@@ -226,18 +218,4 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryText: { color: "#fff", fontWeight: "600" },
-  infoSection: {
-    alignItems: "center",
-    paddingHorizontal: 20,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#fff",
-    textAlign: "center",
-    marginBottom: 4,
-  },
-  meta: { fontSize: 13, color: "#888" },
 });

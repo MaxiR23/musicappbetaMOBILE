@@ -38,7 +38,7 @@ function StationCard({ station }: { station: StationCardType }) {
   const segments = useSegments();
   const tab = segments[1] ?? "home";
 
-  const thumbUrl = upgradeThumbUrl(station.thumbnail ?? undefined, 512);
+  const thumbUrl = upgradeThumbUrl(station.thumbnail ?? undefined, 1024);
   const { color: dominantColor } = useImageDominantColor(thumbUrl ?? null);
   const logoColor = isLight(dominantColor) ? "#000" : "#fff";
 
