@@ -24,6 +24,8 @@ export function useHomeFeed(userId: string) {
   const [replayLoading, setReplayLoading] = useState(true);
   const [feedReady, setFeedReady] = useState(false);
 
+  const [userStations, setUserStations] = useState<any[]>([]);
+
   // -- Ref estable para userId y versions (evita recrear callbacks) --
   const ctxRef = useRef({ userId, versions });
   ctxRef.current = { userId, versions };
@@ -176,6 +178,17 @@ export function useHomeFeed(userId: string) {
         setRecommendedPlaylists([]);
       }
     },
+
+    refreshUserStations: async () => {
+      const { versions } = ctxRef.current;
+      try {
+        const resp = await musicService.getUserStations(versions);
+        setUserStations(resp?.stations ?? []);
+      } catch (e: any) {
+        console.warn('[useHomeFeed] user_stations error:', e?.message || e);
+        setUserStations([]);
+      }
+    },
   });
 
   const recoBySeed = useMemo(() => {
@@ -207,6 +220,7 @@ export function useHomeFeed(userId: string) {
       fns.refreshFeaturedRelease();
       fns.refreshReplay();
       fns.refreshRecommendedPlaylists();
+      fns.refreshUserStations();
     }, 100);
 
     return () => clearTimeout(timer);
@@ -226,6 +240,7 @@ export function useHomeFeed(userId: string) {
     featuredRelease,
     replaySongs,
     recommendedPlaylists,
+    userStations,
     replayLoading,
     feedReady,
   };

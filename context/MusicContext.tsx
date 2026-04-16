@@ -7,7 +7,9 @@ export type PlaySource =
   | { type: "artist";   id?: string | null; name?: string | null; thumb?: string | null }
   | { type: "queue";    id?: string | null; name?: string | null; thumb?: string | null }
   | { type: "related";  id: string;         name?: string | null; thumb?: string | null }
-  | { type: "search";   id: string;         name?: string | null; thumb?: string | null };
+  | { type: "search";   id: string;         name?: string | null; thumb?: string | null }
+  | { type: "station";  id: string;         name?: string | null; thumb?: string | null; station_artist_id?: string };
+
 export interface MusicContextType {
   currentSong: Song | null;
   queue: Song[];

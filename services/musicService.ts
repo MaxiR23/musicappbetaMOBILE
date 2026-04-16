@@ -90,6 +90,12 @@ export type FeaturedRelease = {
   play_count: number;
 };
 
+export type StationCard = {
+  artist_id: string;
+  name: string | null;
+  thumbnail: string | null;
+};
+
 type CacheVersions = Record<string, string>;
 
 export const musicService = {
@@ -189,6 +195,27 @@ export const musicService = {
     );
   },
 
+  getUserStations: async (
+    versions: CacheVersions
+  ): Promise<{ stations: StationCard[] }> => {
+    return cacheWrap(
+      "station:user",
+      async () => {
+        const data = await authFetch(`${API_URL}/station/user`);
+        if (!data?.stations?.length) throw new Error("no_stations");
+        return data;
+      },
+      { version: versions["user-stations"] }
+    );
+  },
+
+  getArtistStation: async (artistId: string): Promise<{ tracks: MappedSong[] }> => {
+    const data = await authFetch(`${API_URL}/station/artist/${encodeURIComponent(artistId)}`);
+    if (!data?.tracks?.length) throw new Error("station_empty");
+    return {
+      tracks: (data.tracks || []).map((t: any) => mapGenericTrack(t)),
+    };
+  },
 
   getGenres: async (versions: CacheVersions): Promise<{ ok: boolean; genres: any[] }> => {
     return cacheWrap(

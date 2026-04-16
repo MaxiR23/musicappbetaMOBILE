@@ -58,6 +58,16 @@ export function useMusicApi() {
     [versions]
   );
 
+  const getArtistStation = useCallback(
+    (id: string) => musicService.getArtistStation(id),
+    []
+  );
+
+  const getUserStations = useCallback(
+    () => musicService.getUserStations(versions),
+    [versions]
+  );
+
   // ==================== GENRES ====================
 
   const getGenres = useCallback(
@@ -231,6 +241,8 @@ export function useMusicApi() {
     getAlbum,
     getArtistAlbums,
     getArtistSingles,
+    getArtistStation,
+    getUserStations,
     getGenres,
     getGenrePlaylists,
     getGenreCategories,

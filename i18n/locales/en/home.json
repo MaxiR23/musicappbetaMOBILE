@@ -39,6 +39,9 @@
     "recommendedPlaylists": {
       "title": "Playlists for you",
       "artistsMatch": "artists you listen to"
+    },
+    "stations": {
+      "basedOn": "Station based on"
     }
   },
   "labels": {

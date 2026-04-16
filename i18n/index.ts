@@ -13,6 +13,7 @@ import esPlayer from "./locales/es/player.json";
 import esPlaylist from "./locales/es/playlist.json";
 import esReplay from "./locales/es/replay.json";
 import esSearch from "./locales/es/search.json";
+import esStation from "./locales/es/station.json";
 import esStats from "./locales/es/stats.json";
 
 import enAlbum from "./locales/en/album.json";
@@ -26,6 +27,7 @@ import enPlayer from "./locales/en/player.json";
 import enPlaylist from "./locales/en/playlist.json";
 import enReplay from "./locales/en/replay.json";
 import enSearch from "./locales/en/search.json";
+import enStation from "./locales/en/station.json";
 import enStats from "./locales/en/stats.json";
 
 const deviceLanguage = getLocales()[0]?.languageCode ?? "es";
@@ -41,6 +43,7 @@ i18n.use(initReactI18next).init({
       playlist: esPlaylist,
       replay: esReplay,
       stats: esStats,
+      station: esStation,
       library: esLibrary,
       explore: esExplore,
       player: esPlayer,
@@ -55,6 +58,7 @@ i18n.use(initReactI18next).init({
       playlist: enPlaylist,
       replay: enReplay,
       stats: enStats,
+      station: enStation,
       library: enLibrary,
       explore: enExplore,
       player: enPlayer,

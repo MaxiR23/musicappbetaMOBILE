@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "label": "Station",
+    "basedOn": "Based on {{name}}",
+    "songCount_one": "{{count}} song",
+    "songCount_other": "{{count}} songs"
+  },
+  "error": {
+    "empty": "No tracks available for this station",
+    "loadFailed": "Failed to load station"
+  }
+}

@@ -25,6 +25,7 @@ import HorizontalScrollSection from "@/components/shared/HorizontalScrollSection
 import FeedSection from "@/components/features/home/FeedSection";
 import HomeFeatured from "@/components/features/home/HomeFeatured";
 import HomeSkeleton from "@/components/features/home/HomeSkeleton";
+import HomeStations from "@/components/features/home/HomeStation";
 import RecommendedPlaylistsSection from "@/components/features/home/RecommendedPlaylistsSection";
 import SimilarToHeader from "@/components/shared/SimilarToHeader";
 import { useContentPadding } from "@/hooks/use-content-padding";
@@ -55,7 +56,8 @@ export default function HomeScreen() {
     replayLoading,
     feedReady,
     featuredRelease,
-    recommendedPlaylists
+    recommendedPlaylists,
+    userStations
   } = useHomeFeed(userId);
 
   const { t } = useTranslation("home");
@@ -259,6 +261,8 @@ export default function HomeScreen() {
             )}
 
             <RecommendedPlaylistsSection playlists={recommendedPlaylists} />
+
+            <HomeStations stations={userStations} />
 
             {/* <FeedSection
               title={t("sections.newSingles.title")}
