@@ -69,8 +69,6 @@ function pickBestAudio(formats) {
 
   const best = candidates.sort((a, b) => b.itag - a.itag)[0];
 
-  console.log("SELECTED:", best.itag, "|", best.bitrate, "|", best.mimeType);
-
   if (!best) throw new Error("No audio stream");
   return { itag: best.itag, url: best.url, mimeType: best.mimeType, bitrate: best.bitrate, audioQuality: best.audioQuality };
 }
