@@ -65,9 +65,12 @@ function pickBestAudio(formats) {
   // TODO: testear Opus/WebM en iOS 17+ — hay indicios de soporte parcial pero sin confirmación oficial.
   const candidates = Platform.OS === "android"
     ? formats.filter((f) => f.mimeType?.startsWith("audio/mp4") || f.mimeType?.startsWith("audio/webm"))
-    : formats.filter((f) => f.mimeType?.startsWith("audio/mp4"));
+    : formats.filter((f) => f.mimeType?.startsWith("audio/mp4"));   
 
-  const best = candidates.sort((a, b) => b.bitrate - a.bitrate)[0];
+  const best = candidates.sort((a, b) => b.itag - a.itag)[0];
+
+  console.log("SELECTED:", best.itag, "|", best.bitrate, "|", best.mimeType);
+
   if (!best) throw new Error("No audio stream");
   return { itag: best.itag, url: best.url, mimeType: best.mimeType, bitrate: best.bitrate, audioQuality: best.audioQuality };
 }
