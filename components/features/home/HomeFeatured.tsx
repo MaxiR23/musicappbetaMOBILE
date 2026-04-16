@@ -55,6 +55,12 @@ const CIRCLE_LG = CARD_WIDTH * 0.52;
 const CIRCLE_MD = CARD_WIDTH * 0.42;
 const CIRCLE_SM = CARD_WIDTH * 0.33;
 
+// -- Font scaling (proportional to card width) --
+const FONT_HUGE = CARD_WIDTH * 0.22;
+const FONT_LG = CARD_WIDTH * 0.084;
+const FONT_MD = CARD_WIDTH * 0.068;
+const FONT_SM = CARD_WIDTH * 0.053;
+
 // -- Cards --
 function StatsCard() {
   const { t } = useTranslation("home");
@@ -285,14 +291,14 @@ const styles = StyleSheet.create({
   },
   cardSubtitle: {
     color: "rgba(255,255,255,0.55)",
-    fontSize: 10,
+    fontSize: FONT_SM,
     fontWeight: "500",
   },
   cardTitle: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: FONT_LG,
     fontWeight: "700",
-    lineHeight: 20,
+    lineHeight: FONT_LG * 1.25,
   },
   replayContent: {
     flex: 1,
@@ -300,18 +306,18 @@ const styles = StyleSheet.create({
   },
   replayLabel: {
     color: "rgba(255,255,255,0.85)",
-    fontSize: 13,
+    fontSize: FONT_MD,
     fontWeight: "600",
   },
   replayTitle: {
     color: "#fff",
-    fontSize: 42,
+    fontSize: FONT_HUGE,
     fontWeight: "800",
-    lineHeight: 36,
+    lineHeight: FONT_HUGE * 0.85,
   },
   replayTrackNames: {
     color: "rgba(255,255,255,0.7)",
-    fontSize: 10,
+    fontSize: FONT_SM,
     fontWeight: "400",
   },
   appLogo: {
