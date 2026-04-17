@@ -1,5 +1,6 @@
 {
   "title": "Replay",
+  "description": "Songs you've played the most",
   "meta": {
     "songCount_one": "{{count}} song",
     "songCount_other": "{{count}} songs"

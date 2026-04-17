@@ -420,17 +420,29 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
               {section.data.name}
             </Text>
 
-            {section.data.isPublic !== undefined && !isLikedPlaylist && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>
-                  {section.data.isPublic ? t("info.public") : t("info.private")}
-                </Text>
-              </View>
+            {!!section.data.description && (
+              <Text style={styles.description} numberOfLines={3}>
+                {section.data.description}
+              </Text>
             )}
 
-            <Text style={styles.meta}>
-              {t("info.songCount", { count: section.data.songCount })} • {section.data.duration}
-            </Text>
+            {section.data.isPublic !== undefined && !isLikedPlaylist ? (
+              <View style={styles.meta}>
+                <Ionicons
+                  name={section.data.isPublic ? "lock-open-outline" : "lock-closed-outline"}
+                  size={13}
+                  color="#888"
+                />
+                <Text style={styles.metaText}>
+                  {t("info.songCount", { count: section.data.songCount })} • {section.data.duration}
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.metaText}>
+                {t("info.songCount", { count: section.data.songCount })} • {section.data.duration}
+              </Text>
+            )}
+
           </View>
         );
 
@@ -544,32 +556,30 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   infoSection: {
-    alignItems: "center",
+    alignItems: "flex-start",
     paddingHorizontal: 20,
     marginTop: 16,
     marginBottom: 8,
   },
   playlistTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "700",
     color: "#fff",
-    textAlign: "center",
-    marginBottom: 8,
+    textAlign: "left",
+    marginBottom: 4,
   },
-  badge: {
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    borderRadius: 12,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#fff",
-    letterSpacing: 0.5,
+  description: {
+    fontSize: 13,
+    color: "#aaa",
+    textAlign: "left",
+    marginBottom: 6,
   },
   meta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  metaText: {
     fontSize: 13,
     color: "#888",
   },

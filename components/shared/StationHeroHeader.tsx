@@ -4,11 +4,11 @@ import { ChevronLeft } from "lucide-react-native";
 import React, { useMemo } from "react";
 import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
-    Extrapolation,
-    interpolate,
-    useAnimatedScrollHandler,
-    useAnimatedStyle,
-    useSharedValue,
+  Extrapolation,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -217,23 +217,23 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   heroInfo: {
-    alignItems: "center",
+    alignItems: "flex-start",
     paddingHorizontal: 24,
     paddingTop: 12,
     paddingBottom: 16,
     backgroundColor: "#0e0e0e",
   },
   heroTitle: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: "700",
     color: "#fff",
-    textAlign: "center",
+    textAlign: "left",
     marginBottom: 6,
   },
   heroSubtitle: {
     fontSize: 13,
     color: "#a0a0a0",
-    textAlign: "center",
+    textAlign: "left",
   },
   collapsedHeader: {
     position: "absolute",

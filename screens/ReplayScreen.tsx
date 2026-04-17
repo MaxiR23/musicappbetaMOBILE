@@ -64,6 +64,7 @@ export default function ReplayScreen() {
         return (
           <View style={styles.infoSection}>
             <Text style={styles.title}>{t("title")}</Text>
+            <Text style={styles.description}>{t("description")}</Text>
             <Text style={styles.meta}>
               {t("meta.songCount", { count: songs.length })} • {totalDuration}
             </Text>
@@ -127,17 +128,23 @@ const styles = StyleSheet.create({
     backgroundColor: "#0e0e0e",
   },
   infoSection: {
-    alignItems: "center",
+    alignItems: "flex-start",
     paddingHorizontal: 20,
     marginTop: 16,
     marginBottom: 8,
   },
   title: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "700",
     color: "#fff",
-    textAlign: "center",
-    marginBottom: 8,
+    textAlign: "left",
+    marginBottom: 4,
+  },
+  description: {
+    fontSize: 13,
+    color: "#aaa",
+    textAlign: "left",
+    marginBottom: 6,
   },
   meta: {
     fontSize: 13,

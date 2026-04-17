@@ -1,5 +1,6 @@
 {
   "title": "Replay",
+  "description": "Las canciones que más escuchaste",
   "meta": {
     "songCount_one": "{{count}} canción",
     "songCount_other": "{{count}} canciones"
