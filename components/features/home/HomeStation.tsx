@@ -21,17 +21,6 @@ const { width: SCREEN_W } = Dimensions.get("window");
 const CARD_WIDTH = SCREEN_W * 0.6;
 const CARD_HEIGHT = CARD_WIDTH;
 
-function isLight(hex: string | null | undefined): boolean {
-  if (!hex) return false;
-  const h = hex.replace("#", "");
-  if (h.length !== 6) return false;
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  const luma = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luma > 0.45;
-}
-
 function StationCard({ station }: { station: StationCardType }) {
   const { t } = useTranslation("home");
   const router = useRouter();
@@ -39,8 +28,9 @@ function StationCard({ station }: { station: StationCardType }) {
   const tab = segments[1] ?? "home";
 
   const thumbUrl = upgradeThumbUrl(station.thumbnail ?? undefined, 1024);
-  const { color: dominantColor } = useImageDominantColor(thumbUrl ?? null);
-  const logoColor = isLight(dominantColor) ? "#000" : "#fff";
+  const { color: dominantColor, isLight: colorIsLight } = useImageDominantColor(thumbUrl ?? null);
+  console.log("[StationCard]", { dominantColor, colorIsLight, thumbUrl });
+  const logoColor = colorIsLight ? "#000" : "#fff";
 
   const handlePress = () => {
     router.push({

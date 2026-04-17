@@ -12,7 +12,7 @@ function isLightColor(hex: string): boolean {
   const g = parseInt(c.substring(2, 4), 16);
   const b = parseInt(c.substring(4, 6), 16);
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.65;
+  return luminance > 0.45;
 }
 
 function darkenHex(hex: string, factor: number = 0.45): string {
@@ -41,9 +41,22 @@ export function useImageDominantColor(imageUrl: string | null | undefined) {
       .then((result) => {
         if (cancelled) return;
 
+        // INFO: iOS has no "dominant" key; we pick the highest-luminance color among background/primary/secondary/detail. 
+        // REF: github.com/osamaqarem/react-native-image-colors v2.6.0 (mar 2026)
         const extracted =
           Platform.OS === "ios"
-            ? (result as any).background
+            ? (() => {
+              const { background, primary, secondary, detail } = result as any;
+              const candidates = [primary, secondary, detail, background].filter(Boolean);
+              const luma = (hex: string) => {
+                const h = hex.replace("#", "");
+                const r = parseInt(h.slice(0, 2), 16);
+                const g = parseInt(h.slice(2, 4), 16);
+                const b = parseInt(h.slice(4, 6), 16);
+                return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+              };
+              return candidates.reduce((best, c) => (luma(c) > luma(best) ? c : best), candidates[0] || DEFAULT_COLOR);
+            })()
             : (result as any).dominant;
 
         const finalColor = extracted || DEFAULT_COLOR;
