@@ -25,8 +25,8 @@ export default function PlaybackButtons({
         activeOpacity={0.85}
         disabled={disabled}
       >
-        <Ionicons name="play" size={18} color="#fff" />
-        <Text style={styles.buttonText}>{t("playback.play")}</Text>
+        <Ionicons name="play" size={18} color="#000" />
+        <Text style={[styles.buttonText, { color: "#000" }]}>{t("playback.play")}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -54,26 +54,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "rgba(255,255,255,0.10)",
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "#fff",
+    paddingHorizontal: 28,
+    paddingVertical: 11,
+    borderRadius: 100,
   },
   shuffleButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
+    backgroundColor: "rgba(255,255,255,0.10)",
+    paddingHorizontal: 28,
+    paddingVertical: 11,
+    borderRadius: 100,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.20)",
   },
   buttonText: {
     color: "#fff",
     fontWeight: "600",
+    fontSize: 14,
   },
 });
