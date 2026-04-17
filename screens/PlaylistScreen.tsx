@@ -2,6 +2,7 @@ import PlaybackButtons from "@/components/features/player/PlaybackButtons";
 import PlaylistEditView from "@/components/features/playlist/PlaylistEditView";
 import PlaylistOptionsSheet from "@/components/features/playlist/PlaylistOptionsSheet";
 import AnimatedDetailHeader from "@/components/shared/AnimatedDetailHeader";
+import BeatlyLogo from "@/components/shared/BeatlyLogo";
 import CreatePlaylistModal from "@/components/shared/CreatePlaylistModal";
 import TrackActionsSheet from "@/components/shared/TrackActionsSheet";
 import TrackRow from "@/components/shared/TrackRow";
@@ -419,6 +420,13 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
             <Text style={styles.playlistTitle} numberOfLines={2}>
               {section.data.name}
             </Text>
+
+            {isGenrePlaylist && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                <BeatlyLogo size={14} withBackground />
+                <Text style={{ fontSize: 13, color: "#aaa", fontWeight: "600" }}>Beatly</Text>
+              </View>
+            )}
 
             {!!section.data.description && (
               <Text style={styles.description} numberOfLines={3}>

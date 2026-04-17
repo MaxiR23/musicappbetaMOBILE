@@ -280,8 +280,6 @@ export default function ArtistScreen({ currentTab = 'home' }: ArtistScreenProps)
         sections={sections}
         renderSection={renderSection}
         onBackPress={() => router.back()}
-        headerHeight={400}
-        collapsedHeight={100}
         contentPaddingHorizontal={0}
         contentContainerStyle={contentPadding}
       />

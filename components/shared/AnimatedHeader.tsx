@@ -2,7 +2,7 @@ import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronLeft } from "lucide-react-native";
-import React, { useMemo } from "react";
+import React from "react";
 import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
     Extrapolation,
@@ -21,8 +21,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
  * - title: Título principal (artista/álbum/playlist)
  * - sections: Array de secciones a renderizar
  * - renderSection: Función para renderizar cada sección (section, index) => ReactElement | null
- * - headerHeight: Altura del header expandido (default: 400)
- * - collapsedHeight: Altura del header colapsado (default: 100)
  * - onBackPress: Callback al presionar el botón back
  * - contentPaddingHorizontal: Padding horizontal para el contenido (default: 0)
  * - contentContainerStyle: Estilos extra para el contentContainerStyle
@@ -33,21 +31,18 @@ interface AnimatedHeaderProps {
     title: string;
     sections: any[];
     renderSection: (section: any, index: number) => React.ReactElement | null;
-    headerHeight?: number;
-    collapsedHeight?: number;
     onBackPress?: () => void;
     contentPaddingHorizontal?: number;
     contentContainerStyle?: any;
 }
 
+// SEE: https://docs.swmansion.com/react-native-reanimated/docs/animations/withTiming
 export default function AnimatedHeader({
     backgroundImage,
     dominantColor,
     title,
     sections,
     renderSection,
-    headerHeight = 400,
-    collapsedHeight = 100,
     onBackPress,
     contentPaddingHorizontal = 0,
     contentContainerStyle,
@@ -55,112 +50,80 @@ export default function AnimatedHeader({
     const scrollY = useSharedValue(0);
     const insets = useSafeAreaInsets();
 
-    // Handler de scroll
     const scrollHandler = useAnimatedScrollHandler({
         onScroll: (event) => {
             scrollY.value = event.contentOffset.y;
         },
     });
 
-    // Animación del header background
-    const headerAnimatedStyle = useAnimatedStyle(() => {
-        const height = interpolate(
+    const heroImageStyle = useAnimatedStyle(() => {
+        const scale = interpolate(
             scrollY.value,
-            [0, headerHeight - collapsedHeight],
-            [headerHeight, collapsedHeight],
+            [-200, 0],
+            [1.5, 1],
             Extrapolation.CLAMP
         );
-
-        const opacity = interpolate(
-            scrollY.value,
-            [0, headerHeight - collapsedHeight - 50, headerHeight - collapsedHeight],
-            [1, 1, 0],
-            Extrapolation.CLAMP
-        );
-
-        return {
-            height,
-            opacity,
-        };
+        return { transform: [{ scale }] };
     });
 
-    // Animación del título grande (abajo)
     const largeTitleStyle = useAnimatedStyle(() => {
         const opacity = interpolate(
             scrollY.value,
-            [0, 100, 150],
+            [100, 200, 250],
             [1, 0.5, 0],
             Extrapolation.CLAMP
         );
-
         const translateY = interpolate(
             scrollY.value,
-            [0, headerHeight - collapsedHeight],
+            [0, 300],
             [0, -30],
             Extrapolation.CLAMP
         );
-
-        return {
-            opacity,
-            transform: [{ translateY }],
-        };
+        return { opacity, transform: [{ translateY }] };
     });
 
-    // Animación del blur y título pequeño (arriba - collapsed)
     const collapsedHeaderStyle = useAnimatedStyle(() => {
         const opacity = interpolate(
             scrollY.value,
-            [100, 180],
+            [260, 330],
             [0, 1],
             Extrapolation.CLAMP
         );
-
-        return {
-            opacity,
-        };
+        return { opacity };
     });
 
-    // Animación del botón back fijo (desaparece cuando aparece el collapsed)
     const fixedBackButtonStyle = useAnimatedStyle(() => {
         const opacity = interpolate(
             scrollY.value,
-            [100, 150],
+            [240, 310],
             [1, 0],
             Extrapolation.CLAMP
         );
-
-        return {
-            opacity,
-        };
+        return { opacity };
     });
 
-    const listHeader = useMemo(() => (
-        <Animated.View style={[styles.headerContainer, headerAnimatedStyle]}>
-            <Image
-                source={backgroundImage}
-                style={styles.backgroundImage}
-                contentFit="cover"
+    const listHeader = (
+        <View style={styles.headerContainer}>
+            <Animated.View style={[StyleSheet.absoluteFill, heroImageStyle]}>
+                <Image
+                    source={backgroundImage}
+                    style={styles.backgroundImage}
+                    contentFit="cover"
                 />
-
-            {/* Gradient overlay */}
+            </Animated.View>
             <LinearGradient
                 colors={["transparent", "rgba(14, 14, 14, 0.8)", "#0e0e0e"]}
                 style={styles.gradient}
                 locations={[0, 0.7, 1]}
-                />
-
-            {/* Título grande (abajo) */}
+            />
             <Animated.View style={[styles.heroInfo, largeTitleStyle]}>
                 <Text style={styles.artist_name}>{title}</Text>
             </Animated.View>
-        </Animated.View>
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    ), [backgroundImage, title]);
+        </View>
+    );
 
     return (
         <View style={styles.container}>
-            {/* Header colapsado (sticky) */}
             <Animated.View style={[styles.collapsedHeader, collapsedHeaderStyle, dominantColor ? { backgroundColor: dominantColor } : undefined]}>
                 {!dominantColor && <BlurView intensity={80} style={StyleSheet.absoluteFillObject} tint="dark" />}
                 <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
@@ -175,7 +138,6 @@ export default function AnimatedHeader({
                 </SafeAreaView>
             </Animated.View>
 
-            {/* FlatList con contenido virtualizado */}
             <Animated.FlatList
                 data={sections}
                 renderItem={({ item, index }) => (
@@ -200,7 +162,6 @@ export default function AnimatedHeader({
                 overScrollMode="never"
             />
 
-            {/* Back button FIJO (siempre visible, fuera del scroll) */}
             <Animated.View style={[styles.backButtonFixed, { top: insets.top + 16 }, fixedBackButtonStyle]}>
                 <Pressable onPress={onBackPress}>
                     <View style={styles.backButtonCircle}>
@@ -217,8 +178,6 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "#0e0e0e",
     },
-
-    // Header colapsado (sticky top)
     collapsedHeader: {
         position: "absolute",
         top: 0,
@@ -241,10 +200,9 @@ const styles = StyleSheet.create({
         marginLeft: 12,
         flex: 1,
     },
-
-    // Header expandido
     headerContainer: {
         width: SCREEN_WIDTH,
+        height: 400,
         overflow: "hidden",
         alignSelf: "center",
     },
@@ -254,8 +212,6 @@ const styles = StyleSheet.create({
     gradient: {
         ...StyleSheet.absoluteFillObject,
     },
-
-    // Back button fijo
     backButtonFixed: {
         position: "absolute",
         left: 16,
@@ -275,8 +231,6 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
     },
-
-    // Título grande (hero)
     heroInfo: {
         position: "absolute",
         bottom: 20,
@@ -284,13 +238,11 @@ const styles = StyleSheet.create({
         right: 16,
     },
     artist_name: {
-        fontSize: 42,
+        fontSize: 34,
         fontWeight: "900",
         color: "#fff",
         marginBottom: 4,
     },
-
-    // Contenido
     contentContainer: {
         backgroundColor: "#0e0e0e",
     },
