@@ -29,7 +29,7 @@ function StationCard({ station }: { station: StationCardType }) {
 
   const thumbUrl = upgradeThumbUrl(station.thumbnail ?? undefined, 1024);
   const { color: dominantColor, isLight: colorIsLight } = useImageDominantColor(thumbUrl ?? null);
-  console.log("[StationCard]", { dominantColor, colorIsLight, thumbUrl });
+  //DBG: console.log("[StationCard]", { dominantColor, colorIsLight, thumbUrl });
   const logoColor = colorIsLight ? "#000" : "#fff";
 
   const handlePress = () => {

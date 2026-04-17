@@ -7,6 +7,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dimensions,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -88,7 +89,7 @@ function StatsCard() {
   const circles = [
     { size: CIRCLE_LG, top: CARD_HEIGHT * 0.03, left: CARD_WIDTH * 0.04 },
     { size: CIRCLE_MD, top: CARD_HEIGHT * 0.30, right: CARD_WIDTH * 0.08 },
-    { size: CIRCLE_SM, top: CARD_HEIGHT * 0.50, left: CARD_WIDTH * 0.15 },
+     { size: CIRCLE_SM, top: Platform.select({ ios: CARD_HEIGHT * 0.46, android: CARD_HEIGHT * 0.50 }), left: CARD_WIDTH * 0.15 },
   ];
 
   return (
@@ -313,7 +314,10 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: FONT_HUGE,
     fontWeight: "800",
-    lineHeight: FONT_HUGE * 0.85,
+    lineHeight: Platform.select({
+      ios: FONT_HUGE * 1.0,
+      android: FONT_HUGE * 0.85,
+    }),
   },
   replayTrackNames: {
     color: "rgba(255,255,255,0.7)",
