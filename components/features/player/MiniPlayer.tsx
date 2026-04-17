@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
 interface MiniPlayerProps {
   thumbUrl: string;
@@ -29,14 +30,41 @@ export const MiniPlayer = React.memo(function MiniPlayer({
   onTogglePlay,
   onNext,
 }: MiniPlayerProps) {
+  const lastGradientRef = useRef<[string, string]>(gradient);
+  const [gradients, setGradients] = useState<{ prev: [string, string]; curr: [string, string] }>({
+    prev: gradient,
+    curr: gradient,
+  });
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    const prev = lastGradientRef.current;
+    lastGradientRef.current = gradient;
+    setGradients({ prev, curr: gradient });
+    opacity.value = 0;
+    opacity.value = withTiming(1, { duration: 600 });
+  }, [gradient[0]]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+
   return (
     <View style={styles.wrapper}>
       <LinearGradient
-        colors={[gradient[0], gradient[1]]}
+        colors={[gradients.prev[0], gradients.prev[1]]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
+      <Animated.View style={[StyleSheet.absoluteFill, animatedStyle]}>
+        <LinearGradient
+          colors={[gradients.curr[0], gradients.curr[1]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
       <View style={styles.glassOverlay} />
 
       <View style={styles.container}>
