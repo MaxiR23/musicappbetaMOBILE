@@ -41,9 +41,9 @@ function hexToHsl(hex: string): { h: number; s: number; l: number } {
   return { h: h * 360, s, l };
 }
 
-// Descarta colores oscuros con cast calido (artefacto tipico de JPEG YCbCr en near-black).
-// Solo afecta: oscuro (l<0.25) + saturado (s>0.12) + hue calido (10deg-55deg = marron/tierra).
-// Azul oscuro, verde oscuro, violeta oscuro: pasan sin cambios.
+// Discards dark colors with a warm cast (typical JPEG YCbCr artifact on near-black images).
+// Only affects: dark (l<0.25) + saturated (s>0.12) + warm hue (<=55deg or >=330deg = brown/red/earth tones).
+// Dark blues, greens, purples: pass through unchanged.
 function normalizeColor(hex: string): string {
   const { h, s, l } = hexToHsl(hex);
   if (l < 0.25 && s > 0.12 && (h <= 55 || h >= 330)) return DEFAULT_COLOR;
@@ -68,7 +68,7 @@ export function useImageDominantColor(imageUrl: string | null | undefined) {
       .then((result) => {
         if (cancelled) return;
 
-        // INFO: iOS has no "dominant" key; background es el equivalente semantico.
+        // INFO: iOS has no "dominant" key; background is the semantic equivalent.
         // REF: github.com/osamaqarem/react-native-image-colors v2.6.0 (mar 2026)
         const extracted =
           Platform.OS === "ios"
@@ -83,8 +83,9 @@ export function useImageDominantColor(imageUrl: string | null | undefined) {
             : { color: (result as any).dominant, imageIsLight: false };
 
         const rawColor = extracted.color || DEFAULT_COLOR;
-        const { h, s, l } = hexToHsl(rawColor);
-        console.log("[DominantColor]", { rawColor, h: h.toFixed(1), s: s.toFixed(3), l: l.toFixed(3) });
+        //DBG
+        /* const { h, s, l } = hexToHsl(rawColor);
+        console.log("[DominantColor]", { rawColor, h: h.toFixed(1), s: s.toFixed(3), l: l.toFixed(3) }); */
         const finalColor = normalizeColor(rawColor);
         const rawIsLight = Platform.OS === "ios" ? extracted.imageIsLight : isLightColor(finalColor);
 

@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   },
   glassOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(15,15,15,0.85)",
+    backgroundColor: "rgba(15,15,15,0.55)",
   },
   container: {
     flexDirection: "row",

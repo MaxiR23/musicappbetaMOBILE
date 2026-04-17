@@ -101,7 +101,8 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
 
   const { repeatOne, toggleRepeatOne } = useRepeatMode();
   const { artist_id, artist_name, rawThumb, thumbUrl, coverUrl, bgUrl } = useTrackMetadata(currentSong);
-  const { gradient } = usePlayerTheme(rawThumb);
+  const { color } = usePlayerTheme(rawThumb);
+  const gradient: [string, string] = [color, color];
   const { coverScale } = useCoverAnimation(isPlaying);
 
   const queueIds = useMemo(() => new Set(queue.map((s) => String(s.id))), [queue]);
