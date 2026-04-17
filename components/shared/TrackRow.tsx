@@ -203,8 +203,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
+    
+    //TODO: check {
+    /* 
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#222",
+    borderBottomColor: "#222", 
+    */
+    //TODO: check }
   },
   indexContainer: {
     width: 24,
