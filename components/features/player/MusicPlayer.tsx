@@ -61,13 +61,18 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
     onCloseTab: () => setActivePlayerTab(null),
   });
 
+  const activePlayerTabRef = useRef(activePlayerTab);
+  useEffect(() => {
+    activePlayerTabRef.current = activePlayerTab;
+  }, [activePlayerTab]);
+
   const handleCollapse = useCallback(() => {
-    if (activePlayerTab !== null) {
+    if (activePlayerTabRef.current !== null) {
       setActivePlayerTab(null);
     } else {
       collapse();
     }
-  }, [activePlayerTab, collapse]);
+  }, [collapse]);
 
   const { panResponder, setPanLocked } = usePlayerPanGesture({
     isExpandedRef,
