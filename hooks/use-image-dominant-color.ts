@@ -36,14 +36,21 @@ function hexToHsl(hex: string): { h: number; s: number; l: number } {
   const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
   let h = 0;
   if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-  else if (max === g) h = ((b - r) / d + 2) / 6;
+  else if (max === g) h = ((b - r) / d + (g < b ? 6 : 0)) / 6;
   else h = ((r - g) / d + 4) / 6;
   return { h: h * 360, s, l };
 }
 
-// Discards dark colors with a warm cast (typical JPEG YCbCr artifact on near-black images).
-// Only affects: dark (l<0.25) + saturated (s>0.12) + warm hue (<=55deg or >=330deg = brown/red/earth tones).
-// Dark blues, greens, purples: pass through unchanged.
+// Near-black OR near-white OR low-saturation gray.
+// These are "non-colors" that swallow any UI built on top of them.
+function isUnusable(hex: string): boolean {
+  const { s, l } = hexToHsl(hex);
+  if (l < 0.08) return true; // near-black
+  if (l > 0.92) return true; // near-white
+  if (s < 0.12) return true; // gray
+  return false;
+}
+
 function normalizeColor(hex: string): string {
   const { h, s, l } = hexToHsl(hex);
   if (l < 0.25 && s > 0.12 && (h <= 55 || h >= 330)) return DEFAULT_COLOR;
@@ -68,24 +75,27 @@ export function useImageDominantColor(imageUrl: string | null | undefined) {
       .then((result) => {
         if (cancelled) return;
 
-        // INFO: iOS has no "dominant" key; background is the semantic equivalent.
-        // REF: github.com/osamaqarem/react-native-image-colors v2.6.0 (mar 2026)
         const extracted =
           Platform.OS === "ios"
             ? (() => {
                 const { background, primary, secondary, detail } = result as any;
-                const candidates = [background, primary, secondary, detail].filter(Boolean);
+                // INFO: UIImageColors returns raw edge/dominant pixels. For images with
+                // heavy black backgrounds (e.g. Billie Eilish cover), `background` comes
+                // back as pure black which swallows the UI. Walk the candidates in order
+                // and pick the first one that is actually a usable color (not black,
+                // white, or gray). Fall back to whatever we have only if nothing works.
+                const candidates = [background, primary, secondary, detail].filter(Boolean) as string[];
+                const usable = candidates.find((c) => !isUnusable(c));
+                const pickedColor = usable || background || primary || DEFAULT_COLOR;
+
                 const lightCount = candidates.filter(isLightColor).length;
                 const imageIsLight = lightCount >= Math.ceil(candidates.length / 2);
-                const color = background || primary || DEFAULT_COLOR;
-                return { color, imageIsLight };
+
+                return { color: pickedColor, imageIsLight };
               })()
             : { color: (result as any).dominant, imageIsLight: false };
 
         const rawColor = extracted.color || DEFAULT_COLOR;
-        //DBG
-        /* const { h, s, l } = hexToHsl(rawColor);
-        console.log("[DominantColor]", { rawColor, h: h.toFixed(1), s: s.toFixed(3), l: l.toFixed(3) }); */
         const finalColor = normalizeColor(rawColor);
         const rawIsLight = Platform.OS === "ios" ? extracted.imageIsLight : isLightColor(finalColor);
 
