@@ -4,25 +4,7 @@
 [![Version](https://img.shields.io/badge/version-test-orange)](/)
 [![Platform](https://img.shields.io/badge/platform-Android-blue)](/)
 
-**Beatly** es tu compañero musical definitivo: descubrí, organizá y disfrutá tu música favorita con una experiencia única y personalizada.
-
----
-
-## Features
-
-### **Reproducción Completa**
-Reproductor inteligente · Reproducción de fondo · Letras
-
-### **Gestión Total**
-Playlists editables · Búsqueda potente · Álbumes completos · Perfiles de artistas · Historial inteligente
-
-### **Experiencia Premium**
-Dark mode · Colores dinámicos · Animaciones fluidas · Drag & Drop · Skeleton loaders
-
-### **Social**
-Sistema de likes · Playlists públicas/privadas · Compartir · Eventos de artistas
-
----
+**Beatly** es una app personal de streaming de música. Actualmente en fase de pruebas
 
 ## Stack Tecnológico
 
@@ -69,7 +51,7 @@ npx expo start --android # Android
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 | Directorio | Descripción |
 |-----------|-------------|
@@ -113,12 +95,3 @@ beatly/
 - Email: maximilianorebolo@gmail.com
 
 ---
-
-## Agradecimientos
-- Inspiración de diseño: Spotify, Apple Music, YT Music
-- Comunidad de React Native y Expo
----
-
-<div align="center">
-  <strong> Hecho de ❤️ y mucha música 🎵</strong>
-</div>
