@@ -50,12 +50,6 @@ function isUnusable(hex: string): boolean {
   if (s < 0.12) return true; // gray
   return false;
 }
-
-function normalizeColor(hex: string): string {
-  const { h, s, l } = hexToHsl(hex);
-  if (l < 0.25 && s > 0.12 && (h <= 55 || h >= 330)) return DEFAULT_COLOR;
-  return hex;
-}
 // TODO: MOVE TO UTILS }
 
 export function useImageDominantColor(imageUrl: string | null | undefined) {
@@ -79,25 +73,38 @@ export function useImageDominantColor(imageUrl: string | null | undefined) {
           Platform.OS === "ios"
             ? (() => {
                 const { background, primary, secondary, detail } = result as any;
+
+                // INFO: Guard for mostly-black covers (e.g. Young Miko "SWAG").
+                // When `background` is near-black, the image is almost entirely black
+                // and the other candidates get polluted by JPEG YCbCr artifacts
+                // (typical lavender/magenta tint on near-white sub-regions like the
+                // parental advisory strip). Force DEFAULT_COLOR in that case.
+                if (background) {
+                  const { l: bgL } = hexToHsl(background);
+                  if (bgL < 0.08) return { color: DEFAULT_COLOR };
+                }
+
                 // INFO: UIImageColors returns raw edge/dominant pixels. For images with
-                // heavy black backgrounds (e.g. Billie Eilish cover), `background` comes
-                // back as pure black which swallows the UI. Walk the candidates in order
-                // and pick the first one that is actually a usable color (not black,
-                // white, or gray). Fall back to whatever we have only if nothing works.
+                // heavy black/gray borders (e.g. "Your month in music" card), `background`
+                // is a non-color that swallows the UI. Walk candidates in order and pick
+                // the first usable one (not black/white/gray). Fall back to raw values
+                // only if nothing passes.
                 const candidates = [background, primary, secondary, detail].filter(Boolean) as string[];
                 const usable = candidates.find((c) => !isUnusable(c));
                 const pickedColor = usable || background || primary || DEFAULT_COLOR;
 
-                const lightCount = candidates.filter(isLightColor).length;
-                const imageIsLight = lightCount >= Math.ceil(candidates.length / 2);
-
-                return { color: pickedColor, imageIsLight };
+                return { color: pickedColor };
               })()
-            : { color: (result as any).dominant, imageIsLight: false };
+            : { color: (result as any).dominant };
 
-        const rawColor = extracted.color || DEFAULT_COLOR;
-        const finalColor = normalizeColor(rawColor);
-        const rawIsLight = Platform.OS === "ios" ? extracted.imageIsLight : isLightColor(finalColor);
+        const finalColor = extracted.color || DEFAULT_COLOR;
+        // INFO: Unified rule across iOS and Android. Previously iOS used a vote across
+        // the 4 candidates (`imageIsLight`), which failed on white album covers (Young
+        // Miko DND) because UIImageColors returns dark primary/secondary/detail to
+        // contrast with a white background, so the vote never crossed 50%. Checking
+        // the final picked color directly (like Android) makes both platforms behave
+        // consistently and guarantees white backgrounds get darkened.
+        const rawIsLight = isLightColor(finalColor);
 
         setColor(rawIsLight ? darkenHex(finalColor) : finalColor);
         setIsLight(rawIsLight);
