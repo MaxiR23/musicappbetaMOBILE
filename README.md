@@ -2,7 +2,8 @@
 > **Versión Test** · Streaming moderno de música con React Native
 
 [![Version](https://img.shields.io/badge/version-test-orange)](/)
-[![Platform](https://img.shields.io/badge/platform-Android-blue)](/)
+[![Android](https://img.shields.io/badge/Android-in%20testing-3DDC84)](/)
+[![iOS](https://img.shields.io/badge/iOS-in%20testing-999999)](/)
 
 **Beatly** es una app personal de streaming de música. Actualmente en fase de pruebas
 
