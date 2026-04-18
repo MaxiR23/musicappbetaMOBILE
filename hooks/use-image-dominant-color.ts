@@ -41,13 +41,15 @@ function hexToHsl(hex: string): { h: number; s: number; l: number } {
   return { h: h * 360, s, l };
 }
 
-// Near-black OR near-white OR low-saturation gray.
-// These are "non-colors" that swallow any UI built on top of them.
+// Near-black OR near-white OR TRUE gray.
+// INFO: The saturation threshold is intentionally low (0.06) so that desaturated
+// but still perceptibly tinted colors (navy blues, teal oceans, muted jeans) pass
+// through. Only pure/near-pure grays get filtered out.
 function isUnusable(hex: string): boolean {
   const { s, l } = hexToHsl(hex);
   if (l < 0.08) return true; // near-black
   if (l > 0.92) return true; // near-white
-  if (s < 0.12) return true; // gray
+  if (s < 0.06) return true; // true gray
   return false;
 }
 // TODO: MOVE TO UTILS }
@@ -98,6 +100,7 @@ export function useImageDominantColor(imageUrl: string | null | undefined) {
             : { color: (result as any).dominant };
 
         const finalColor = extracted.color || DEFAULT_COLOR;
+
         // INFO: Unified rule across iOS and Android. Previously iOS used a vote across
         // the 4 candidates (`imageIsLight`), which failed on white album covers (Young
         // Miko DND) because UIImageColors returns dark primary/secondary/detail to
