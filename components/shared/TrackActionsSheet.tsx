@@ -331,7 +331,16 @@ export default function TrackActionsSheet({
                                                 await remove(track.id);
                                                 setIsTrackOffline(false);
                                             } else {
-                                                await download(track.id);
+                                                await download({
+                                                    track_id: track.id,
+                                                    title: track.title,
+                                                    artist: track.artist_name ?? track.artist ?? "",
+                                                    artist_id: track.artist_id ?? "",
+                                                    album: track.album_name ?? track.album ?? "",
+                                                    album_id: track.album_id ?? "",
+                                                    thumbnail_url: track.thumbnail ?? track.thumbnail_url ?? "",
+                                                    duration_seconds: track.duration_seconds ?? 0,
+                                                });
                                                 setIsTrackOffline(true);
                                             }
                                         } catch (e: any) {

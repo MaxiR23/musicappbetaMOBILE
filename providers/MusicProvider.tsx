@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
+import { getOfflineTrack } from "@/lib/offlineItems";
 import { resolveAudioStream } from "@/services/audioStreamService";
 import { logPlaybackError } from "@/services/errorLogService";
 import { upgradeThumbUrl } from "@/utils/image-helpers";
@@ -513,15 +514,27 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         // Log a los 30s
         if (listenTimeRef.current.accumulated >= 30 && lastLoggedTrackIdRef.current !== trackId) {
           lastLoggedTrackIdRef.current = trackId;
-          logPlayTrack(trackId, {
-            album_id: track.album_id ?? undefined,
-            album_name: track.album_name,
-            artist_id: track.artist_id ?? undefined,
-            artist_name: track.artist_name ?? undefined,
-            track_name: track.title,
-            duration_seconds: track.duration_seconds,
-            thumbnail_url: track.thumbnail,
-          }).catch(() => { });
+          const offline = await getOfflineTrack(trackId);
+          const metadata = offline
+            ? {
+              album_id: offline.album_id || undefined,
+              album_name: offline.album || undefined,
+              artist_id: offline.artist_id || undefined,
+              artist_name: offline.artist || undefined,
+              track_name: offline.title,
+              duration_seconds: offline.duration_seconds,
+              thumbnail_url: offline.thumbnail_url,
+            }
+            : {
+              album_id: track.album_id ?? undefined,
+              album_name: track.album_name,
+              artist_id: track.artist_id ?? undefined,
+              artist_name: track.artist_name ?? undefined,
+              track_name: track.title,
+              duration_seconds: track.duration_seconds,
+              thumbnail_url: track.thumbnail,
+            };
+          logPlayTrack(trackId, metadata).catch(() => { });
         }
 
         // Preload a 15s del final

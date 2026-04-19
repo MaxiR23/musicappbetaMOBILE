@@ -1,15 +1,15 @@
-import { offlineService } from "@/services/offline-service";
+import { OfflineDownloadMeta, offlineService } from "@/services/offline-service";
 import { useCallback, useState } from "react";
 
 export function useOffline() {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
 
-  const download = useCallback(async (trackId: string) => {
+  const download = useCallback(async (meta: OfflineDownloadMeta) => {
     try {
-      setDownloading(trackId);
+      setDownloading(meta.track_id);
       setProgress(0);
-      await offlineService.download(trackId, (pct) => setProgress(pct));
+      await offlineService.download(meta, (pct) => setProgress(pct));
     } finally {
       setDownloading(null);
       setProgress(0);

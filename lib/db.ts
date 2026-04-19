@@ -42,6 +42,24 @@ const migrations: Migration[] = [
       );
     `,
   },
+  {
+    version: 3,
+    up: `
+    CREATE TABLE IF NOT EXISTS offline_tracks (
+      track_id TEXT PRIMARY KEY NOT NULL,
+      title TEXT NOT NULL,
+      artist TEXT NOT NULL,
+      artist_id TEXT NOT NULL,
+      album TEXT NOT NULL DEFAULT '',
+      album_id TEXT NOT NULL DEFAULT '',
+      thumbnail_url TEXT NOT NULL DEFAULT '',
+      duration_seconds INTEGER NOT NULL DEFAULT 0,
+      downloaded_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_offline_tracks_downloaded
+      ON offline_tracks(downloaded_at DESC);
+  `,
+  },
 ];
 
 function ensureDb(): SQLite.SQLiteDatabase {
