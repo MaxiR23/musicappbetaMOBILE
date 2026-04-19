@@ -41,6 +41,11 @@
     "createFailed": "No se pudo crear/agregar.",
     "alreadyInPlaylist": "Ya está en esta playlist",
     "goToArtist": "Ir al artista",
-    "goToAlbum": "Ir al álbum"
+    "goToAlbum": "Ir al álbum",
+    "download": "Descargar",
+    "downloading": "Descargando",
+    "downloaded": "Descargado",
+    "removeDownload": "Eliminar descarga",
+    "downloadFailed": "Error al descargar"
   }
 }

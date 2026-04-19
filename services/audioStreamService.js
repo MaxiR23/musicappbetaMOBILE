@@ -1,4 +1,5 @@
 import { STREAM_CLIENT_NAME, STREAM_CLIENT_VERSION, STREAM_ENDPOINT } from "@/constants/config";
+import { offlineService } from "@/services/offline-service";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
@@ -74,6 +75,12 @@ function pickBestAudio(formats) {
 }
 
 export async function resolveAudioStream(videoId) {
+    // offline hit?
+    const localPath = await offlineService.getLocalPath(videoId);
+    if (localPath) {
+        return { stream: { url: localPath, itag: 0, mimeType: "audio/mp4", bitrate: 0, audioQuality: "OFFLINE" } };
+    }
+
     // cache hit?
     const cached = streamCache.get(videoId);
     if (cached && cached.expiresAt > Date.now()) {
