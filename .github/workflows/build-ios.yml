@@ -27,6 +27,7 @@ jobs:
           echo "EXPO_PUBLIC_STREAM_ENDPOINT=${{ secrets.EXPO_PUBLIC_STREAM_ENDPOINT }}" >> .env
           echo "EXPO_PUBLIC_STREAM_CLIENT_NAME=${{ secrets.EXPO_PUBLIC_STREAM_CLIENT_NAME }}" >> .env
           echo "EXPO_PUBLIC_STREAM_CLIENT_VERSION=${{ secrets.EXPO_PUBLIC_STREAM_CLIENT_VERSION }}" >> .env
+          echo "EXPO_PUBLIC_OFFLINE_USERS=${{ secrets.EXPO_PUBLIC_OFFLINE_USERS }}" >> .env
 
       - name: Expo Prebuild
         run: npx expo prebuild --platform ios --no-install
