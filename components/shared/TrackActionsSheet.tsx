@@ -17,6 +17,10 @@ import {
     View,
 } from "react-native";
 
+import { canOffline } from "@/config/feature-flags";
+import { useOffline } from "@/hooks/use-offline";
+import { supabase } from "@/lib/supabase";
+
 type Track = any;
 
 type ExtraAction = {
@@ -87,6 +91,10 @@ export default function TrackActionsSheet({
     const [addedToId, setAddedToId] = useState<string | null>(null);
     const [alreadyInId, setAlreadyInId] = useState<string | null>(null);
 
+    const { download, remove, downloading, progress, isDownloaded } = useOffline();
+    const [isTrackOffline, setIsTrackOffline] = useState(false);
+    const [offlineAllowed, setOfflineAllowed] = useState(false);
+
     useEffect(() => {
         if (!open) {
             setMode("root");
@@ -111,8 +119,25 @@ export default function TrackActionsSheet({
             .catch((e) => console.error("[Sheet] getPlaylists error:", e));
     }, [open, mode, loaded, getPlaylists]);
 
-    // ── NAVIGATION ────────────────────────────────────────────────────────────
+    // TODO: TEST offline {
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data }) => {
+            const uid = data.session?.user?.id;
+            // DBG: {
+            //console.log("[offline] uid:", uid);
+            //console.log("[offline] canOffline:", uid ? canOffline(uid) : "no uid");
+            // DBG }
+            if (uid) setOfflineAllowed(canOffline(uid));
+        });
+    }, []);
 
+    useEffect(() => {
+        if (!open || !track?.id || !offlineAllowed) return;
+        isDownloaded(track.id).then(setIsTrackOffline);
+    }, [open, track, offlineAllowed]);
+    // TODO: TEST offline }
+
+    // ── NAVIGATION ────────────────────────────────────────────────────────────
     const artistId = track?.artist_id ?? null;
     const albumId = track?.album_id ?? track?.go_to?.album_id ?? null;
 
@@ -216,7 +241,7 @@ export default function TrackActionsSheet({
     if (!open) return null;
 
     return (
-         <Modal visible={open} transparent animationType="fade" onRequestClose={() => onOpenChange(false)}>
+        <Modal visible={open} transparent animationType="fade" onRequestClose={() => onOpenChange(false)}>
             <KeyboardAvoidingView
                 style={styles.overlay}
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -287,6 +312,38 @@ export default function TrackActionsSheet({
                             {allowShare && (
                                 <ActionRow icon="share-outline" label={t("trackActions.share")} onPress={handleShare} />
                             )}
+
+                            {/* TODO: TEST offline { */}
+                            {offlineAllowed && !!track?.id && (
+                                <ActionRow
+                                    icon={isTrackOffline ? "trash-outline" : "cloud-download-outline"}
+                                    label={
+                                        downloading === track.id
+                                            ? `${t("trackActions.downloading")} ${Math.round(progress * 100)}%`
+                                            : isTrackOffline
+                                                ? t("trackActions.removeDownload")
+                                                : t("trackActions.download")
+                                    }
+                                    onPress={async () => {
+                                        if (downloading) return;
+                                        try {
+                                            if (isTrackOffline) {
+                                                await remove(track.id);
+                                                setIsTrackOffline(false);
+                                            } else {
+                                                await download(track.id);
+                                                setIsTrackOffline(true);
+                                            }
+                                        } catch (e: any) {
+                                            console.log("[offline] error:", e?.message);
+                                            setErr(e?.message || t("trackActions.downloadFailed"));
+                                        }
+                                    }}
+                                    danger={isTrackOffline}
+                                />
+                            )}
+                            {/* TODO: TEST offline } */}
+
                             {extraActions.map((a) => (
                                 <ActionRow
                                     key={a.key}
