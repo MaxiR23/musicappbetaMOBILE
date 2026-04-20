@@ -1,8 +1,12 @@
+import ConfirmDialog, { ConfirmAction } from "@/components/shared/ConfirmDialog";
 import { AlbumSkeletonLayout } from "@/components/shared/skeletons/Skeleton";
 import TrackActionsSheet from "@/components/shared/TrackActionsSheet";
+import { canOffline } from "@/config/feature-flags";
 import { useDetailScreen } from "@/hooks/use-detail-screen";
+import { useLibrary } from "@/hooks/use-library";
 import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
+import { useUserProfile } from "@/hooks/use-user-profile";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -17,13 +21,14 @@ import HorizontalScrollSection from "@/components/shared/HorizontalScrollSection
 import TrackRow from "@/components/shared/TrackRow";
 import { useContentPadding } from "@/hooks/use-content-padding";
 import { useImageDominantColor } from "@/hooks/use-image-dominant-color";
+import { useOfflinePlaylist } from "@/hooks/use-offline-playlist";
 import { extractIncludedArtists } from "@/utils/data-helpers";
 import { getUpgradedThumb } from "@/utils/image-helpers";
 import { formatAlbumMeta, formatReleaseSubtitle } from "@/utils/subtitle-helpers";
 import { useTranslation } from "react-i18next";
 
 interface AlbumScreenProps {
-  currentTab?: 'home' | 'explore' | 'search';
+    currentTab?: 'home' | 'explore' | 'search' | 'library';
 }
 
 export default function AlbumScreen({ currentTab = 'home' }: AlbumScreenProps) {
@@ -32,13 +37,30 @@ export default function AlbumScreen({ currentTab = 'home' }: AlbumScreenProps) {
     const { playList } = useMusic();
     const { getAlbum } = useMusicApi();
     const router = useRouter();
-    
+
     const contentPadding = useContentPadding();
     const { t } = useTranslation("album");
     const { t: tCommon } = useTranslation("common");
+    const { t: tLibrary } = useTranslation("library");
+
+    const { userId } = useUserProfile();
+    const { isInLibrary, addToLibrary, removeFromLibrary } = useLibrary();
+
+    const offlineAllowed = !!userId && canOffline(userId);
+    const offlineId = id ?? null;
+    const {
+        state: offlineState,
+        download: downloadAlbum,
+        cancel: cancelDownload,
+        remove: removeOfflineAlbum,
+    } = useOfflinePlaylist(offlineId);
 
     const [actionsOpen, setActionsOpen] = useState(false);
     const [selectedTrack, setSelectedTrack] = useState<any | null>(null);
+
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmTitle, setConfirmTitle] = useState("");
+    const [confirmActions, setConfirmActions] = useState<ConfirmAction[]>([]);
 
     const { data: album, loading, error } = useDetailScreen({
         id,
@@ -71,7 +93,110 @@ export default function AlbumScreen({ currentTab = 'home' }: AlbumScreenProps) {
 
     const hasTracks = !!(album?.tracks && album.tracks.length > 0);
 
-    // Array de sections
+    const inLibrary = !!album && isInLibrary("album", id ?? "");
+    const libraryState = inLibrary ? "added" : "none";
+
+    const downloadState =
+        offlineState.status === "done"
+            ? "done"
+            : offlineState.status === "downloading"
+                ? "downloading"
+                : "none";
+
+    const openPremiumOptions = () => {
+        if (!id) return;
+        setConfirmTitle(tLibrary("options.titlePremium"));
+        setConfirmActions([
+            {
+                label: tLibrary("options.removeDownloads"),
+                onPress: () => removeOfflineAlbum(id),
+            },
+            {
+                label: tLibrary("options.removeFromLibrary"),
+                destructive: true,
+                onPress: async () => {
+                    await removeOfflineAlbum(id);
+                    await removeFromLibrary("album", id);
+                },
+            },
+        ]);
+        setConfirmOpen(true);
+    };
+
+    const openFreeOptions = () => {
+        if (!id) return;
+        setConfirmTitle(tLibrary("options.titleFree"));
+        setConfirmActions([
+            {
+                label: tLibrary("options.removeFromLibrary"),
+                destructive: true,
+                onPress: () => removeFromLibrary("album", id),
+            },
+        ]);
+        setConfirmOpen(true);
+    };
+
+    const handleLibraryToggle = () => {
+        if (!album || !id) return;
+
+        if (inLibrary) {
+            if (downloadState !== "none") {
+                openPremiumOptions();
+                return;
+            }
+            openFreeOptions();
+            return;
+        }
+
+        addToLibrary({
+            kind: "album",
+            external_id: id,
+            title: album.info?.title ?? "",
+            thumbnail_url: coverUrl,
+            artist: (album.info as any)?.artist_name ?? "",
+            artist_id: (album.info as any)?.artist_id ?? "",
+            album_id: id,
+            album_name: album.info?.title ?? "",
+        });
+    };
+
+    const handleDownloadPress = () => {
+        if (!album || !id) return;
+
+        if (offlineState.status === "downloading") {
+            cancelDownload();
+            return;
+        }
+
+        if (offlineState.status === "done") {
+            openPremiumOptions();
+            return;
+        }
+
+        const tracks = mappedSongs.map((s: any) => ({
+            track_id: s.id,
+            title: s.title,
+            artist: s.artist_name ?? "",
+            artist_id: s.artist_id ?? "",
+            album: album.info?.title ?? "",
+            album_id: id,
+            thumbnail_url: s.thumbnail ?? coverUrl,
+            duration_seconds: s.duration_seconds ?? 0,
+        }));
+
+        downloadAlbum(
+            {
+                playlist_id: id,
+                kind: "user",
+                name: album.info?.title ?? "",
+                thumbnail_url: coverUrl,
+            },
+            tracks,
+        );
+    };
+
+    const showDownloadButton = offlineAllowed && inLibrary;
+
     const sections = useMemo(() => {
         if (!album) return [];
 
@@ -172,6 +297,11 @@ export default function AlbumScreen({ currentTab = 'home' }: AlbumScreenProps) {
                                 thumb: coverUrl,
                             });
                         } : undefined}
+                        onLibrary={handleLibraryToggle}
+                        libraryState={libraryState}
+                        onDownload={showDownloadButton ? handleDownloadPress : undefined}
+                        downloadState={downloadState}
+                        downloadProgress={offlineState.progress}
                     />
                 );
 
@@ -298,11 +428,18 @@ export default function AlbumScreen({ currentTab = 'home' }: AlbumScreenProps) {
                 track={selectedTrack}
                 showGoToAlbum={false}
             />
+
+            <ConfirmDialog
+                open={confirmOpen}
+                onOpenChange={setConfirmOpen}
+                title={confirmTitle}
+                actions={confirmActions}
+            />
         </>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#0e0e0e" },
+    container: { flex: 1, backgroundColor: "#0e0e0e", },
     section: { paddingHorizontal: 16, marginTop: 8 },
 });

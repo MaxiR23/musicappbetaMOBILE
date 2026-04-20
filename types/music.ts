@@ -67,6 +67,7 @@ export interface AlbumDetails {
   info: {
     title: string;
     subtitle?: string;
+    secondSubtitle?: string;
     description?: string;
     thumbnails: { url: string; width: number; height: number }[];
   };
@@ -80,8 +81,11 @@ export interface AlbumDetails {
     artist_id: string | null;
     artist_name: string | null;
   }[];
+  upcoming_events?: any[];  
+  other_versions?: any[];   
+  more_from_artist?: any[]; 
+  releases_for_you?: any[]; 
 }
-
 export interface NewRelease {
   id: string;
   title: string;

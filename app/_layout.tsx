@@ -14,6 +14,7 @@ import MusicPlayer from "@/components/features/player/MusicPlayer";
 import { MusicProvider } from "@/providers/MusicProvider";
 import * as PlayerService from "@/services/PlayerService";
 
+import { LibraryProvider } from "@/providers/LibraryProvider";
 import { LikesProvider } from "@/providers/LikesProvider";
 
 import { useMusic } from "@/hooks/use-music";
@@ -54,9 +55,11 @@ function Gate() {
 function AuthedApp() {
   return (
     <LikesProvider>
-      <MusicProvider>
-        <InnerLayout />
-      </MusicProvider>
+      <LibraryProvider>
+        <MusicProvider>
+          <InnerLayout />
+        </MusicProvider>
+      </LibraryProvider>
     </LikesProvider>
   );
 }
