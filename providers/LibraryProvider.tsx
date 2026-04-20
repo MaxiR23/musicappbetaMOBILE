@@ -13,6 +13,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const { versions } = useCacheVersions();
+  const libraryVersion = versions.library;
 
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [isReady, setIsReady] = useState(false);
@@ -47,14 +48,14 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     if (mutationQueuesRef.current.size > 0) return;
     syncingRef.current = true;
     try {
-      const { items: fetched } = await libraryService.list(versions);
+      const { items: fetched } = await libraryService.list({ library: libraryVersion });
       setItems(fetched);
     } catch (err) {
       console.warn("[LibraryProvider] refresh failed:", err);
     } finally {
       syncingRef.current = false;
     }
-  }, [userId, versions]);
+  }, [userId, libraryVersion]);
 
   useEffect(() => {
     if (!userId) {
@@ -65,7 +66,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const { items: fetched } = await libraryService.list(versions);
+        const { items: fetched } = await libraryService.list({ library: libraryVersion });
         if (!cancelled) setItems(fetched);
       } catch (err) {
         console.warn("[LibraryProvider] loadInitial failed:", err);
@@ -74,7 +75,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [userId, versions]);
+  }, [userId, libraryVersion]);
 
   useEffect(() => {
     if (!userId) return;
