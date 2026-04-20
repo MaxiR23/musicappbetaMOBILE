@@ -511,7 +511,7 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
         playlistId={!isReadOnly ? playlist.id : undefined}
         track={selectedTrack}
         onRemove={!isReadOnly ? (_, trackId) => handleRemoveFromSheet(playlist.id, trackId) : undefined}
-        showAddTo={!isReadOnly}
+        showAddTo={isReadOnly}
         showRemove={!isReadOnly}
       />
 
