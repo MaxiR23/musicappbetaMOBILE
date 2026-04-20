@@ -1,4 +1,11 @@
 {
   "header": "Tu biblioteca",
-  "untitled": "Sin nombre"
+  "untitled": "Sin título",
+  "options": {
+    "titlePremium": "¿Querés eliminar este álbum de las descargas o eliminarlo de tu biblioteca?",
+    "titleFree": "¿Querés eliminar este álbum de tu biblioteca?",
+    "removeDownloads": "Solo eliminar descargas",
+    "removeFromLibrary": "Eliminar de la biblioteca",
+    "cancel": "Cancelar"
+  }
 }

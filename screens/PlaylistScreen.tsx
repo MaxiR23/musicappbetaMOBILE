@@ -3,6 +3,7 @@ import PlaylistEditView from "@/components/features/playlist/PlaylistEditView";
 import PlaylistOptionsSheet from "@/components/features/playlist/PlaylistOptionsSheet";
 import AnimatedDetailHeader from "@/components/shared/AnimatedDetailHeader";
 import BeatlyLogo from "@/components/shared/BeatlyLogo";
+import ConfirmDialog, { ConfirmAction } from "@/components/shared/ConfirmDialog";
 import CreatePlaylistModal from "@/components/shared/CreatePlaylistModal";
 import TrackActionsSheet from "@/components/shared/TrackActionsSheet";
 import TrackRow from "@/components/shared/TrackRow";
@@ -69,6 +70,11 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<any | null>(null);
   const [editDetailsOpen, setEditDetailsOpen] = useState(false);
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmMessage, setConfirmMessage] = useState<string | undefined>(undefined);
+  const [confirmActions, setConfirmActions] = useState<ConfirmAction[]>([]);
 
   // TEST offline {
   const offlineAllowed = !!userId && canOffline(userId);
@@ -275,18 +281,16 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
     }
 
     if (offlineState.status === "done") {
-      Alert.alert(
-        "Eliminar descarga",
-        `¿Querés borrar la descarga de "${playlist.name}"?`,
-        [
-          { text: tCommon("actions.cancel"), style: "cancel" },
-          {
-            text: "Borrar",
-            style: "destructive",
-            onPress: () => removeOfflinePlaylist(playlist.id),
-          },
-        ]
-      );
+      setConfirmTitle("Eliminar descarga");
+      setConfirmMessage(`¿Querés borrar la descarga de "${playlist.name}"?`);
+      setConfirmActions([
+        {
+          label: "Borrar",
+          destructive: true,
+          onPress: () => removeOfflinePlaylist(playlist.id),
+        },
+      ]);
+      setConfirmOpen(true);
       return;
     }
 
@@ -324,27 +328,26 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
 
   const confirmDelete = () => {
     if (!playlist || isReadOnly) return;
-    Alert.alert(
-      t("delete.title"),
-      t("delete.message", { name: playlist.name }),
-      [
-        { text: tCommon("actions.cancel"), style: "cancel" },
-        {
-          text: t("delete.confirm"),
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deletePlaylist(playlist.id);
-              await invalidatePlaylists();
-              setMenuOpen(false);
-              router.back();
-            } catch (e: any) {
-              Alert.alert("Error", e?.message || t("errors.deleteFailed"));
-            }
-          },
+    setConfirmTitle(t("delete.title"));
+    setConfirmMessage(t("delete.message", { name: playlist.name }));
+    setConfirmActions([
+      {
+        label: t("delete.confirm"),
+        destructive: true,
+        onPress: async () => {
+          try {
+            await deletePlaylist(playlist.id);
+            await invalidatePlaylists();
+            setMenuOpen(false);
+            router.back();
+          } catch (e: any) {
+            Alert.alert("Error", e?.message || t("errors.deleteFailed"));
+          }
         },
-      ]
-    );
+      },
+    ]);
+    setMenuOpen(false);
+    setConfirmOpen(true);
   };
 
   const handleStartEdit = () => {
@@ -610,6 +613,14 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
           }}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={confirmTitle}
+        message={confirmMessage}
+        actions={confirmActions}
+      />
     </>
   );
 }

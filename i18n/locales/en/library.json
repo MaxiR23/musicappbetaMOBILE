@@ -1,4 +1,11 @@
- {
+{
   "header": "Your library",
-  "untitled": "Untitled"
+  "untitled": "Untitled",
+  "options": {
+    "titlePremium": "Do you want to remove this album from your downloads or delete it from your library?",
+    "titleFree": "Do you want to remove this album from your library?",
+    "removeDownloads": "Only remove downloads",
+    "removeFromLibrary": "Remove from library",
+    "cancel": "Cancel"
+  }
 }

@@ -1,48 +1,84 @@
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 
-// TEST offline {
 export type DownloadState = "none" | "downloading" | "done";
+export type LibraryState = "none" | "added";
 
 const RING_SIZE = 44;
 const RING_STROKE = 2.5;
 const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
-// TEST offline }
 
 interface PlaybackButtonsProps {
   onPlay: () => void;
   onShuffle?: () => void;
   disabled?: boolean;
 
-  // TEST offline {
+  onLibrary?: () => void;
+  libraryState?: LibraryState;
+
   onDownload?: () => void;
   downloadState?: DownloadState;
   downloadProgress?: number;
-  // TEST offline }
 }
 
 export default function PlaybackButtons({
   onPlay,
   onShuffle,
   disabled = false,
-  // TEST offline {
+  onLibrary,
+  libraryState = "none",
   onDownload,
   downloadState = "none",
   downloadProgress = 0,
-  // TEST offline }
 }: PlaybackButtonsProps) {
   const { t } = useTranslation("common");
   const shuffleDisabled = disabled || !onShuffle;
 
-  // TEST offline {
-  const showDownload = !!onDownload;
+  const showLibrary = !!onLibrary;
+  const showDownload = libraryState === "added" && !!onDownload;
+
   const clampedProgress = Math.max(0, Math.min(1, downloadProgress));
   const strokeDashoffset = RING_CIRCUMFERENCE * (1 - clampedProgress);
-  // TEST offline }
+
+  const checkScale = useSharedValue(libraryState === "added" ? 1 : 0);
+  const plusScale = useSharedValue(libraryState === "none" ? 1 : 0);
+
+  useEffect(() => {
+    if (libraryState === "added") {
+      plusScale.value = withTiming(0, { duration: 120 });
+      checkScale.value = withSequence(
+        withTiming(0, { duration: 0 }),
+        withSpring(1.2, { damping: 8, stiffness: 180 }),
+        withSpring(1, { damping: 10, stiffness: 200 }),
+      );
+    } else {
+      checkScale.value = withTiming(0, { duration: 120 });
+      plusScale.value = withSpring(1, { damping: 12, stiffness: 200 });
+    }
+  }, [libraryState, checkScale, plusScale]);
+
+  const plusAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: plusScale.value }],
+    opacity: plusScale.value,
+    position: "absolute",
+  }));
+
+  const checkAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: checkScale.value }],
+    opacity: checkScale.value,
+    position: "absolute",
+  }));
 
   return (
     <View style={styles.container}>
@@ -65,7 +101,24 @@ export default function PlaybackButtons({
         <Ionicons name="shuffle" size={18} color="#fff" />
       </TouchableOpacity>
 
-      {/* TEST offline { */}
+      {showLibrary && (
+        <TouchableOpacity
+          style={[
+            styles.iconButton,
+            libraryState === "added" && styles.iconButtonActive,
+          ]}
+          onPress={onLibrary}
+          activeOpacity={0.85}
+        >
+          <Animated.View style={plusAnimStyle}>
+            <Ionicons name="add" size={24} color="#fff" />
+          </Animated.View>
+          <Animated.View style={checkAnimStyle}>
+            <Ionicons name="checkmark" size={20} color="#000" />
+          </Animated.View>
+        </TouchableOpacity>
+      )}
+
       {showDownload && (
         <TouchableOpacity
           style={[
@@ -102,13 +155,12 @@ export default function PlaybackButtons({
               <Ionicons name="stop" size={12} color="#fff" />
             </View>
           ) : downloadState === "done" ? (
-            <Ionicons name="checkmark" size={20} color="#000" />
+            <Ionicons name="checkmark-done" size={20} color="#000" />
           ) : (
             <Ionicons name="cloud-download-outline" size={22} color="#fff" />
           )}
         </TouchableOpacity>
       )}
-      {/* TEST offline } */}
     </View>
   );
 }

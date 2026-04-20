@@ -4,6 +4,7 @@ import ReleaseCard from "@/components/shared/ReleaseCard";
 import ScreenHeader from "@/components/shared/ScreenHeader";
 import { useContentPadding } from "@/hooks/use-content-padding";
 import { useHomePlaylists } from "@/hooks/use-home-playlists";
+import { useLibrary } from "@/hooks/use-library";
 import { useUserProfile } from "@/hooks/use-user-profile";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -21,7 +22,9 @@ export default function LibraryScreen() {
   const contentPadding = useContentPadding();
   const { t } = useTranslation("library");
 
-  const playlists = playlistsWithCreate.filter(pl => !pl.isCreateButton);
+  const { albums: libraryAlbums, playlists: libraryPlaylists } = useLibrary();
+
+  const ownedPlaylists = playlistsWithCreate.filter(pl => !pl.isCreateButton);
 
   const data = useMemo(() => {
     const likedItem = {
@@ -29,10 +32,29 @@ export default function LibraryScreen() {
       title: t("liked"),
       isLiked: true,
     };
-    return [likedItem, ...playlists];
-  }, [playlists, t]);
 
-  const renderPlaylist = useCallback(
+    const mappedAlbums = libraryAlbums.map((a) => ({
+      id: `album:${a.external_id}`,
+      title: a.title,
+      subtitle: a.artist,
+      thumbnail_url: a.thumbnail_url,
+      isLibraryAlbum: true,
+      external_id: a.external_id,
+    }));
+
+    const mappedExternalPlaylists = libraryPlaylists.map((p) => ({
+      id: `ext-playlist:${p.external_id}`,
+      title: p.title,
+      subtitle: p.artist,
+      thumbnail_url: p.thumbnail_url,
+      isLibraryPlaylist: true,
+      external_id: p.external_id,
+    }));
+
+    return [likedItem, ...ownedPlaylists, ...mappedAlbums, ...mappedExternalPlaylists];
+  }, [ownedPlaylists, libraryAlbums, libraryPlaylists, t]);
+
+  const renderItem = useCallback(
     ({ item }: { item: any }) => {
       if (item.isLiked) {
         return (
@@ -40,6 +62,28 @@ export default function LibraryScreen() {
             cover={require("@/assets/images/liked-cover.png")}
             title={item.title}
             onPress={() => router.push("/(tabs)/library/playlist/liked")}
+          />
+        );
+      }
+
+      if (item.isLibraryAlbum) {
+        return (
+          <ReleaseCard
+            cover={item.thumbnail_url || null}
+            title={item.title}
+            subtitle={item.subtitle}
+            onPress={() => router.push(`/(tabs)/library/album/${encodeURIComponent(item.external_id)}`)}
+          />
+        );
+      }
+
+      if (item.isLibraryPlaylist) {
+        return (
+          <ReleaseCard
+            cover={item.thumbnail_url || null}
+            title={item.title}
+            subtitle={item.subtitle}
+            onPress={() => router.push(`/(tabs)/library/playlist/${encodeURIComponent(item.external_id)}`)}
           />
         );
       }
@@ -84,14 +128,13 @@ export default function LibraryScreen() {
             { padding: 12, gap: 12 },
             contentPadding
           ]}
-          renderItem={renderPlaylist}
+          renderItem={renderItem}
           removeClippedSubviews={true}
           initialNumToRender={20}
           maxToRenderPerBatch={10}
           windowSize={5}
         />
 
-        {/* Botón flotante */}
         <TouchableOpacity
           style={[styles.fab, { bottom: contentPadding.fabBottom }]}
           onPress={() => setCreateOpen(true)}
