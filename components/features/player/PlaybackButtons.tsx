@@ -46,7 +46,7 @@ export default function PlaybackButtons({
   const shuffleDisabled = disabled || !onShuffle;
 
   const showLibrary = !!onLibrary;
-  const showDownload = libraryState === "added" && !!onDownload;
+  const showDownload = !!onDownload && (!onLibrary || libraryState === "added");
 
   const clampedProgress = Math.max(0, Math.min(1, downloadProgress));
   const strokeDashoffset = RING_CIRCUMFERENCE * (1 - clampedProgress);
