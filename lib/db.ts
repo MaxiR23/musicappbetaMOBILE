@@ -60,6 +60,41 @@ const migrations: Migration[] = [
       ON offline_tracks(downloaded_at DESC);
   `,
   },
+  {
+    version: 4,
+    up: `
+  CREATE TABLE IF NOT EXISTS offline_playlists (
+    playlist_id TEXT PRIMARY KEY NOT NULL,
+    kind TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    name TEXT NOT NULL,
+    thumbnail_url TEXT NOT NULL DEFAULT '',
+    downloaded_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_offline_playlists_downloaded
+    ON offline_playlists(downloaded_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_offline_playlists_status
+    ON offline_playlists(status);
+
+  CREATE TABLE IF NOT EXISTS offline_playlist_tracks (
+    playlist_id TEXT NOT NULL,
+    track_id TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'ok',
+    added_at TEXT NOT NULL,
+    PRIMARY KEY (playlist_id, track_id),
+    FOREIGN KEY (playlist_id) REFERENCES offline_playlists(playlist_id) ON DELETE CASCADE,
+    FOREIGN KEY (track_id) REFERENCES offline_tracks(track_id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_opt_by_playlist
+    ON offline_playlist_tracks(playlist_id, position);
+  CREATE INDEX IF NOT EXISTS idx_opt_by_track
+    ON offline_playlist_tracks(track_id);
+  CREATE INDEX IF NOT EXISTS idx_opt_by_status
+    ON offline_playlist_tracks(status);
+`,
+  },
 ];
 
 function ensureDb(): SQLite.SQLiteDatabase {
@@ -71,7 +106,7 @@ function ensureDb(): SQLite.SQLiteDatabase {
 async function runMigrations(): Promise<SQLite.SQLiteDatabase> {
   const db = ensureDb();
 
-  await db.execAsync("PRAGMA journal_mode = WAL;");
+  await db.execAsync("PRAGMA foreign_keys = ON;");
 
   const row = await db.getFirstAsync<{ user_version: number }>("PRAGMA user_version");
   let currentVersion = row?.user_version ?? 0;

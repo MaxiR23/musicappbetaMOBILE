@@ -7,12 +7,14 @@ import CreatePlaylistModal from "@/components/shared/CreatePlaylistModal";
 import TrackActionsSheet from "@/components/shared/TrackActionsSheet";
 import TrackRow from "@/components/shared/TrackRow";
 import { PlaylistSkeletonLayout } from "@/components/shared/skeletons/Skeleton";
+import { canOffline } from "@/config/feature-flags";
 import { useCacheInvalidation } from "@/hooks/use-cache-invalidation";
 import { useContentPadding } from "@/hooks/use-content-padding";
 import { useImageDominantColor } from "@/hooks/use-image-dominant-color";
 import { useLikes } from "@/hooks/use-likes";
 import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
+import { useOfflinePlaylist } from "@/hooks/use-offline-playlist";
 import { usePlaylistEditor } from "@/hooks/use-playlist-editor";
 import { useUserProfile } from "@/hooks/use-user-profile";
 import { formatDurationCustom, parseDurationToMs } from "@/utils/durations";
@@ -68,6 +70,17 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
   const [selectedTrack, setSelectedTrack] = useState<any | null>(null);
   const [editDetailsOpen, setEditDetailsOpen] = useState(false);
 
+  // TEST offline {
+  const offlineAllowed = !!userId && canOffline(userId);
+  const offlinePlaylistId = isGenrePlaylist ? null : (id ?? null);
+  const {
+    state: offlineState,
+    download: downloadPlaylist,
+    cancel: cancelDownload,
+    remove: removeOfflinePlaylist,
+  } = useOfflinePlaylist(offlinePlaylistId);
+  // TEST offline }
+
   const {
     editMode,
     editSongs,
@@ -109,6 +122,7 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
                     t.duration_seconds % 60
                   ).padStart(2, "0")}`
                   : "--:--",
+                duration_seconds: t.duration_seconds ?? 0,
                 albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
                 _i: idx + 1,
               }));
@@ -145,6 +159,7 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
                   t.duration_seconds % 60
                 ).padStart(2, "0")}`
                 : "--:--",
+              duration_seconds: t.duration_seconds ?? 0,
               albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
               _i: idx + 1,
             }));
@@ -180,6 +195,7 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
                   t.duration_seconds % 60
                 ).padStart(2, "0")}`
                 : "--:--",
+              duration_seconds: t.duration_seconds ?? 0,
               albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
               _i: idx + 1,
             }));
@@ -248,6 +264,54 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
     const shuffled = [...mappedSongs].sort(() => Math.random() - 0.5);
     playList(shuffled, 0, { type: "playlist", id: playlist!.id, name: playlist!.name });
   };
+
+  // TEST offline {
+  const handleDownloadPress = () => {
+    if (!playlist) return;
+
+    if (offlineState.status === "downloading") {
+      cancelDownload();
+      return;
+    }
+
+    if (offlineState.status === "done") {
+      Alert.alert(
+        "Eliminar descarga",
+        `¿Querés borrar la descarga de "${playlist.name}"?`,
+        [
+          { text: tCommon("actions.cancel"), style: "cancel" },
+          {
+            text: "Borrar",
+            style: "destructive",
+            onPress: () => removeOfflinePlaylist(playlist.id),
+          },
+        ]
+      );
+      return;
+    }
+
+    const tracks = (playlist.songs || []).map((s: any) => ({
+      track_id: s.id,
+      title: s.title,
+      artist: s.artist,
+      artist_id: s.artist_id ?? "",
+      album: s.album_name ?? "",
+      album_id: s.album_id ?? "",
+      thumbnail_url: s.albumCover ?? "",
+      duration_seconds: s.duration_seconds ?? 0,
+    }));
+
+    downloadPlaylist(
+      {
+        playlist_id: playlist.id,
+        kind: isLikedPlaylist ? "liked" : "user",
+        name: playlist.name,
+        thumbnail_url: mosaicImages[0] ?? "",
+      },
+      tracks
+    );
+  };
+  // TEST offline }
 
   const handleTrackPress = (index: number) => {
     playList(mappedSongs, index, { type: "playlist", id: playlist!.id, name: playlist!.name });
@@ -412,6 +476,16 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
     );
   }
 
+  // TEST offline {
+  const showOfflineButton = offlineAllowed && !isGenrePlaylist;
+  const downloadState =
+    offlineState.status === "done"
+      ? "done"
+      : offlineState.status === "downloading"
+        ? "downloading"
+        : "none";
+  // TEST offline }
+
   const renderSection = (section: any) => {
     switch (section.type) {
       case 'info':
@@ -455,7 +529,15 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
         );
 
       case 'buttons':
-        return <PlaybackButtons onPlay={handlePlayAll} onShuffle={handleShuffleAll} />;
+        return (
+          <PlaybackButtons
+            onPlay={handlePlayAll}
+            onShuffle={handleShuffleAll}
+            onDownload={showOfflineButton ? handleDownloadPress : undefined}
+            downloadState={downloadState}
+            downloadProgress={offlineState.progress}
+          />
+        );
 
       case 'track':
         return (
