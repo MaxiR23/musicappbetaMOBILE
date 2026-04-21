@@ -19,6 +19,7 @@ import { LikesProvider } from "@/providers/LikesProvider";
 
 import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
+import { PlaylistsProvider } from "@/providers/PlaylistsProvider";
 
 const MyTheme = {
   ...DarkTheme,
@@ -56,9 +57,11 @@ function AuthedApp() {
   return (
     <LikesProvider>
       <LibraryProvider>
-        <MusicProvider>
-          <InnerLayout />
-        </MusicProvider>
+        <PlaylistsProvider>
+          <MusicProvider>
+            <InnerLayout />
+          </MusicProvider>
+        </PlaylistsProvider>
       </LibraryProvider>
     </LikesProvider>
   );
