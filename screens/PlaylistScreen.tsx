@@ -166,8 +166,8 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
             title: t.title,
             artist: t.artist,
             artist_id: t.artist_id,
-            album_id: t.album_id,
-            album_name: t.album_name,
+            album_id: t.album_id ?? t.extra?.album_id ?? null,
+            album_name: t.extra?.album_name ?? null,
             duration: t.duration_seconds != null
               ? `${Math.floor(t.duration_seconds / 60)}:${String(
                 t.duration_seconds % 60
@@ -204,8 +204,8 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
             title: t.title,
             artist: t.artist,
             artist_id: t.artist_id,
-            album_id: t.album_id,
-            album_name: t.album_name,
+            album_id: t.album_id ?? t.extra?.album_id ?? null,
+            album_name: t.extra?.album_name ?? null,
             duration: t.duration_seconds != null
               ? `${Math.floor(t.duration_seconds / 60)}:${String(
                 t.duration_seconds % 60
