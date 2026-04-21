@@ -23,8 +23,8 @@ import { upgradeThumbUrl } from "@/utils/image-helpers";
 import { applyServerOrder } from "@/utils/reorder-logger";
 import { mapPlaylistSongs } from "@/utils/song-mapper";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
@@ -76,6 +76,14 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
   const [confirmMessage, setConfirmMessage] = useState<string | undefined>(undefined);
   const [confirmActions, setConfirmActions] = useState<ConfirmAction[]>([]);
 
+  const isMountedRef = useRef(true);
+  const isFirstFocusRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
+
   // TEST offline {
   const offlineAllowed = !!userId && canOffline(userId);
   const offlinePlaylistId = isGenrePlaylist ? null : (id ?? null);
@@ -97,136 +105,153 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
     handleReorder,
   } = usePlaylistEditor(playlist);
 
-  useEffect(() => {
-    let mounted = true;
+  const fetchPlaylist = useCallback(async (opts: { silent?: boolean } = {}) => {
+    if (!id) return;
 
-    (async () => {
-      if (!id) return;
-      setLoading(true);
-      setError(null);
+    if (!opts.silent) setLoading(true);
+    setError(null);
 
-      try {
-        if (isGenrePlaylist) {
-          const result = await getGenrePlaylistTracks(id);
-          if (mounted) {
-            if (result?.ok) {
-              const totalMs = (result.tracks || []).reduce(
-                (acc: number, t: any) => acc + ((t?.duration_seconds ?? 0) * 1000),
-                0
-              );
+    try {
+      if (isGenrePlaylist) {
+        const result = await getGenrePlaylistTracks(id);
+        if (!isMountedRef.current) return;
 
-              const songs = (result.tracks || []).map((t: any, idx: number) => ({
-                id: t.track_id,
-                internalId: t.id,
-                title: t.title,
-                artist: t.artist,
-                artist_id: t.artist_id,
-                album_id: t.album_id,
-                album_name: t.album_name,
-                duration: t.duration_seconds != null
-                  ? `${Math.floor(t.duration_seconds / 60)}:${String(
-                    t.duration_seconds % 60
-                  ).padStart(2, "0")}`
-                  : "--:--",
-                duration_seconds: t.duration_seconds ?? 0,
-                albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
-                _i: idx + 1,
-              }));
+        if (result?.ok) {
+          const totalMs = (result.tracks || []).reduce(
+            (acc: number, t: any) => acc + ((t?.duration_seconds ?? 0) * 1000),
+            0
+          );
 
-              setPlaylist({
-                id: result.playlist.id,
-                name: result.playlist.title,
-                song_count: songs.length,
-                duration: formatDurationCustom(totalMs, { format: 'compact', round: true }),
-                songs,
-              });
-            } else {
-              setError(result?.error || t("error.loadFailed"));
-            }
-          }
-        } else if (isLikedPlaylist) {
-          const rawData = await getLikedPlaylist();
-          if (mounted && rawData) {
-            const totalMs = (rawData.tracks || []).reduce(
-              (acc: number, t: any) => acc + ((t?.duration_seconds ?? 0) * 1000),
-              0
-            );
+          const songs = (result.tracks || []).map((t: any, idx: number) => ({
+            id: t.track_id,
+            internalId: t.id,
+            title: t.title,
+            artist: t.artist,
+            artist_id: t.artist_id,
+            album_id: t.album_id,
+            album_name: t.album_name,
+            duration: t.duration_seconds != null
+              ? `${Math.floor(t.duration_seconds / 60)}:${String(
+                t.duration_seconds % 60
+              ).padStart(2, "0")}`
+              : "--:--",
+            duration_seconds: t.duration_seconds ?? 0,
+            albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
+            _i: idx + 1,
+          }));
 
-            const songs = (rawData.tracks || []).map((t: any, idx: number) => ({
-              id: t.track_id,
-              internalId: t.id,
-              title: t.title,
-              artist: t.artist,
-              artist_id: t.artist_id,
-              album_id: t.album_id,
-              album_name: t.album_name,
-              duration: t.duration_seconds != null
-                ? `${Math.floor(t.duration_seconds / 60)}:${String(
-                  t.duration_seconds % 60
-                ).padStart(2, "0")}`
-                : "--:--",
-              duration_seconds: t.duration_seconds ?? 0,
-              albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
-              _i: idx + 1,
-            }));
-
-            setPlaylist({
-              id: "liked",
-              name: t("liked.title"),
-              description: null,
-              isPublic: false,
-              songCount: songs.length,
-              duration: formatDurationCustom(totalMs, { format: 'compact', round: true }),
-              songs,
-            });
-          }
+          setPlaylist({
+            id: result.playlist.id,
+            name: result.playlist.title,
+            song_count: songs.length,
+            duration: formatDurationCustom(totalMs, { format: 'compact', round: true }),
+            songs,
+          });
         } else {
-          const rawData = await getPlaylistById(id);
-          if (mounted && rawData) {
-            const totalMs = (rawData.tracks || []).reduce(
-              (acc: number, t: any) => acc + ((t?.duration_seconds ?? 0) * 1000),
-              0
-            );
-
-            const songs = (rawData.tracks || []).map((t: any, idx: number) => ({
-              id: t.track_id,
-              internalId: t.id,
-              title: t.title,
-              artist: t.artist,
-              artist_id: t.artist_id,
-              album_id: t.album_id,
-              album_name: t.album_name,
-              duration: t.duration_seconds != null
-                ? `${Math.floor(t.duration_seconds / 60)}:${String(
-                  t.duration_seconds % 60
-                ).padStart(2, "0")}`
-                : "--:--",
-              duration_seconds: t.duration_seconds ?? 0,
-              albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
-              _i: idx + 1,
-            }));
-
-            setPlaylist({
-              id: rawData.id,
-              name: rawData.title,
-              description: rawData.description,
-              isPublic: rawData.is_public,
-              songCount: songs.length,
-              duration: formatDurationCustom(totalMs, { format: 'compact', round: true }),
-              songs,
-            });
-          }
+          setError(result?.error || t("error.loadFailed"));
         }
-      } catch (err) {
-        console.error("[playlist] Error:", err);
-        if (mounted) setError("Error al cargar playlist");
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
+      } else if (isLikedPlaylist) {
+        const rawData = await getLikedPlaylist();
+        if (!isMountedRef.current) return;
 
-    return () => { mounted = false; };
-  }, [id, isGenrePlaylist, isLikedPlaylist, getPlaylistById, getLikedPlaylist, getGenrePlaylistTracks]);
+        if (rawData) {
+          const totalMs = (rawData.tracks || []).reduce(
+            (acc: number, t: any) => acc + ((t?.duration_seconds ?? 0) * 1000),
+            0
+          );
+
+          const songs = (rawData.tracks || []).map((t: any, idx: number) => ({
+            id: t.track_id,
+            internalId: t.id,
+            title: t.title,
+            artist: t.artist,
+            artist_id: t.artist_id,
+            album_id: t.album_id,
+            album_name: t.album_name,
+            duration: t.duration_seconds != null
+              ? `${Math.floor(t.duration_seconds / 60)}:${String(
+                t.duration_seconds % 60
+              ).padStart(2, "0")}`
+              : "--:--",
+            duration_seconds: t.duration_seconds ?? 0,
+            albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
+            _i: idx + 1,
+          }));
+
+          setPlaylist({
+            id: "liked",
+            name: t("liked.title"),
+            description: null,
+            isPublic: false,
+            songCount: songs.length,
+            duration: formatDurationCustom(totalMs, { format: 'compact', round: true }),
+            songs,
+          });
+        }
+      } else {
+        const rawData = await getPlaylistById(id);
+        if (!isMountedRef.current) return;
+
+        if (rawData) {
+          const totalMs = (rawData.tracks || []).reduce(
+            (acc: number, t: any) => acc + ((t?.duration_seconds ?? 0) * 1000),
+            0
+          );
+
+          const songs = (rawData.tracks || []).map((t: any, idx: number) => ({
+            id: t.track_id,
+            internalId: t.id,
+            title: t.title,
+            artist: t.artist,
+            artist_id: t.artist_id,
+            album_id: t.album_id,
+            album_name: t.album_name,
+            duration: t.duration_seconds != null
+              ? `${Math.floor(t.duration_seconds / 60)}:${String(
+                t.duration_seconds % 60
+              ).padStart(2, "0")}`
+              : "--:--",
+            duration_seconds: t.duration_seconds ?? 0,
+            albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
+            _i: idx + 1,
+          }));
+
+          setPlaylist({
+            id: rawData.id,
+            name: rawData.title,
+            description: rawData.description,
+            isPublic: rawData.is_public,
+            songCount: songs.length,
+            duration: formatDurationCustom(totalMs, { format: 'compact', round: true }),
+            songs,
+          });
+        }
+      }
+    } catch (err) {
+      console.error("[playlist] Error:", err);
+      if (isMountedRef.current) setError("Error al cargar playlist");
+    } finally {
+      if (isMountedRef.current && !opts.silent) setLoading(false);
+    }
+  }, [id, isGenrePlaylist, isLikedPlaylist, getPlaylistById, getLikedPlaylist, getGenrePlaylistTracks, t]);
+
+  // Initial load + id change: shows skeleton
+  useEffect(() => {
+    fetchPlaylist();
+  }, [fetchPlaylist]);
+
+  // Silent refetch when screen regains focus (e.g. after adding a track from another screen).
+  // Skipped for genre playlists since they're read-only and can't be modified from elsewhere.
+  useFocusEffect(
+    useCallback(() => {
+      if (isFirstFocusRef.current) {
+        isFirstFocusRef.current = false;
+        return;
+      }
+      if (isGenrePlaylist) return;
+      fetchPlaylist({ silent: true });
+    }, [fetchPlaylist, isGenrePlaylist])
+  );
 
   useEffect(() => {
     if (!playlist?.songs?.length) return;
