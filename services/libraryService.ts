@@ -50,13 +50,14 @@ export interface LibraryItemInput {
   album_name?: string;
 }
 
-type CacheVersions = Record<string, string>;
-
 export const libraryService = {
   list: async (
-    versions: CacheVersions,
+    version: string,
     kind?: LibraryKind,
   ): Promise<{ items: LibraryItem[] }> => {
+    if (!version) {
+      throw new Error("libraryService.list requires a non-empty version");
+    }
     const url = kind
       ? `${API_URL}/library/?kind=${encodeURIComponent(kind)}`
       : `${API_URL}/library/`;
@@ -65,7 +66,7 @@ export const libraryService = {
     return cacheWrap(
       cacheKey,
       () => authFetch(url),
-      { version: versions["library"] }
+      { version }
     );
   },
 

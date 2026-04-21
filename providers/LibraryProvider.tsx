@@ -44,11 +44,12 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (!userId || syncingRef.current) return;
+    if (!libraryVersion) return;
     // No refrescar si hay mutaciones pendientes, el server puede no estar al dia
     if (mutationQueuesRef.current.size > 0) return;
     syncingRef.current = true;
     try {
-      const { items: fetched } = await libraryService.list({ library: libraryVersion });
+      const { items: fetched } = await libraryService.list(libraryVersion);
       setItems(fetched);
     } catch (err) {
       console.warn("[LibraryProvider] refresh failed:", err);
@@ -63,10 +64,12 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       setIsReady(false);
       return;
     }
+    if (!libraryVersion) return;
+
     let cancelled = false;
     (async () => {
       try {
-        const { items: fetched } = await libraryService.list({ library: libraryVersion });
+        const { items: fetched } = await libraryService.list(libraryVersion);
         if (!cancelled) setItems(fetched);
       } catch (err) {
         console.warn("[LibraryProvider] loadInitial failed:", err);
