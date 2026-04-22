@@ -19,7 +19,9 @@
     },
     "lyrics": {
         "noLyrics": "No hay letras disponibles",
-        "loading": "Cargando letras..."
+        "loading": "Cargando letras...",
+        "no_lyrics": "No hay letras disponibles",
+        "load_error": "No se pudieron cargar las letras."
     },
     "related": {
         "noContent": "No hay contenido relacionado",

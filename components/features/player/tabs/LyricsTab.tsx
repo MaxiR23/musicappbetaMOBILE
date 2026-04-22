@@ -47,7 +47,7 @@ export const LyricsTab = memo(function LyricsTab({
   if (lyricsError) {
     return (
       <View style={sharedTabStyles.errorContainer}>
-        <Text style={sharedTabStyles.errorText}>{lyricsError}</Text>
+        <Text style={sharedTabStyles.errorText}>{t(`lyrics.${lyricsError}`)}</Text>
       </View>
     );
   }

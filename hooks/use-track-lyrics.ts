@@ -43,7 +43,7 @@ export function useTrackLyrics({
       if (!res?.ok || !res?.lyrics) {
         setLyricsText(null);
         setLyricsLines(null);
-        setLyricsError("No hay letras para este tema.");
+        setLyricsError("no_lyrics");
         return;
       }
 
@@ -54,12 +54,12 @@ export function useTrackLyrics({
         const txt = String(res.lyrics).replace(/\r\n/g, "\n").trim();
         setLyricsText(txt || null);
         setLyricsLines(null);
-        if (!txt) setLyricsError("No hay letras para este tema.");
+        if (!txt) setLyricsError("no_lyrics");
       }
     } catch {
       setLyricsText(null);
       setLyricsLines(null);
-      setLyricsError("No se pudieron cargar las letras.");
+      setLyricsError("load_error");
     } finally {
       setLyricsLoading(false);
     }

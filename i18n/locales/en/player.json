@@ -19,7 +19,9 @@
     },
     "lyrics": {
         "noLyrics": "No lyrics available",
-        "loading": "Loading lyrics..."
+        "loading": "Loading lyrics...",
+        "no_lyrics": "No lyrics available",
+        "load_error": "Could not load lyrics."
     },
     "related": {
         "noContent": "No related content available",
