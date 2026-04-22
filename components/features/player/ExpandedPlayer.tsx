@@ -1,4 +1,5 @@
 import { usePlayerInsets } from "@/hooks/use-player-insets";
+import type { LyricLine } from "@/hooks/use-track-lyrics";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -43,6 +44,7 @@ interface ExpandedPlayerProps {
   isLiked: boolean;
   liking: boolean;
   lyricsText: string | null;
+  lyricsLines: LyricLine[] | null;
   lyricsLoading: boolean;
   lyricsError: string | null;
   mainScrollRef: React.RefObject<ScrollView | null>;
@@ -99,6 +101,7 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
   isLiked,
   liking,
   lyricsText,
+  lyricsLines,
   lyricsLoading,
   lyricsError,
   mainScrollRef,
@@ -375,6 +378,7 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
             isPlaying={isPlaying}
             autoplayStartIndex={autoplayStartIndex}
             lyricsText={lyricsText}
+            lyricsLines={lyricsLines}
             lyricsLoading={lyricsLoading}
             lyricsError={lyricsError}
             upNextData={upNextData}
@@ -417,6 +421,7 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
     prev.gradient[1] === next.gradient[1] &&
     prev.autoplayEnabled === next.autoplayEnabled &&
     prev.lyricsText === next.lyricsText &&
+    prev.lyricsLines === next.lyricsLines &&
     prev.lyricsLoading === next.lyricsLoading &&
     prev.lyricsError === next.lyricsError &&
     prev.upNextData === next.upNextData &&

@@ -14,6 +14,7 @@ import {
 
 import ProList from "@/components/shared/ProList";
 import { useMusic } from "@/hooks/use-music";
+import type { LyricLine } from "@/hooks/use-track-lyrics";
 import { LyricsTab } from "./tabs/LyricsTab";
 import { RelatedTab } from "./tabs/RelatedTab";
 import { UpNextTab } from "./tabs/UpNextTab";
@@ -36,6 +37,7 @@ interface PlayerTabsProps {
   autoplayStartIndex?: number;
 
   lyricsText: string | null;
+  lyricsLines: LyricLine[] | null;
   lyricsLoading: boolean;
   lyricsError: string | null;
 
@@ -68,6 +70,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
   isPlaying,
   autoplayStartIndex = 0,
   lyricsText,
+  lyricsLines,
   lyricsLoading,
   lyricsError,
   upNextData,
@@ -96,8 +99,11 @@ export const PlayerTabs = React.memo(function PlayerTabs({
     setActiveTab(initialTab);
   }, [initialTab]);
 
+  // Helper para no refetchear si ya hay cualquiera de los dos formatos de lyrics
+  const lyricsAlreadyLoaded = lyricsText != null || (lyricsLines != null && lyricsLines.length > 0);
+
   useEffect(() => {
-    if (activeTab === "lyrics" && !lyricsText && !lyricsLoading) {
+    if (activeTab === "lyrics" && !lyricsAlreadyLoaded && !lyricsLoading) {
       onFetchLyrics();
     }
     if (activeTab === "upnext" && !upNextData && !upNextLoading) {
@@ -125,7 +131,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
     setActiveTab(tab);
     onTabChange(tab);
 
-    if (tab === "lyrics" && !lyricsText && !lyricsLoading) onFetchLyrics();
+    if (tab === "lyrics" && !lyricsAlreadyLoaded && !lyricsLoading) onFetchLyrics();
     if (tab === "upnext" && !upNextData && !upNextLoading) onFetchUpNext();
     if (tab === "related" && !relatedData && !relatedLoading) onFetchRelated();
   };
@@ -168,44 +174,50 @@ export const PlayerTabs = React.memo(function PlayerTabs({
         ))}
       </View>
 
-      <ProList
-        style={styles.contentContainer}
-        contentContainerStyle={styles.contentInner}
-        showsVerticalScrollIndicator
-        blockSize={2}
-        initialBlocks={3}
-        onEndReachedThreshold={0.5}
-      >
-        <View style={styles.tabContent}>
-          {activeTab === "upnext" && (
-            <UpNextTab
-              upNextData={upNextData}
-              upNextLoading={upNextLoading}
-              upNextError={upNextError}
-              onUpNextTrackPress={onUpNextTrackPress}
-            />
-          )}
-
-          {activeTab === "lyrics" && (
-            <LyricsTab
-              lyricsText={lyricsText}
-              lyricsLoading={lyricsLoading}
-              lyricsError={lyricsError}
-            />
-          )}
-
-          {activeTab === "related" && (
-            <RelatedTab
-              relatedData={relatedData}
-              relatedLoading={relatedLoading}
-              relatedError={relatedError}
-              onRelatedTrackPress={onRelatedTrackPress}
-              onRelatedArtistPress={onRelatedArtistPress}
-              onRelatedAlbumPress={onRelatedAlbumPress}
-            />
-          )}
+      {/* Lyrics tiene su propio scroll interno (ScrollView o FlatList segun el caso).
+          No lo envolvemos en ProList para evitar nested virtualized lists y
+          conflictos de scroll. UpNext y Related mantienen el ProList. */}
+      {activeTab === "lyrics" ? (
+        <View style={styles.contentContainer}>
+          <LyricsTab
+            lyricsText={lyricsText}
+            lyricsLines={lyricsLines}
+            lyricsLoading={lyricsLoading}
+            lyricsError={lyricsError}
+          />
         </View>
-      </ProList>
+      ) : (
+        <ProList
+          style={styles.contentContainer}
+          contentContainerStyle={styles.contentInner}
+          showsVerticalScrollIndicator
+          blockSize={2}
+          initialBlocks={3}
+          onEndReachedThreshold={0.5}
+        >
+          <View style={styles.tabContent}>
+            {activeTab === "upnext" && (
+              <UpNextTab
+                upNextData={upNextData}
+                upNextLoading={upNextLoading}
+                upNextError={upNextError}
+                onUpNextTrackPress={onUpNextTrackPress}
+              />
+            )}
+
+            {activeTab === "related" && (
+              <RelatedTab
+                relatedData={relatedData}
+                relatedLoading={relatedLoading}
+                relatedError={relatedError}
+                onRelatedTrackPress={onRelatedTrackPress}
+                onRelatedArtistPress={onRelatedArtistPress}
+                onRelatedAlbumPress={onRelatedAlbumPress}
+              />
+            )}
+          </View>
+        </ProList>
+      )}
     </View>
   );
 }, (prevProps, nextProps) => {
@@ -217,6 +229,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
     prevProps.isPlaying === nextProps.isPlaying &&
     prevProps.autoplayStartIndex === nextProps.autoplayStartIndex &&
     prevProps.lyricsText === nextProps.lyricsText &&
+    prevProps.lyricsLines === nextProps.lyricsLines &&
     prevProps.lyricsLoading === nextProps.lyricsLoading &&
     prevProps.upNextData === nextProps.upNextData &&
     prevProps.upNextLoading === nextProps.upNextLoading &&

@@ -16,7 +16,6 @@ export interface Artist {
     singles?: boolean;
   };
 }
-
 export interface TopSong {
   id: string;
   title: string;
@@ -27,14 +26,12 @@ export interface TopSong {
   duration_seconds?: number;
   thumbnail?: string | null;
 }
-
 export interface Album {
   id: string;
   title: string;
   year?: string;
   thumbnails: { url: string; width: number; height: number }[];
 }
-
 export interface Single {
   id: string;
   title: string;
@@ -42,14 +39,12 @@ export interface Single {
   year?: string;
   thumbnails: { url: string; width: number; height: number }[];
 }
-
 export interface RelatedArtist {
   id: string;
   name: string;
   subtitle: string;
   thumbnails: { url: string; width: number; height: number }[];
 }
-
 export interface Song {
   id: string;
   title: string;

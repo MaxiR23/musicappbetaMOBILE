@@ -81,7 +81,7 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
   });
 
   const { isLiked, liking, toggleLike } = useTrackLikes({ currentSong });
-  const { lyricsText, lyricsLoading, lyricsError, mainScrollRef, fetchLyrics } = useTrackLyrics({
+  const { lyricsText, lyricsLines, lyricsLoading, lyricsError, mainScrollRef, fetchLyrics } = useTrackLyrics({
     currentSong,
     getTrackLyrics,
     setPanLocked,
@@ -285,6 +285,7 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
         activePlayerTab={activePlayerTab}
         onTabChange={handleTabChange}
         lyricsText={lyricsText}
+        lyricsLines={lyricsLines}
         lyricsLoading={lyricsLoading}
         lyricsError={lyricsError}
         mainScrollRef={mainScrollRef}

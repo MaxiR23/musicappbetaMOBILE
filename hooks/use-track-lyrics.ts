@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { ScrollView } from "react-native";
 
+export interface LyricLine {
+  text: string;
+  start_time: number; // ms
+  end_time: number; // ms
+  id: number;
+}
+
 interface UseTrackLyricsParams {
   currentSong: any;
   getTrackLyrics: (id: string) => Promise<any>;
@@ -8,8 +15,8 @@ interface UseTrackLyricsParams {
 }
 
 /**
- * Hook para manejar la carga y visualización de letras de canciones
- * Incluye estados de loading, error y control del scroll
+ * Hook para manejar la carga y visualizacion de letras de canciones.
+ * Soporta lyrics planas (string) y sincronizadas (array de LyricLine).
  */
 export function useTrackLyrics({
   currentSong,
@@ -18,6 +25,7 @@ export function useTrackLyrics({
 }: UseTrackLyricsParams) {
   const [lyricsOpen, setLyricsOpen] = useState(false);
   const [lyricsText, setLyricsText] = useState<string | null>(null);
+  const [lyricsLines, setLyricsLines] = useState<LyricLine[] | null>(null);
   const [lyricsLoading, setLyricsLoading] = useState(false);
   const [lyricsError, setLyricsError] = useState<string | null>(null);
   const mainScrollRef = useRef<ScrollView>(null);
@@ -31,16 +39,26 @@ export function useTrackLyrics({
 
     try {
       const res = await getTrackLyrics(String(currentSong.id));
-      
+
       if (!res?.ok || !res?.lyrics) {
         setLyricsText(null);
+        setLyricsLines(null);
         setLyricsError("No hay letras para este tema.");
+        return;
+      }
+
+      if (res.has_timestamps && Array.isArray(res.lyrics)) {
+        setLyricsLines(res.lyrics as LyricLine[]);
+        setLyricsText(null);
       } else {
         const txt = String(res.lyrics).replace(/\r\n/g, "\n").trim();
         setLyricsText(txt || null);
+        setLyricsLines(null);
+        if (!txt) setLyricsError("No hay letras para este tema.");
       }
     } catch {
       setLyricsText(null);
+      setLyricsLines(null);
       setLyricsError("No se pudieron cargar las letras.");
     } finally {
       setLyricsLoading(false);
@@ -52,22 +70,23 @@ export function useTrackLyrics({
     const next = !lyricsOpen;
     setLyricsOpen(next);
 
-    // Si se está abriendo y no hay letras cargadas, fetchear
-    if (next && lyricsText == null && !lyricsLoading) {
+    // Si se esta abriendo y no hay letras cargadas (ni texto ni lineas), fetchear
+    if (next && lyricsText == null && lyricsLines == null && !lyricsLoading) {
       await fetchLyrics();
     }
 
-    // Si se está cerrando, resetear scroll y desbloquear pan
+    // Si se esta cerrando, resetear scroll y desbloquear pan
     if (!next) {
       setPanLocked(false);
       mainScrollRef.current?.scrollTo({ y: 0, animated: false });
     }
   };
 
-  // Reset cuando cambia la canción
+  // Reset cuando cambia la cancion
   useEffect(() => {
     setLyricsOpen(false);
     setLyricsText(null);
+    setLyricsLines(null);
     setLyricsError(null);
     setLyricsLoading(false);
     setPanLocked(false);
@@ -76,6 +95,7 @@ export function useTrackLyrics({
   return {
     lyricsOpen,
     lyricsText,
+    lyricsLines,
     lyricsLoading,
     lyricsError,
     mainScrollRef,
