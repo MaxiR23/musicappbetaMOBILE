@@ -60,6 +60,7 @@ export default function LibraryScreen() {
           return (
             <ReleaseCard
               cover={item.thumbnail_url || null}
+              thumbnails={item.thumbnail_urls}
               title={item.title || t("untitled")}
               onPress={() =>
                 router.push(`/(tabs)/library/playlist/${encodeURIComponent(item.id)}`)
@@ -149,7 +150,7 @@ export default function LibraryScreen() {
         onOpenChange={setCreateOpen}
         // El provider escucha onPlaylistChange internamente, no hace falta pasarle callback.
         // Si tu modal requiere el prop, pasale () => {} o sacá el prop del modal.
-        onCreated={() => {}}
+        onCreated={() => { }}
       />
     </>
   );

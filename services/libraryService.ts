@@ -61,7 +61,6 @@ export type LibraryViewKind =
   | "own_playlist"
   | "saved_playlist"
   | "saved_album";
-
 export interface LibraryViewItem {
   kind: LibraryViewKind;
   id: string;
@@ -69,8 +68,8 @@ export interface LibraryViewItem {
   thumbnail_url: string;
   subtitle: string;
   sorted_at: string;
+  thumbnail_urls?: string[];
 }
-
 export interface LibraryView {
   sort: "recents";
   items: LibraryViewItem[];
