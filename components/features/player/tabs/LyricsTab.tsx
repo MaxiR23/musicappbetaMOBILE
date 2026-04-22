@@ -9,15 +9,15 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useProgress } from "react-native-track-player";
 import { sharedTabStyles } from "./shared-tab-styles";
 
-const LINE_HEIGHT = 56;
 const POLL_INTERVAL_MS = 500;
 const SCROLL_VIEW_POSITION = 0.4;
-const SCALE_ACTIVE = 1.12;
+const SCALE_ACTIVE = 1.06;
 const SCALE_ANIMATION_DURATION = 350;
 
 interface LyricsTabProps {
@@ -91,7 +91,12 @@ function findActiveLineIndex(lines: LyricLine[], positionMs: number): number {
 
 const TimedLyrics = memo(function TimedLyrics({ lines }: { lines: LyricLine[] }) {
   const { position } = useProgress(POLL_INTERVAL_MS);
+  const { height } = useWindowDimensions();
   const positionMs = position * 1000;
+
+  const lineHeight = height < 700 ? 48 : 56;
+  const paddingBottom = height * 0.32;
+  const paddingTop = height * 0.08;
 
   const activeIndex = useMemo(
     () => findActiveLineIndex(lines, positionMs),
@@ -131,18 +136,23 @@ const TimedLyrics = memo(function TimedLyrics({ lines }: { lines: LyricLine[] })
 
   const getItemLayout = useCallback(
     (_: ArrayLike<LyricLine> | null | undefined, index: number) => ({
-      length: LINE_HEIGHT,
-      offset: LINE_HEIGHT * index,
+      length: lineHeight,
+      offset: lineHeight * index,
       index,
     }),
-    []
+    [lineHeight]
   );
 
   const renderItem: ListRenderItem<LyricLine> = useCallback(
     ({ item, index }) => (
-      <LyricsLineItem text={item.text} isActive={index === activeIndex} />
+      <LyricsLineItem
+        text={item.text}
+        isActive={index === activeIndex}
+        lineHeight={lineHeight}
+        height={height}
+      />
     ),
-    [activeIndex]
+    [activeIndex, lineHeight, height]
   );
 
   const handleScrollToIndexFailed = useCallback(
@@ -152,11 +162,11 @@ const TimedLyrics = memo(function TimedLyrics({ lines }: { lines: LyricLine[] })
       averageItemLength: number;
     }) => {
       listRef.current?.scrollToOffset({
-        offset: info.index * LINE_HEIGHT,
+        offset: info.index * lineHeight,
         animated: true,
       });
     },
-    []
+    [lineHeight]
   );
 
   return (
@@ -173,15 +183,30 @@ const TimedLyrics = memo(function TimedLyrics({ lines }: { lines: LyricLine[] })
       maxToRenderPerBatch={8}
       windowSize={7}
       removeClippedSubviews
-      contentContainerStyle={styles.timedContent}
+      contentContainerStyle={[
+        styles.timedContent,
+        { paddingTop, paddingBottom },
+      ]}
     />
   );
 });
 
 const LyricsLineItem = memo(
-  function LyricsLineItem({ text, isActive }: { text: string; isActive: boolean }) {
+  function LyricsLineItem({
+    text,
+    isActive,
+    lineHeight,
+    height,
+  }: {
+    text: string;
+    isActive: boolean;
+    lineHeight: number;
+    height: number;
+  }) {
     const scale = useRef(new Animated.Value(isActive ? SCALE_ACTIVE : 1)).current;
     const opacity = useRef(new Animated.Value(isActive ? 1 : 0.4)).current;
+
+    const fontSize = height < 700 ? 17 : height > 844 ? 22 : 20;
 
     useEffect(() => {
       Animated.parallel([
@@ -199,14 +224,11 @@ const LyricsLineItem = memo(
     }, [isActive]);
 
     return (
-      <View style={styles.lineRow}>
+      <View style={[styles.lineRow, { height: lineHeight }]}>
         <Animated.Text
           style={[
             styles.lineText,
-            {
-              opacity,
-              transform: [{ scale }],
-            },
+            { fontSize, lineHeight: fontSize * 1.2, opacity, transform: [{ scale }] },
           ]}
           numberOfLines={2}
         >
@@ -215,7 +237,11 @@ const LyricsLineItem = memo(
       </View>
     );
   },
-  (prev, next) => prev.text === next.text && prev.isActive === next.isActive
+  (prev, next) =>
+    prev.text === next.text &&
+    prev.isActive === next.isActive &&
+    prev.lineHeight === next.lineHeight &&
+    prev.height === next.height
 );
 
 const styles = StyleSheet.create({
@@ -237,18 +263,13 @@ const styles = StyleSheet.create({
   },
   timedContent: {
     paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 260,
   },
   lineRow: {
-    height: LINE_HEIGHT,
     justifyContent: "center",
   },
   lineText: {
     color: "#fff",
-    fontSize: 20,
     fontWeight: "700",
-    lineHeight: 24,
     textAlign: "center",
   },
   lineTextActive: {
