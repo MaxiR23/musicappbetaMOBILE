@@ -1,5 +1,4 @@
 type Listener = () => void;
-
 class PlaylistEventEmitter {
   private listeners: Listener[] = [];
 

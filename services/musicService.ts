@@ -273,17 +273,6 @@ export const musicService = {
     );
   },
 
-  getPlaylists: async (versions: CacheVersions): Promise<any[]> => {
-    return cacheWrap(
-      'playlists:list',
-      async () => {
-        const data = await authFetch(`${API_URL}/playlists/`);
-        return data;
-      },
-      { version: versions['user-playlists'] }
-    );
-  },
-
   getPlaylistById: async (id: string, versions: CacheVersions): Promise<any> => {
     return cacheWrap(
       `playlist:${id}`,
@@ -317,7 +306,7 @@ export const musicService = {
         is_public: !!is_public,
       }),
     });
-    await cacheClearPrefix('playlists:list');
+    await cacheClearPrefix('library-view');
     emitPlaylistChange();
     return result;
   },
@@ -332,7 +321,7 @@ export const musicService = {
       }),
     });
     await cacheClearPrefix(`playlist:${playlistId}`);
-    await cacheClearPrefix('playlists:list');
+    await cacheClearPrefix('library-view');
     emitPlaylistChange();
     return result;
   },
@@ -347,7 +336,7 @@ export const musicService = {
       }
     );
     await cacheClearPrefix(`playlist:${playlistId}`);
-    await cacheClearPrefix('playlists:list');
+    await cacheClearPrefix('library-view');
     emitPlaylistChange();
     return result;
   },
@@ -358,7 +347,7 @@ export const musicService = {
       { method: "DELETE" }
     );
     await cacheClearPrefix(`playlist:${playlistId}`);
-    await cacheClearPrefix('playlists:list');
+    await cacheClearPrefix('library-view');
     emitPlaylistChange();
     return result;
   },
@@ -369,7 +358,7 @@ export const musicService = {
       { method: "DELETE" }
     );
     await cacheClearPrefix(`playlist:${playlistId}`);
-    await cacheClearPrefix('playlists:list');
+    await cacheClearPrefix('library-view');
     emitPlaylistChange();
     return result;
   },
@@ -540,7 +529,7 @@ export const musicService = {
       }
     );
     await cacheClearPrefix(`playlist:${playlistId}`);
-    await cacheClearPrefix('playlists:list');
+    await cacheClearPrefix('library-view');
     emitPlaylistChange();
     return result;
   },

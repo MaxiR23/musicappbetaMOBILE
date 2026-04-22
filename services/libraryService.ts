@@ -22,8 +22,24 @@ async function authFetch<T = any>(url: string, init: RequestInit = {}): Promise<
   return undefined as T;
 }
 
+// ── TYPES ─────────────────────────────────────────────────────────────────────
+
+// Input para add_library_item (POST /library): sigue usando "album" | "playlist"
+// porque asi esta guardado en la tabla library_items.
 export type LibraryKind = "album" | "playlist";
 
+export interface LibraryItemInput {
+  kind: LibraryKind;
+  external_id: string;
+  title: string;
+  thumbnail_url?: string;
+  artist?: string;
+  artist_id?: string;
+  album_id?: string;
+  album_name?: string;
+}
+
+// Item devuelto por add/remove (shape crudo de la tabla).
 export interface LibraryItem {
   id: string;
   user_id: string;
@@ -39,55 +55,77 @@ export interface LibraryItem {
   updated_at: string;
 }
 
-export interface LibraryItemInput {
-  kind: LibraryKind;
-  external_id: string;
+// Item de la grilla unificada (GET /library).
+export type LibraryViewKind =
+  | "liked"
+  | "own_playlist"
+  | "saved_playlist"
+  | "saved_album";
+
+export interface LibraryViewItem {
+  kind: LibraryViewKind;
+  id: string;
   title: string;
-  thumbnail_url?: string;
-  artist?: string;
-  artist_id?: string;
-  album_id?: string;
-  album_name?: string;
+  thumbnail_url: string;
+  subtitle: string;
+  sorted_at: string;
 }
 
-export const libraryService = {
-  list: async (
-    version: string,
-    kind?: LibraryKind,
-  ): Promise<{ items: LibraryItem[] }> => {
-    if (!version) {
-      throw new Error("libraryService.list requires a non-empty version");
-    }
-    const url = kind
-      ? `${API_URL}/library/?kind=${encodeURIComponent(kind)}`
-      : `${API_URL}/library/`;
-    const cacheKey = kind ? `library:list:${kind}` : "library:list";
+export interface LibraryView {
+  sort: "recents";
+  items: LibraryViewItem[];
+}
 
+// ── SERVICE ───────────────────────────────────────────────────────────────────
+
+const CACHE_KEY = "library-view:list";
+const CACHE_PREFIX = "library-view";
+
+export const libraryService = {
+  /**
+   * Grilla unificada: liked + playlists propias + items saved (albums/playlists).
+   * Reemplaza a los viejos getPlaylists + getLikedPlaylist + libraryService.list.
+   */
+  getView: async (
+    version: string,
+    sort: "recents" = "recents",
+  ): Promise<LibraryView> => {
+    if (!version) {
+      throw new Error("libraryService.getView requires a non-empty version");
+    }
     return cacheWrap(
-      cacheKey,
-      () => authFetch(url),
+      CACHE_KEY,
+      () => authFetch<LibraryView>(`${API_URL}/library?sort=${sort}`),
       { version }
     );
   },
 
+  /**
+   * Guarda un album o playlist de terceros en library_items.
+   * Invalida la grilla unificada del front.
+   */
   add: async (payload: LibraryItemInput): Promise<{ ok: boolean; item: LibraryItem }> => {
-    const result = await authFetch(`${API_URL}/library/`, {
+    const result = await authFetch(`${API_URL}/library`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
-    await cacheClearPrefix("library:list");
+    await cacheClearPrefix(CACHE_PREFIX);
     return result;
   },
 
+  /**
+   * Saca un album o playlist guardado.
+   * Invalida la grilla unificada del front.
+   */
   remove: async (
     kind: LibraryKind,
-    externalId: string
+    externalId: string,
   ): Promise<{ ok: boolean; removed: LibraryItem }> => {
     const result = await authFetch(
       `${API_URL}/library/${encodeURIComponent(kind)}/${encodeURIComponent(externalId)}`,
       { method: "DELETE" }
     );
-    await cacheClearPrefix("library:list");
+    await cacheClearPrefix(CACHE_PREFIX);
     return result;
   },
 };

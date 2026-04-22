@@ -3,7 +3,7 @@ import { AlbumSkeletonLayout } from "@/components/shared/skeletons/Skeleton";
 import TrackActionsSheet from "@/components/shared/TrackActionsSheet";
 import { canOffline } from "@/config/feature-flags";
 import { useDetailScreen } from "@/hooks/use-detail-screen";
-import { useLibrary } from "@/hooks/use-library";
+import { useLibraryView } from "@/hooks/use-library-view";
 import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
 import { useUserProfile } from "@/hooks/use-user-profile";
@@ -44,7 +44,7 @@ export default function AlbumScreen({ currentTab = 'home' }: AlbumScreenProps) {
     const { t: tLibrary } = useTranslation("library");
 
     const { userId } = useUserProfile();
-    const { isInLibrary, addToLibrary, removeFromLibrary } = useLibrary();
+    const { isInLibrary, addToLibrary, removeFromLibrary } = useLibraryView();
 
     const offlineAllowed = !!userId && canOffline(userId);
     const offlineId = id ?? null;

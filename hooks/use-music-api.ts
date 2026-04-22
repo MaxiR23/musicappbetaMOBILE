@@ -92,11 +92,6 @@ export function useMusicApi() {
 
   // ==================== PRIVATE (AUTH) ====================
 
-  const getPlaylists = useCallback(
-    () => musicService.getPlaylists(versions),
-    [versions]
-  );
-
   const getPlaylistById = useCallback(
     (id: string) => musicService.getPlaylistById(id, versions),
     [versions]
@@ -247,7 +242,6 @@ export function useMusicApi() {
     getGenrePlaylists,
     getGenreCategories,
     getGenrePlaylistTracks,
-    getPlaylists,
     getPlaylistById,
     getLikedPlaylist,
     createPlaylist,

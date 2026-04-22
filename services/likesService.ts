@@ -9,6 +9,7 @@ import {
 } from "@/lib/likesDb";
 import { supabase } from "@/lib/supabase";
 import { cacheClearPrefix } from "@/utils/cache";
+import { emitLikesChange } from "@/utils/likes-events";
 
 // ── AUTH FETCH (mismo patron que musicService) ────────────────────────────────
 
@@ -99,6 +100,9 @@ export const likesService = {
     });
 
     await cacheClearPrefix("playlist:liked");
+    await cacheClearPrefix("library-view");
+
+    emitLikesChange();
   },
 
   unlike: async (trackId: string): Promise<void> => {
@@ -111,6 +115,9 @@ export const likesService = {
     });
 
     await cacheClearPrefix("playlist:liked");
+    await cacheClearPrefix("library-view");
+
+    emitLikesChange();
   },
 
   fetchAll: async (): Promise<LikedTrackRow[]> => {

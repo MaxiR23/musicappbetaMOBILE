@@ -14,12 +14,11 @@ import MusicPlayer from "@/components/features/player/MusicPlayer";
 import { MusicProvider } from "@/providers/MusicProvider";
 import * as PlayerService from "@/services/PlayerService";
 
-import { LibraryProvider } from "@/providers/LibraryProvider";
+import { LibraryViewProvider } from "@/providers/LibraryViewProvider";
 import { LikesProvider } from "@/providers/LikesProvider";
 
 import { useMusic } from "@/hooks/use-music";
 import { useMusicApi } from "@/hooks/use-music-api";
-import { PlaylistsProvider } from "@/providers/PlaylistsProvider";
 
 const MyTheme = {
   ...DarkTheme,
@@ -56,13 +55,11 @@ function Gate() {
 function AuthedApp() {
   return (
     <LikesProvider>
-      <LibraryProvider>
-        <PlaylistsProvider>
-          <MusicProvider>
-            <InnerLayout />
-          </MusicProvider>
-        </PlaylistsProvider>
-      </LibraryProvider>
+      <LibraryViewProvider>
+        <MusicProvider>
+          <InnerLayout />
+        </MusicProvider>
+      </LibraryViewProvider>
     </LikesProvider>
   );
 }
