@@ -376,6 +376,7 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
             title={title}
             artist_name={artist_name}
             isPlaying={isPlaying}
+            accentColor={accentColor}
             autoplayStartIndex={autoplayStartIndex}
             lyricsText={lyricsText}
             lyricsLines={lyricsLines}

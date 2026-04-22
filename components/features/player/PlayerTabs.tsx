@@ -34,6 +34,7 @@ interface PlayerTabsProps {
   artist_name: string;
   isPlaying: boolean;
 
+  accentColor?: string;
   autoplayStartIndex?: number;
 
   lyricsText: string | null;
@@ -68,6 +69,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
   title,
   artist_name,
   isPlaying,
+  accentColor = "#1a1a1a",
   autoplayStartIndex = 0,
   lyricsText,
   lyricsLines,
@@ -137,10 +139,10 @@ export const PlayerTabs = React.memo(function PlayerTabs({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: accentColor }]}>
       <StatusBar barStyle="light-content" />
 
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: accentColor }]}>
         <TouchableOpacity onPress={onCoverPress} activeOpacity={0.8}>
           <Image source={coverUrl} style={styles.coverThumb} />
         </TouchableOpacity>
@@ -159,7 +161,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
         </TouchableOpacity>
       </View>
 
-      <View style={styles.tabsContainer}>
+      <View style={[styles.tabsContainer, { backgroundColor: accentColor }]}>
         {(["upnext", "lyrics", "related"] as TabType[]).map((tab) => (
           <Pressable
             key={tab}
@@ -227,6 +229,7 @@ export const PlayerTabs = React.memo(function PlayerTabs({
     prevProps.title === nextProps.title &&
     prevProps.artist_name === nextProps.artist_name &&
     prevProps.isPlaying === nextProps.isPlaying &&
+    prevProps.accentColor === nextProps.accentColor &&
     prevProps.autoplayStartIndex === nextProps.autoplayStartIndex &&
     prevProps.lyricsText === nextProps.lyricsText &&
     prevProps.lyricsLines === nextProps.lyricsLines &&
@@ -241,7 +244,6 @@ export const PlayerTabs = React.memo(function PlayerTabs({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#1a1a1a",
     paddingTop: Platform.OS === "ios" ? 44 : StatusBar.currentHeight || 24,
   },
   header: {
@@ -249,7 +251,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#222",
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,255,255,0.1)",
   },
@@ -257,7 +258,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 6,
-    backgroundColor: "#333",
   },
   headerInfo: {
     flex: 1,
@@ -279,7 +279,6 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     flexDirection: "row",
-    backgroundColor: "#1a1a1a",
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,255,255,0.1)",
   },

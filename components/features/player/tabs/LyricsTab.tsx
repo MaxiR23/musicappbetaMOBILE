@@ -1,5 +1,11 @@
+import {
+  LyricSyncStore,
+  useIsActiveLine,
+  useLyricSyncEngine,
+  useLyricSyncStore,
+} from "@/hooks/use-active-lyric-index";
 import type { LyricLine } from "@/hooks/use-track-lyrics";
-import React, { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import React, { memo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -12,10 +18,8 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { useProgress } from "react-native-track-player";
 import { sharedTabStyles } from "./shared-tab-styles";
 
-const POLL_INTERVAL_MS = 500;
 const SCROLL_VIEW_POSITION = 0.4;
 const SCALE_ACTIVE = 1.06;
 const SCALE_ANIMATION_DURATION = 350;
@@ -75,53 +79,45 @@ export const LyricsTab = memo(function LyricsTab({
   );
 });
 
-function findActiveLineIndex(lines: LyricLine[], positionMs: number): number {
-  if (lines.length === 0 || positionMs < lines[0].start_time) return -1;
-
-  let lo = 0;
-  let hi = lines.length - 1;
-
-  while (lo < hi) {
-    const mid = (lo + hi + 1) >>> 1;
-    if (lines[mid].start_time <= positionMs) lo = mid;
-    else hi = mid - 1;
-  }
-  return lo;
-}
-
 const TimedLyrics = memo(function TimedLyrics({ lines }: { lines: LyricLine[] }) {
-  const { position } = useProgress(POLL_INTERVAL_MS);
   const { height } = useWindowDimensions();
-  const positionMs = position * 1000;
+  const store = useLyricSyncStore();
+  useLyricSyncEngine(store, lines);
 
   const lineHeight = height < 700 ? 48 : 56;
   const paddingBottom = height * 0.32;
   const paddingTop = height * 0.08;
 
-  const activeIndex = useMemo(
-    () => findActiveLineIndex(lines, positionMs),
-    [lines, positionMs]
-  );
-
   const listRef = useRef<FlatList<LyricLine>>(null);
   const lastScrolledIndexRef = useRef<number>(-1);
+  const lastSeekVersionRef = useRef<number>(0);
   const userTookControlRef = useRef<boolean>(false);
 
   useEffect(() => {
-    if (userTookControlRef.current) return;
-    if (activeIndex < 0) return;
-    if (activeIndex === lastScrolledIndexRef.current) return;
+    const unsubscribe = store.subscribe(() => {
+      if (userTookControlRef.current) return;
 
-    lastScrolledIndexRef.current = activeIndex;
-    listRef.current?.scrollToIndex({
-      index: activeIndex,
-      animated: true,
-      viewPosition: SCROLL_VIEW_POSITION,
+      const newIndex = store.getIndex();
+      if (newIndex < 0) return;
+      if (newIndex === lastScrolledIndexRef.current) return;
+
+      const currentSeekVersion = store.getSeekVersion();
+      const wasSeek = currentSeekVersion !== lastSeekVersionRef.current;
+      lastSeekVersionRef.current = currentSeekVersion;
+      lastScrolledIndexRef.current = newIndex;
+
+      listRef.current?.scrollToIndex({
+        index: newIndex,
+        animated: !wasSeek,
+        viewPosition: SCROLL_VIEW_POSITION,
+      });
     });
-  }, [activeIndex]);
+    return unsubscribe;
+  }, [store]);
 
   useEffect(() => {
     lastScrolledIndexRef.current = -1;
+    lastSeekVersionRef.current = 0;
     userTookControlRef.current = false;
   }, [lines]);
 
@@ -146,13 +142,14 @@ const TimedLyrics = memo(function TimedLyrics({ lines }: { lines: LyricLine[] })
   const renderItem: ListRenderItem<LyricLine> = useCallback(
     ({ item, index }) => (
       <LyricsLineItem
+        index={index}
         text={item.text}
-        isActive={index === activeIndex}
+        store={store}
         lineHeight={lineHeight}
         height={height}
       />
     ),
-    [activeIndex, lineHeight, height]
+    [store, lineHeight, height]
   );
 
   const handleScrollToIndexFailed = useCallback(
@@ -191,18 +188,24 @@ const TimedLyrics = memo(function TimedLyrics({ lines }: { lines: LyricLine[] })
   );
 });
 
+interface LyricsLineItemProps {
+  index: number;
+  text: string;
+  store: LyricSyncStore;
+  lineHeight: number;
+  height: number;
+}
+
 const LyricsLineItem = memo(
   function LyricsLineItem({
+    index,
     text,
-    isActive,
+    store,
     lineHeight,
     height,
-  }: {
-    text: string;
-    isActive: boolean;
-    lineHeight: number;
-    height: number;
-  }) {
+  }: LyricsLineItemProps) {
+    const isActive = useIsActiveLine(store, index);
+
     const scale = useRef(new Animated.Value(isActive ? SCALE_ACTIVE : 1)).current;
     const opacity = useRef(new Animated.Value(isActive ? 1 : 0.4)).current;
 
@@ -239,7 +242,8 @@ const LyricsLineItem = memo(
   },
   (prev, next) =>
     prev.text === next.text &&
-    prev.isActive === next.isActive &&
+    prev.index === next.index &&
+    prev.store === next.store &&
     prev.lineHeight === next.lineHeight &&
     prev.height === next.height
 );

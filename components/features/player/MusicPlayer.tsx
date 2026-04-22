@@ -315,7 +315,7 @@ export default function MusicPlayer({ isPlaying, onTogglePlay, onNext, onPrev }:
         onRelatedArtistPress={goToArtist}
         onRelatedAlbumPress={goToAlbum}
         setPanLocked={setPanLocked}
-        accentColor={ACCENT}
+        accentColor={color}
       />
 
       <TrackActionsSheet
