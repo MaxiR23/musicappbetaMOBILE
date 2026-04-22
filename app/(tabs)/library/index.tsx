@@ -111,7 +111,21 @@ export default function LibraryScreen() {
     <>
       <StatusBar barStyle="light-content" />
       <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
-        <ScreenHeader title={t("header")} />
+        <ScreenHeader
+          title={t("header")}
+          rightContent={
+            <TouchableOpacity
+              onPress={() => setCreateOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={t("create_playlist")}
+              hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+              style={styles.headerAction}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add" size={26} color="#fff" />
+            </TouchableOpacity>
+          }
+        />
 
         <FlatList
           data={data}
@@ -128,14 +142,6 @@ export default function LibraryScreen() {
           maxToRenderPerBatch={10}
           windowSize={5}
         />
-
-        <TouchableOpacity
-          style={[styles.fab, { bottom: contentPadding.fabBottom }]}
-          onPress={() => setCreateOpen(true)}
-          activeOpacity={0.9}
-        >
-          <Ionicons name="add" size={28} color="#fff" />
-        </TouchableOpacity>
       </View>
 
       <CreatePlaylistModal
@@ -154,20 +160,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0e0e0e",
   },
-  fab: {
-    position: "absolute",
-    right: 20,
-    bottom: 90,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#4facfe",
+  headerAction: {
+    width: "100%",
+    height: "100%",
     alignItems: "center",
     justifyContent: "center",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
   },
 });
