@@ -125,7 +125,8 @@ export function useMusicApi() {
   );
 
   const removeTrackFromPlaylist = useCallback(
-    (playlistId: string, trackId: string) => musicService.removeTrackFromPlaylist(playlistId, trackId),
+    (playlistId: string, trackId: string, opts?: { catalogTrackId?: string }) =>
+      musicService.removeTrackFromPlaylist(playlistId, trackId, opts),
     []
   );
 

@@ -422,8 +422,9 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
 
   const handleRemoveFromSheet = async (playlistId: string, trackIdMaybe: string) => {
     const internalId = String(selectedTrack?.internalId ?? trackIdMaybe);
+    const catalogTrackId = selectedTrack?.id ? String(selectedTrack.id) : undefined;
     try {
-      await removeTrackFromPlaylist(playlistId, internalId);
+      await removeTrackFromPlaylist(playlistId, internalId, { catalogTrackId });
 
       setPlaylist((prev: any) =>
         prev
@@ -560,8 +561,12 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
         return (
           <PlaybackButtons
             onPlay={handlePlayAll}
-            onShuffle={handleShuffleAll}
-            onDownload={showOfflineButton ? handleDownloadPress : undefined}
+            onShuffle={mappedSongs.length >= 2 ? handleShuffleAll : undefined}
+            onDownload={
+              showOfflineButton && mappedSongs.length >= 1
+                ? handleDownloadPress
+                : undefined
+            }
             downloadState={downloadState}
             downloadProgress={offlineState.progress}
           />

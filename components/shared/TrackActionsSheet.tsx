@@ -1,3 +1,4 @@
+import { useLibraryView } from "@/hooks/use-library-view";
 import { useMusicApi } from "@/hooks/use-music-api";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useSegments } from "expo-router";
@@ -74,13 +75,12 @@ export default function TrackActionsSheet({
     const { t } = useTranslation("common");
     const segments = useSegments();
     const currentTab = (segments[1] as string) || "home";
-    const { getPlaylists, addTrackToPlaylist, createPlaylist } = useMusicApi();
+    const { addTrackToPlaylist, createPlaylist } = useMusicApi();
+    const { ownedPlaylists } = useLibraryView();
 
     const [mode, setMode] = useState<Mode>("root");
     const [loading, setLoading] = useState(false);
 
-    const [playlists, setPlaylists] = useState<any[]>([]);
-    const [loaded, setLoaded] = useState(false);
     const [err, setErr] = useState<string | null>(null);
 
     const [name, setName] = useState("");
@@ -102,22 +102,11 @@ export default function TrackActionsSheet({
             setName("");
             setDesc("");
             setLoading(false);
-            setLoaded(false);
             setAddingToId(null);
             setAddedToId(null);
             setAlreadyInId(null);
         }
     }, [open, track]);
-
-    useEffect(() => {
-        if (!open || mode !== "add" || loaded) return;
-        getPlaylists()
-            .then((pls) => {
-                setPlaylists(pls || []);
-                setLoaded(true);
-            })
-            .catch((e) => console.error("[Sheet] getPlaylists error:", e));
-    }, [open, mode, loaded, getPlaylists]);
 
     // TODO: TEST offline {
     useEffect(() => {
@@ -367,7 +356,7 @@ export default function TrackActionsSheet({
 
                     {mode === "add" && (
                         <ScrollView style={{ maxHeight: 360 }} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-                            {playlists.map((pl) => {
+                            {ownedPlaylists.map((pl) => {
                                 const isAlready = alreadyInId === pl.id;
                                 return (
                                     <TouchableOpacity

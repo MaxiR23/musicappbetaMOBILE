@@ -1,4 +1,11 @@
 import { API_URL } from "@/constants/config";
+
+import {
+  purgeOfflinePlaylist,
+  syncTrackToOfflinePlaylist,
+  unsyncTrackFromOfflinePlaylist,
+} from "@/lib/offlineSync";
+
 import { cacheClearPrefix, cacheWrap } from "@/utils/cache";
 import { toTrackPayload } from "@/utils/music-helpers";
 import { emitPlaylistChange } from "@/utils/playlist-events";
@@ -338,6 +345,9 @@ export const musicService = {
     await cacheClearPrefix(`playlist:${playlistId}`);
     await cacheClearPrefix('library-view');
     emitPlaylistChange();
+
+    syncTrackToOfflinePlaylist(playlistId, song).catch(() => { });
+
     return result;
   },
 
@@ -349,10 +359,17 @@ export const musicService = {
     await cacheClearPrefix(`playlist:${playlistId}`);
     await cacheClearPrefix('library-view');
     emitPlaylistChange();
+
+    purgeOfflinePlaylist(playlistId).catch(() => { });
+
     return result;
   },
 
-  removeTrackFromPlaylist: async (playlistId: string, trackId: string) => {
+  removeTrackFromPlaylist: async (
+    playlistId: string,
+    trackId: string,
+    opts?: { catalogTrackId?: string }
+  ) => {
     const result = await authFetch(
       `${API_URL}/playlists/${encodeURIComponent(playlistId)}/tracks/${encodeURIComponent(trackId)}`,
       { method: "DELETE" }
@@ -360,6 +377,11 @@ export const musicService = {
     await cacheClearPrefix(`playlist:${playlistId}`);
     await cacheClearPrefix('library-view');
     emitPlaylistChange();
+
+    if (opts?.catalogTrackId) {
+      unsyncTrackFromOfflinePlaylist(playlistId, opts.catalogTrackId).catch(() => { });
+    }
+
     return result;
   },
 
