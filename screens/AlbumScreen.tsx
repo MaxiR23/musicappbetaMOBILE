@@ -101,7 +101,9 @@ export default function AlbumScreen({ currentTab = 'home' }: AlbumScreenProps) {
             ? "done"
             : offlineState.status === "downloading"
                 ? "downloading"
-                : "none";
+                : offlineState.status === "queued"
+                    ? "queued"
+                    : "none";
 
     const openPremiumOptions = () => {
         if (!id) return;
@@ -163,7 +165,7 @@ export default function AlbumScreen({ currentTab = 'home' }: AlbumScreenProps) {
     const handleDownloadPress = () => {
         if (!album || !id) return;
 
-        if (offlineState.status === "downloading") {
+        if (offlineState.status === "downloading" || offlineState.status === "queued") {
             cancelDownload();
             return;
         }

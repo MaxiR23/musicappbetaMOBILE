@@ -2,16 +2,21 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
 import Animated, {
+  cancelAnimation,
+  Easing,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
   withSequence,
   withSpring,
   withTiming,
 } from "react-native-reanimated";
+
 import Svg, { Circle } from "react-native-svg";
 
-export type DownloadState = "none" | "downloading" | "done";
+export type DownloadState = "none" | "queued" | "downloading" | "done";
 export type LibraryState = "none" | "added";
 
 const RING_SIZE = 44;
@@ -74,10 +79,24 @@ export default function PlaybackButtons({
     position: "absolute",
   }));
 
-  const checkAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: checkScale.value }],
-    opacity: checkScale.value,
-    position: "absolute",
+  const spinRotation = useSharedValue(0);
+
+  useEffect(() => {
+    if (downloadState === "queued") {
+      spinRotation.value = 0;
+      spinRotation.value = withRepeat(
+        withTiming(360, { duration: 1000, easing: Easing.linear }),
+        -1,
+        false
+      );
+    } else {
+      cancelAnimation(spinRotation);
+      spinRotation.value = 0;
+    }
+  }, [downloadState, spinRotation]);
+
+  const spinStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${spinRotation.value}deg` }],
   }));
 
   return (
@@ -152,6 +171,32 @@ export default function PlaybackButtons({
                   transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
                 />
               </Svg>
+              <Ionicons name="stop" size={12} color="#fff" />
+            </View>
+          ) : downloadState === "queued" ? (
+            <View style={styles.progressWrap}>
+              <Animated.View style={[StyleSheet.absoluteFill, spinStyle]}>
+                <Svg width={RING_SIZE} height={RING_SIZE}>
+                  <Circle
+                    cx={RING_SIZE / 2}
+                    cy={RING_SIZE / 2}
+                    r={RING_RADIUS}
+                    stroke="rgba(255,255,255,0.15)"
+                    strokeWidth={RING_STROKE}
+                    fill="none"
+                  />
+                  <Circle
+                    cx={RING_SIZE / 2}
+                    cy={RING_SIZE / 2}
+                    r={RING_RADIUS}
+                    stroke="#fff"
+                    strokeWidth={RING_STROKE}
+                    fill="none"
+                    strokeDasharray={`${RING_CIRCUMFERENCE * 0.25} ${RING_CIRCUMFERENCE * 0.75}`}
+                    strokeLinecap="round"
+                  />
+                </Svg>
+              </Animated.View>
               <Ionicons name="stop" size={12} color="#fff" />
             </View>
           ) : downloadState === "done" ? (

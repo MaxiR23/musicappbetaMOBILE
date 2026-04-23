@@ -300,7 +300,7 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
   const handleDownloadPress = () => {
     if (!playlist) return;
 
-    if (offlineState.status === "downloading") {
+    if (offlineState.status === "downloading" || offlineState.status === "queued") {
       cancelDownload();
       return;
     }
@@ -512,7 +512,9 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
       ? "done"
       : offlineState.status === "downloading"
         ? "downloading"
-        : "none";
+        : offlineState.status === "queued"
+          ? "queued"
+          : "none";
   // TEST offline }
 
   const renderSection = (section: any) => {
