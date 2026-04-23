@@ -154,8 +154,7 @@ export default function GenrePlaylistsScreen() {
     []
   );
 
-  const headerTitle = genre?.name
-    || (initialLoading ? t("genres.playlists.loading") : t("genres.playlists.fallbackTitle"));
+  const headerTitle = genre?.name ?? ' ';
 
   return (
     <>
