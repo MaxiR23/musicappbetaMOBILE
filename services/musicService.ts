@@ -33,7 +33,7 @@ async function authFetch<T = any>(url: string, init: RequestInit = {}): Promise<
     headers.set("Content-Type", "application/json");
   }
 
-  const res = await fetch(url, { ...init, headers });
+  const res = await fetch(url, { ...init, headers, redirect: "error" });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`${res.status} ${res.statusText}${text ? ` - ${text}` : ""}`);
