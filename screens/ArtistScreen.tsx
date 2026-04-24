@@ -20,7 +20,7 @@ import { getUpgradedThumb, upgradeThumbUrl } from "@/utils/image-helpers";
 import { formatReleaseSubtitle } from "@/utils/subtitle-helpers";
 import { useTranslation } from "react-i18next";
 interface ArtistScreenProps {
-  currentTab?: 'home' | 'explore' | 'search';
+  currentTab?: 'home' | 'explore' | 'search' | 'library';
 }
 
 export default function ArtistScreen({ currentTab = 'home' }: ArtistScreenProps) {

@@ -169,23 +169,7 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
             0
           );
 
-          const songs = (rawData.tracks || []).map((t: any, idx: number) => ({
-            id: t.track_id,
-            internalId: t.id,
-            title: t.title,
-            artist: t.artist,
-            artist_id: t.artist_id,
-            album_id: t.album_id ?? t.extra?.album_id ?? null,
-            album_name: t.extra?.album_name ?? null,
-            duration: t.duration_seconds != null
-              ? `${Math.floor(t.duration_seconds / 60)}:${String(
-                t.duration_seconds % 60
-              ).padStart(2, "0")}`
-              : "--:--",
-            duration_seconds: t.duration_seconds ?? 0,
-            albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
-            _i: idx + 1,
-          }));
+          const songs = (rawData.tracks || []).map(mapBackendTrackToSong);
 
           setPlaylist({
             id: "liked",
@@ -207,23 +191,7 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
             0
           );
 
-          const songs = (rawData.tracks || []).map((t: any, idx: number) => ({
-            id: t.track_id,
-            internalId: t.id,
-            title: t.title,
-            artist: t.artist,
-            artist_id: t.artist_id,
-            album_id: t.album_id ?? t.extra?.album_id ?? null,
-            album_name: t.extra?.album_name ?? null,
-            duration: t.duration_seconds != null
-              ? `${Math.floor(t.duration_seconds / 60)}:${String(
-                t.duration_seconds % 60
-              ).padStart(2, "0")}`
-              : "--:--",
-            duration_seconds: t.duration_seconds ?? 0,
-            albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
-            _i: idx + 1,
-          }));
+          const songs = (rawData.tracks || []).map(mapBackendTrackToSong);
 
           setPlaylist({
             id: rawData.id,

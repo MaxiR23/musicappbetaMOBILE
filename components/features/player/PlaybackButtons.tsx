@@ -79,6 +79,12 @@ export default function PlaybackButtons({
     position: "absolute",
   }));
 
+  const checkAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: checkScale.value }],
+    opacity: checkScale.value,
+    position: "absolute",
+  }));
+
   const spinRotation = useSharedValue(0);
 
   useEffect(() => {

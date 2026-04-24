@@ -23,7 +23,7 @@ export const mmssToMs = (s?: string | null): number | null => {
  * Lanza error si falta cualquier campo obligatorio (backend exige todos not null).
  */
 export const toTrackPayload = (song: any) => {
-  const track_id = song?.track_id;
+  const track_id = song?.track_id ?? song?.id;
   const title = song?.title;
   const album = song?.album_name;
   const album_id = song?.album_id;
