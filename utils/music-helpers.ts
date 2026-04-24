@@ -3,7 +3,7 @@ import { getUpgradedThumb, upgradeThumbUrl } from "@/utils/image-helpers";
 /**
  * Retorna el primer valor que no sea undefined, null o string vacío
  */
-export const first = (...vals: any[]) => 
+export const first = (...vals: any[]) =>
   vals.find(v => v !== undefined && v !== null && v !== "");
 
 /**
@@ -19,43 +19,55 @@ export const mmssToMs = (s?: string | null): number | null => {
 };
 
 /**
- * Transforma un objeto song en el payload que espera el backend
+ * Transforma un objeto song en el payload que espera el backend POST /playlists/{id}/tracks.
+ * Lanza error si falta cualquier campo obligatorio (backend exige todos not null).
  */
 export const toTrackPayload = (song: any) => {
-  const id = first(song?.id, song?.track_id, song?.track_id, song?.video_id);
+  const track_id = song?.track_id ?? song?.id;
+  const title = song?.title;
+  const album = song?.album_name;
+  const album_id = song?.album_id;
 
-  const duration_ms =
-    song?.duration_ms ??
-    (song?.duration_seconds != null
-      ? Math.round(Number(song.duration_seconds) * 1000)
-      : mmssToMs(song?.duration));
+  const duration_seconds =
+    song?.duration_seconds ??
+    (() => {
+      const ms = mmssToMs(song?.duration);
+      return ms != null ? Math.round(ms / 1000) : null;
+    })();
 
   const thumbnail_url =
     getUpgradedThumb(song, 512) ??
-    upgradeThumbUrl(first(song?.thumbnail_url, song?.thumbnail, song?.albumCover), 512) ??
+    upgradeThumbUrl(first(song?.thumbnail_url, song?.thumbnail), 512) ??
     null;
 
-  const artist_id = first(song?.artist_id, song?.artist_id, song?.artists?.[0]?.id, null);
-  const artist =
-    first(
-      song?.artist_name,
-      song?.artist,
-      Array.isArray(song?.artists) 
-        ? song.artists.map((a: any) => a?.name).filter(Boolean).join(", ") 
-        : null
-    ) ?? null;
+  const artists = Array.isArray(song?.artists)
+    ? song.artists
+      .filter((a: any) => a?.name)
+      .map((a: any) => ({ id: a?.id ?? null, name: a.name }))
+    : [];
 
-  const album = first(song?.album_id, song?.album, null);
+  const missing: string[] = [];
+  if (!track_id) missing.push("track_id");
+  if (!title) missing.push("title");
+  if (!album) missing.push("album");
+  if (!album_id) missing.push("album_id");
+  if (duration_seconds == null) missing.push("duration_seconds");
+  if (!thumbnail_url) missing.push("thumbnail_url");
+  if (artists.length === 0) missing.push("artists");
+
+  if (missing.length > 0) {
+    throw new Error(
+      `toTrackPayload: missing required fields: ${missing.join(", ")}. Song: ${JSON.stringify(song)}`
+    );
+  }
 
   return {
-    id,
-    track_id: id,
-    artist_id,
+    track_id,
+    title,
+    artists,
     album,
-    duration_ms,
+    album_id,
+    duration_seconds,
     thumbnail_url,
-    extra: song,
-    title: song?.title ?? null,
-    artist,
   };
 };

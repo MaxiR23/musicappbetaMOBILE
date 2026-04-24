@@ -12,8 +12,7 @@ export interface LikesContextType {
 export interface LikeInput {
   track_id: string;
   title: string;
-  artist: string;
-  artist_id: string;
+  artists: { id: string | null; name: string }[];
   album: string;
   album_id: string;
   thumbnail_url: string;

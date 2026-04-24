@@ -19,8 +19,7 @@ const EXT_MAP: Record<number, string> = {
 export interface OfflineDownloadMeta {
   track_id: string;
   title: string;
-  artist: string;
-  artist_id: string;
+  artists: { id: string | null; name: string }[];
   album: string;
   album_id: string;
   thumbnail_url: string;
@@ -113,7 +112,13 @@ export const offlineService = {
     }
 
     await upsertOfflineTrack({
-      ...meta,
+      track_id: meta.track_id,
+      title: meta.title,
+      artists: JSON.stringify(meta.artists),
+      album: meta.album,
+      album_id: meta.album_id,
+      thumbnail_url: meta.thumbnail_url,
+      duration_seconds: meta.duration_seconds,
       downloaded_at: new Date().toISOString(),
     });
 

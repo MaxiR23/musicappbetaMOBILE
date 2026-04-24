@@ -3,8 +3,7 @@ import { getDb } from "@/lib/db";
 export interface LikedTrackRow {
   track_id: string;
   title: string;
-  artist: string;
-  artist_id: string;
+  artists: string;
   album: string;
   album_id: string;
   thumbnail_url: string;
@@ -14,17 +13,15 @@ export interface LikedTrackRow {
 }
 
 // ── WRITE ─────────────────────────────────────────────────────────────────────
-
 export async function upsertLike(track: LikedTrackRow): Promise<void> {
   const db = await getDb();
   await db.runAsync(
     `INSERT INTO liked_tracks
-      (track_id, title, artist, artist_id, album, album_id, thumbnail_url, duration_seconds, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (track_id, title, artists, album, album_id, thumbnail_url, duration_seconds, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(track_id) DO UPDATE SET
       title = excluded.title,
-      artist = excluded.artist,
-      artist_id = excluded.artist_id,
+      artists = excluded.artists,
       album = excluded.album,
       album_id = excluded.album_id,
       thumbnail_url = excluded.thumbnail_url,
@@ -32,8 +29,7 @@ export async function upsertLike(track: LikedTrackRow): Promise<void> {
       updated_at = excluded.updated_at`,
     track.track_id,
     track.title,
-    track.artist,
-    track.artist_id,
+    track.artists,
     track.album,
     track.album_id,
     track.thumbnail_url,

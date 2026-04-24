@@ -16,8 +16,7 @@ function songToOfflineMeta(song: Song): OfflineDownloadMeta {
   return {
     track_id: song.id,
     title: song.title,
-    artist: song.artist_name ?? "",
-    artist_id: song.artist_id ?? "",
+    artists: (song as any).artists ?? [],
     album: song.album_name ?? "",
     album_id: song.album_id ?? "",
     thumbnail_url: song.thumbnail ?? "",
@@ -59,8 +58,7 @@ export async function syncTrackToOfflinePlaylist(
       await upsertOfflineTrack({
         track_id: meta.track_id,
         title: meta.title,
-        artist: meta.artist,
-        artist_id: meta.artist_id,
+        artists: JSON.stringify(meta.artists),
         album: meta.album,
         album_id: meta.album_id,
         thumbnail_url: meta.thumbnail_url,
