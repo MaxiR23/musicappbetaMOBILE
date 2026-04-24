@@ -36,6 +36,31 @@ import {
   View
 } from "react-native";
 
+function formatDurationMMSS(seconds: number | null | undefined): string {
+  if (seconds == null) return "--:--";
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function mapBackendTrackToSong(t: any, idx: number) {
+  const artists = Array.isArray(t.artists) ? t.artists : [];
+  const primary = artists[0] ?? null;
+
+  return {
+    id: t.track_id,
+    internalId: t.id,
+    title: t.title,
+    artist: artists.map((a: any) => a?.name).filter(Boolean).join(", "),
+    artist_id: primary?.id ?? null,
+    artists,
+    album_id: t.album_id ?? null,
+    album_name: t.album ?? null,
+    duration: formatDurationMMSS(t.duration_seconds),
+    duration_seconds: t.duration_seconds ?? 0,
+    albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
+    _i: idx + 1,
+  };
+}
+
 interface PlaylistScreenProps {
   isGenrePlaylist?: boolean;
 }
@@ -122,23 +147,7 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
             0
           );
 
-          const songs = (result.tracks || []).map((t: any, idx: number) => ({
-            id: t.track_id,
-            internalId: t.id,
-            title: t.title,
-            artist: t.artist,
-            artist_id: t.artist_id,
-            album_id: t.album_id,
-            album_name: t.album_name,
-            duration: t.duration_seconds != null
-              ? `${Math.floor(t.duration_seconds / 60)}:${String(
-                t.duration_seconds % 60
-              ).padStart(2, "0")}`
-              : "--:--",
-            duration_seconds: t.duration_seconds ?? 0,
-            albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
-            _i: idx + 1,
-          }));
+          const songs = (result.tracks || []).map(mapBackendTrackToSong);
 
           setPlaylist({
             id: result.playlist.id,
@@ -322,8 +331,7 @@ export default function PlaylistScreen({ isGenrePlaylist = false }: PlaylistScre
     const tracks = (playlist.songs || []).map((s: any) => ({
       track_id: s.id,
       title: s.title,
-      artist: s.artist,
-      artist_id: s.artist_id ?? "",
+      artists: Array.isArray(s.artists) ? s.artists : [],
       album: s.album_name ?? "",
       album_id: s.album_id ?? "",
       thumbnail_url: s.albumCover ?? "",

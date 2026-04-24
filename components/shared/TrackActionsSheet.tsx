@@ -323,8 +323,7 @@ export default function TrackActionsSheet({
                                                 await download({
                                                     track_id: track.id,
                                                     title: track.title,
-                                                    artist: track.artist_name ?? track.artist ?? "",
-                                                    artist_id: track.artist_id ?? "",
+                                                    artists: Array.isArray(track.artists) ? track.artists : [],
                                                     album: track.album_name ?? track.album ?? "",
                                                     album_id: track.album_id ?? "",
                                                     thumbnail_url: track.thumbnail ?? track.thumbnail_url ?? "",

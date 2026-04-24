@@ -515,12 +515,22 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         if (listenTimeRef.current.accumulated >= 30 && lastLoggedTrackIdRef.current !== trackId) {
           lastLoggedTrackIdRef.current = trackId;
           const offline = await getOfflineTrack(trackId);
+
+          const offlineArtists = offline
+            ? (() => { try { return JSON.parse(offline.artists); } catch { return []; } })()
+            : [];
+          const offlinePrimary = offlineArtists[0] ?? null;
+          const offlineArtistNameJoined = offlineArtists
+            .map((a: any) => a?.name)
+            .filter(Boolean)
+            .join(", ");
+
           const metadata = offline
             ? {
               album_id: offline.album_id || undefined,
               album_name: offline.album || undefined,
-              artist_id: offline.artist_id || undefined,
-              artist_name: offline.artist || undefined,
+              artist_id: offlinePrimary?.id ?? undefined,
+              artist_name: offlineArtistNameJoined || undefined,
               track_name: offline.title,
               duration_seconds: offline.duration_seconds,
               thumbnail_url: offline.thumbnail_url,
@@ -534,6 +544,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
               duration_seconds: track.duration_seconds,
               thumbnail_url: track.thumbnail,
             };
+
           logPlayTrack(trackId, metadata).catch(() => { });
         }
 

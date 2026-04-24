@@ -1,12 +1,12 @@
 import { upsertOfflineTrack } from "@/lib/offlineItems";
 import {
-    getFailedTrackIdsForPlaylist,
-    getOfflinePlaylist,
-    getOkTrackIdsForPlaylist,
-    linkTrackToPlaylist,
-    OfflinePlaylistKind,
-    setOfflinePlaylistStatus,
-    upsertOfflinePlaylist,
+  getFailedTrackIdsForPlaylist,
+  getOfflinePlaylist,
+  getOkTrackIdsForPlaylist,
+  linkTrackToPlaylist,
+  OfflinePlaylistKind,
+  setOfflinePlaylistStatus,
+  upsertOfflinePlaylist,
 } from "@/lib/offlinePlaylists";
 import { OfflineDownloadMeta, offlineService } from "@/services/offline-service";
 
@@ -186,8 +186,7 @@ class OfflinePlaylistManager {
           await upsertOfflineTrack({
             track_id: next.track.track_id,
             title: next.track.title,
-            artist: next.track.artist,
-            artist_id: next.track.artist_id,
+            artists: JSON.stringify(next.track.artists),
             album: next.track.album,
             album_id: next.track.album_id,
             thumbnail_url: next.track.thumbnail_url,

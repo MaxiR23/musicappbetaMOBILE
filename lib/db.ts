@@ -14,21 +14,20 @@ const migrations: Migration[] = [
   {
     version: 1,
     up: `
-      CREATE TABLE IF NOT EXISTS liked_tracks (
-        track_id TEXT PRIMARY KEY NOT NULL,
-        title TEXT NOT NULL,
-        artist TEXT NOT NULL,
-        artist_id TEXT NOT NULL,
-        album TEXT NOT NULL DEFAULT '',
-        album_id TEXT NOT NULL DEFAULT '',
-        thumbnail_url TEXT NOT NULL DEFAULT '',
-        duration_seconds INTEGER NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      );
-      CREATE INDEX IF NOT EXISTS idx_liked_tracks_created
-        ON liked_tracks(created_at DESC);
-    `,
+    CREATE TABLE IF NOT EXISTS liked_tracks (
+      track_id TEXT PRIMARY KEY NOT NULL,
+      title TEXT NOT NULL,
+      artists TEXT NOT NULL,
+      album TEXT NOT NULL,
+      album_id TEXT NOT NULL,
+      thumbnail_url TEXT NOT NULL,
+      duration_seconds INTEGER NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_liked_tracks_created
+      ON liked_tracks(created_at DESC);
+  `,
   },
   {
     version: 2,
@@ -48,12 +47,11 @@ const migrations: Migration[] = [
     CREATE TABLE IF NOT EXISTS offline_tracks (
       track_id TEXT PRIMARY KEY NOT NULL,
       title TEXT NOT NULL,
-      artist TEXT NOT NULL,
-      artist_id TEXT NOT NULL,
-      album TEXT NOT NULL DEFAULT '',
-      album_id TEXT NOT NULL DEFAULT '',
-      thumbnail_url TEXT NOT NULL DEFAULT '',
-      duration_seconds INTEGER NOT NULL DEFAULT 0,
+      artists TEXT NOT NULL,
+      album TEXT NOT NULL,
+      album_id TEXT NOT NULL,
+      thumbnail_url TEXT NOT NULL,
+      duration_seconds INTEGER NOT NULL,
       downloaded_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_offline_tracks_downloaded

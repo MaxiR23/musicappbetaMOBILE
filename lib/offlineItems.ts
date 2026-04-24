@@ -3,8 +3,7 @@ import { getDb } from "@/lib/db";
 export interface OfflineTrackRow {
   track_id: string;
   title: string;
-  artist: string;
-  artist_id: string;
+  artists: string;
   album: string;
   album_id: string;
   thumbnail_url: string;
@@ -17,12 +16,11 @@ export async function upsertOfflineTrack(track: OfflineTrackRow): Promise<void> 
   const db = await getDb();
   await db.runAsync(
     `INSERT INTO offline_tracks
-      (track_id, title, artist, artist_id, album, album_id, thumbnail_url, duration_seconds, downloaded_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (track_id, title, artists, album, album_id, thumbnail_url, duration_seconds, downloaded_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(track_id) DO UPDATE SET
       title = excluded.title,
-      artist = excluded.artist,
-      artist_id = excluded.artist_id,
+      artists = excluded.artists,
       album = excluded.album,
       album_id = excluded.album_id,
       thumbnail_url = excluded.thumbnail_url,
@@ -30,8 +28,7 @@ export async function upsertOfflineTrack(track: OfflineTrackRow): Promise<void> 
       downloaded_at = excluded.downloaded_at`,
     track.track_id,
     track.title,
-    track.artist,
-    track.artist_id,
+    track.artists,
     track.album,
     track.album_id,
     track.thumbnail_url,

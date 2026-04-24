@@ -34,18 +34,15 @@ async function authFetch<T = any>(url: string, init: RequestInit = {}): Promise<
 }
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
-
 export interface LikePayload {
   track_id: string;
   title: string;
-  artist: string;
-  artist_id: string;
+  artists: { id: string | null; name: string }[];
   album: string;
   album_id: string;
   thumbnail_url: string;
   duration_seconds: number;
 }
-
 interface BackendLikeRow {
   track_id: string;
   created_at: string;
@@ -54,8 +51,7 @@ interface BackendLikeRow {
   tracks: {
     track_id: string;
     title: string;
-    artist: string;
-    artist_id: string;
+    artists: { id: string | null; name: string }[];
     album: string;
     album_id: string;
     thumbnail_url: string;
@@ -64,13 +60,11 @@ interface BackendLikeRow {
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
-
 function toLocalRow(row: BackendLikeRow): LikedTrackRow {
   return {
     track_id: row.track_id,
     title: row.tracks.title ?? "",
-    artist: row.tracks.artist ?? "",
-    artist_id: row.tracks.artist_id ?? "",
+    artists: JSON.stringify(row.tracks.artists ?? []),
     album: row.tracks.album ?? "",
     album_id: row.tracks.album_id ?? "",
     thumbnail_url: row.tracks.thumbnail_url ?? "",
@@ -81,19 +75,22 @@ function toLocalRow(row: BackendLikeRow): LikedTrackRow {
 }
 
 // ── API ───────────────────────────────────────────────────────────────────────
-
 export const likesService = {
   like: async (payload: LikePayload): Promise<void> => {
     const now = new Date().toISOString();
 
-    // 1. Write local (instantaneo)
     await upsertLike({
-      ...payload,
+      track_id: payload.track_id,
+      title: payload.title,
+      artists: JSON.stringify(payload.artists),
+      album: payload.album,
+      album_id: payload.album_id,
+      thumbnail_url: payload.thumbnail_url,
+      duration_seconds: payload.duration_seconds,
       created_at: now,
       updated_at: now,
     });
 
-    // 2. Push al backend (background)
     await authFetch(`${API_URL}/likes/`, {
       method: "POST",
       body: JSON.stringify(payload),
