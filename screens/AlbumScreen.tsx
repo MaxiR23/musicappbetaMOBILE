@@ -178,8 +178,7 @@ export default function AlbumScreen({ currentTab = 'home' }: AlbumScreenProps) {
         const tracks = mappedSongs.map((s: any) => ({
             track_id: s.id,
             title: s.title,
-            artist: s.artist_name ?? "",
-            artist_id: s.artist_id ?? "",
+            artists: Array.isArray(s.artists) ? s.artists : [],
             album: album.info?.title ?? "",
             album_id: id,
             thumbnail_url: s.thumbnail ?? coverUrl,

@@ -41,6 +41,7 @@ interface Job {
   meta: OfflinePlaylistMeta;
   tracks: OfflineDownloadMeta[];
   cancelled: boolean;
+  controller: AbortController;
 }
 
 class OfflinePlaylistManager {
@@ -83,7 +84,18 @@ class OfflinePlaylistManager {
       return;
     }
 
-    const job: Job = { meta, tracks, cancelled: false };
+    // Si hay un job activo de esta misma playlist (por ej. recien cancelada y
+    // todavia esta terminando de abortar), no encolamos: esperamos a que muera.
+    if (this.currentJob && this.currentJob.meta.playlist_id === meta.playlist_id) {
+      return;
+    }
+
+    const job: Job = {
+      meta,
+      tracks,
+      cancelled: false,
+      controller: new AbortController(),
+    };
     this.queue.push(job);
 
     this.setState(meta.playlist_id, {
@@ -102,15 +114,16 @@ class OfflinePlaylistManager {
     const idx = this.queue.findIndex((j) => j.meta.playlist_id === playlistId);
     if (idx !== -1) {
       this.queue[idx].cancelled = true;
+      this.queue[idx].controller.abort();
       this.queue.splice(idx, 1);
       this.setState(playlistId, { status: "cancelled" });
       this.states.delete(playlistId);
       return;
     }
-    // Cancelar el job activo (los workers salen en el proximo tick,
-    // despues de terminar la descarga del track actual).
+    // Cancelar el job activo: aborta los downloads en vuelo.
     if (this.currentJob && this.currentJob.meta.playlist_id === playlistId) {
       this.currentJob.cancelled = true;
+      this.currentJob.controller.abort();
     }
   }
 
@@ -169,36 +182,74 @@ class OfflinePlaylistManager {
         if (!next) break;
 
         try {
-          await offlineService.download(next.track);
-          await linkTrackToPlaylist(
-            meta.playlist_id,
-            next.track.track_id,
-            next.position,
-            "ok"
-          );
-          completedCount++;
-        } catch (err) {
+          // Skip si ya esta descargado (evita re-bajar al reintentar).
+          const already = await offlineService.isDownloaded(next.track.track_id);
+          if (already) {
+            // Aseguramos el link en la playlist por si no estaba.
+            await linkTrackToPlaylist(
+              meta.playlist_id,
+              next.track.track_id,
+              next.position,
+              "ok"
+            );
+            // Aseguramos el row de offline_tracks (idempotente).
+            await upsertOfflineTrack({
+              track_id: next.track.track_id,
+              title: next.track.title,
+              artists: JSON.stringify(next.track.artists),
+              album: next.track.album,
+              album_id: next.track.album_id,
+              thumbnail_url: next.track.thumbnail_url,
+              duration_seconds: next.track.duration_seconds,
+              downloaded_at: new Date().toISOString(),
+            });
+            completedCount++;
+          } else {
+            await offlineService.download(next.track, undefined, job.controller.signal);
+            await linkTrackToPlaylist(
+              meta.playlist_id,
+              next.track.track_id,
+              next.position,
+              "ok"
+            );
+            completedCount++;
+          }
+        } catch (err: any) {
+          // Si fue aborto, salimos sin marcar como failed.
+          if (err?.message === "aborted" || job.cancelled) {
+            break;
+          }
+
           console.warn(
             `[offlinePlaylistManager] Track ${next.track.track_id} failed:`,
             err
           );
-          // Stub para respetar la FK en offline_tracks.
-          await upsertOfflineTrack({
-            track_id: next.track.track_id,
-            title: next.track.title,
-            artists: JSON.stringify(next.track.artists),
-            album: next.track.album,
-            album_id: next.track.album_id,
-            thumbnail_url: next.track.thumbnail_url,
-            duration_seconds: next.track.duration_seconds,
-            downloaded_at: new Date().toISOString(),
-          });
-          await linkTrackToPlaylist(
-            meta.playlist_id,
-            next.track.track_id,
-            next.position,
-            "failed"
-          );
+
+          // Stub para respetar la FK en offline_tracks. Envuelto en try
+          // para que un fallo de SQLite no mate al worker entero.
+          try {
+            await upsertOfflineTrack({
+              track_id: next.track.track_id,
+              title: next.track.title,
+              artists: JSON.stringify(next.track.artists),
+              album: next.track.album,
+              album_id: next.track.album_id,
+              thumbnail_url: next.track.thumbnail_url,
+              duration_seconds: next.track.duration_seconds,
+              downloaded_at: new Date().toISOString(),
+            });
+            await linkTrackToPlaylist(
+              meta.playlist_id,
+              next.track.track_id,
+              next.position,
+              "failed"
+            );
+          } catch (innerErr) {
+            console.warn(
+              `[offlinePlaylistManager] Could not record failure for ${next.track.track_id}:`,
+              innerErr
+            );
+          }
           failedCount++;
         }
 

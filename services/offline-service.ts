@@ -64,11 +64,16 @@ export const offlineService = {
 
   download: async (
     meta: OfflineDownloadMeta,
-    onProgress?: (progress: number) => void
+    onProgress?: (progress: number) => void,
+    signal?: AbortSignal
   ): Promise<string> => {
     await ensureDir();
     const headers = await getAuthHeaders();
     const trackId = meta.track_id;
+
+    if (signal?.aborted) {
+      throw new Error("aborted");
+    }
 
     const tryItag = async (itag: number): Promise<string> => {
       const url = `${API_URL}/offline/fetch/${trackId}?itag=${itag}`;
@@ -87,27 +92,51 @@ export const offlineService = {
         }
       );
 
-      const result = await downloadResumable.downloadAsync();
-      if (!result?.uri) throw new Error("download_failed");
+      const onAbort = async () => {
+        try {
+          await downloadResumable.cancelAsync();
+        } catch {
+        }
+        try {
+          await FileSystem.deleteAsync(dest, { idempotent: true });
+        } catch {
+        }
+      };
+      signal?.addEventListener("abort", onAbort);
 
-      if (result.status && result.status >= 400) {
-        await FileSystem.deleteAsync(result.uri, { idempotent: true });
-        throw new Error(`download_failed_${result.status}`);
+      try {
+        const result = await downloadResumable.downloadAsync();
+
+        if (signal?.aborted) {
+          throw new Error("aborted");
+        }
+
+        if (!result?.uri) throw new Error("download_failed");
+
+        if (result.status && result.status >= 400) {
+          await FileSystem.deleteAsync(result.uri, { idempotent: true });
+          throw new Error(`download_failed_${result.status}`);
+        }
+
+        const fileInfo = await FileSystem.getInfoAsync(result.uri);
+        if (!fileInfo.exists || (fileInfo.size && fileInfo.size < 10000)) {
+          await FileSystem.deleteAsync(result.uri, { idempotent: true });
+          throw new Error("download_failed_invalid_file");
+        }
+
+        return result.uri;
+      } finally {
+        signal?.removeEventListener("abort", onAbort);
       }
-
-      const fileInfo = await FileSystem.getInfoAsync(result.uri);
-      if (!fileInfo.exists || (fileInfo.size && fileInfo.size < 10000)) {
-        await FileSystem.deleteAsync(result.uri, { idempotent: true });
-        throw new Error("download_failed_invalid_file");
-      }
-
-      return result.uri;
     };
 
     let uri: string;
     try {
       uri = await tryItag(PRIMARY_ITAG);
-    } catch {
+    } catch (err: any) {
+      if (err?.message === "aborted" || signal?.aborted) {
+        throw new Error("aborted");
+      }
       uri = await tryItag(FALLBACK_ITAG);
     }
 
