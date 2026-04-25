@@ -1,5 +1,5 @@
 import { API_URL } from "@/constants/config";
-import { removeOfflineTrack, upsertOfflineTrack } from "@/lib/offlineItems";
+import { getOfflineTrack, removeOfflineTrack, upsertOfflineTrack } from "@/lib/offlineItems";
 import { supabase } from "@/lib/supabase";
 import * as FileSystem from "expo-file-system";
 import { Platform } from "react-native";
@@ -44,22 +44,42 @@ function localPath(trackId: string, itag: number): string {
   return `${OFFLINE_DIR}${trackId}.${EXT_MAP[itag]}`;
 }
 
+async function findExistingFile(trackId: string): Promise<string | null> {
+  for (const ext of ["m4a", "opus"]) {
+    const path = `${OFFLINE_DIR}${trackId}.${ext}`;
+    const info = await FileSystem.getInfoAsync(path);
+    if (info.exists) return path;
+  }
+  return null;
+}
+
 export const offlineService = {
   isDownloaded: async (trackId: string): Promise<boolean> => {
-    for (const ext of ["m4a", "opus"]) {
-      const info = await FileSystem.getInfoAsync(`${OFFLINE_DIR}${trackId}.${ext}`);
-      if (info.exists) return true;
+    const path = await findExistingFile(trackId);
+    if (!path) return false;
+
+    // Si hay archivo pero no row en SQLite -> quedo huerfano de un crash.
+    // Lo borramos para que se vuelva a descargar limpio.
+    const row = await getOfflineTrack(trackId);
+    if (!row) {
+      await FileSystem.deleteAsync(path, { idempotent: true });
+      return false;
     }
-    return false;
+
+    return true;
   },
 
   getLocalPath: async (trackId: string): Promise<string | null> => {
-    for (const ext of ["m4a", "opus"]) {
-      const path = `${OFFLINE_DIR}${trackId}.${ext}`;
-      const info = await FileSystem.getInfoAsync(path);
-      if (info.exists) return path;
+    const path = await findExistingFile(trackId);
+    if (!path) return null;
+
+    const row = await getOfflineTrack(trackId);
+    if (!row) {
+      await FileSystem.deleteAsync(path, { idempotent: true });
+      return null;
     }
-    return null;
+
+    return path;
   },
 
   download: async (
