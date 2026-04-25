@@ -348,7 +348,10 @@ export default function SearchScreen() {
                           artist_name: item.artist_name,
                           artist_id: item.artist_id,
                           album_id: item.album_id,
+                          album_name: item.album_name,
                           thumbnail: item.thumbnail,
+                          duration_seconds: item.duration_seconds,
+                          artists: [{ artist_id: item.artist_id ?? null, name: item.artist_name }],
                         });
                         setActionsOpen(true);
                       }}

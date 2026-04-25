@@ -51,7 +51,6 @@ export const toTrackPayload = (song: any) => {
   if (!title) missing.push("title");
   if (!album) missing.push("album");
   if (!album_id) missing.push("album_id");
-  if (duration_seconds == null) missing.push("duration_seconds");
   if (!thumbnail_url) missing.push("thumbnail_url");
   if (artists.length === 0) missing.push("artists");
 
@@ -67,7 +66,7 @@ export const toTrackPayload = (song: any) => {
     artists,
     album,
     album_id,
-    duration_seconds,
+    duration_seconds: duration_seconds ?? null,
     thumbnail_url,
   };
 };
