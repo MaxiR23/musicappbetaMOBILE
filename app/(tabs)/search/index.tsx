@@ -32,6 +32,7 @@ export type ResultItem = {
   title: string;
   artist_name: string;
   artist_id?: string | null;
+  artists?: { id: string; name: string }[];
   album_id?: string | null;
   album_name?: string | null;
   duration?: string;
@@ -117,6 +118,10 @@ export default function SearchScreen() {
       title: s.title,
       artist_name: (s.artists || []).map((ar: any) => ar.name).join(", ") || "",
       artist_id: s.artists?.[0]?.artist_id ?? s.artists?.[0]?.id ?? null,
+      artists: (s.artists || []).map((ar: any) => ({
+        id: ar.artist_id ?? ar.id,
+        name: ar.name,
+      })),
       album_id: s.go_to?.album_id ?? null,
       album_name: s.album_name ?? null,
       duration: s.duration || "",
@@ -195,6 +200,7 @@ export default function SearchScreen() {
           title: item.title,
           artist_name: item.artist_name ?? "",
           artist_id: item.artist_id ?? undefined,
+          artists: item.artists ?? [],
           thumbnail: item.thumbnail ?? "",
           url: "",
           duration: item.duration,
@@ -351,7 +357,7 @@ export default function SearchScreen() {
                           album_name: item.album_name,
                           thumbnail: item.thumbnail,
                           duration_seconds: item.duration_seconds,
-                          artists: [{ id: item.artist_id ?? null, name: item.artist_name }],
+                          artists: item.artists ?? [{ id: item.artist_id ?? null, name: item.artist_name }],
                         });
                         setActionsOpen(true);
                       }}

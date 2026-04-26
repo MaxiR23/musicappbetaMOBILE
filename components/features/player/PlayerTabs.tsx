@@ -12,7 +12,6 @@ import {
   View,
 } from "react-native";
 
-import ProList from "@/components/shared/ProList";
 import { useMusic } from "@/hooks/use-music";
 import type { LyricLine } from "@/hooks/use-track-lyrics";
 import { LyricsTab } from "./tabs/LyricsTab";
@@ -176,50 +175,38 @@ export const PlayerTabs = React.memo(function PlayerTabs({
         ))}
       </View>
 
-      {/* Lyrics tiene su propio scroll interno (ScrollView o FlatList segun el caso).
-          No lo envolvemos en ProList para evitar nested virtualized lists y
-          conflictos de scroll. UpNext y Related mantienen el ProList. */}
-      {activeTab === "lyrics" ? (
-        <View style={styles.contentContainer}>
+      {/* Cada tab maneja su propio scroll con su FlatList interna.
+          No hay wrapper con scroll: la virtualizacion vive en cada tab. */}
+      <View style={styles.contentContainer}>
+        {activeTab === "lyrics" && (
           <LyricsTab
             lyricsText={lyricsText}
             lyricsLines={lyricsLines}
             lyricsLoading={lyricsLoading}
             lyricsError={lyricsError}
           />
-        </View>
-      ) : (
-        <ProList
-          style={styles.contentContainer}
-          contentContainerStyle={styles.contentInner}
-          showsVerticalScrollIndicator
-          blockSize={2}
-          initialBlocks={3}
-          onEndReachedThreshold={0.5}
-        >
-          <View style={styles.tabContent}>
-            {activeTab === "upnext" && (
-              <UpNextTab
-                upNextData={upNextData}
-                upNextLoading={upNextLoading}
-                upNextError={upNextError}
-                onUpNextTrackPress={onUpNextTrackPress}
-              />
-            )}
+        )}
 
-            {activeTab === "related" && (
-              <RelatedTab
-                relatedData={relatedData}
-                relatedLoading={relatedLoading}
-                relatedError={relatedError}
-                onRelatedTrackPress={onRelatedTrackPress}
-                onRelatedArtistPress={onRelatedArtistPress}
-                onRelatedAlbumPress={onRelatedAlbumPress}
-              />
-            )}
-          </View>
-        </ProList>
-      )}
+        {activeTab === "upnext" && (
+          <UpNextTab
+            upNextData={upNextData}
+            upNextLoading={upNextLoading}
+            upNextError={upNextError}
+            onUpNextTrackPress={onUpNextTrackPress}
+          />
+        )}
+
+        {activeTab === "related" && (
+          <RelatedTab
+            relatedData={relatedData}
+            relatedLoading={relatedLoading}
+            relatedError={relatedError}
+            onRelatedTrackPress={onRelatedTrackPress}
+            onRelatedArtistPress={onRelatedArtistPress}
+            onRelatedAlbumPress={onRelatedAlbumPress}
+          />
+        )}
+      </View>
     </View>
   );
 }, (prevProps, nextProps) => {
@@ -308,14 +295,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   contentContainer: {
-    flex: 1,
-  },
-  contentInner: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 40,
-  },
-  tabContent: {
     flex: 1,
   },
 });

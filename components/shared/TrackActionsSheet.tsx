@@ -127,7 +127,7 @@ export default function TrackActionsSheet({
     // TODO: TEST offline }
 
     // ── NAVIGATION ────────────────────────────────────────────────────────────
-    const artistId = track?.artist_id ?? null;
+    const artistId = track?.artist_id ?? track?.artists?.[0]?.id ?? null;
     const albumId = track?.album_id ?? track?.go_to?.album_id ?? null;
 
     const allowGoToArtist = showGoToArtist !== false && !!artistId;
@@ -258,10 +258,10 @@ export default function TrackActionsSheet({
                     </View>
 
                     {/* LINEA SUBTÍTULO */}
-                    {!!(track?.title || subtitle) && (
+                    {!!(track?.title || track?.display_name || subtitle) && (
                         <Text style={styles.trackLine} numberOfLines={1}>
-                            {track?.title
-                                ? `${track.title} • ${track.artist_name || track.artist || ""}`
+                            {(track?.title || track?.display_name)
+                                ? `${track.title || track.display_name} • ${track.artist_name || track.artist || track.artists?.map((a: any) => a.name).join(", ") || ""}`
                                 : subtitle || ""}
                         </Text>
                     )}

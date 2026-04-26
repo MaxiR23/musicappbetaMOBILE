@@ -101,7 +101,11 @@ export default function TrackCard({
         <TrackActionsSheet
           open={actionsOpen}
           onOpenChange={setActionsOpen}
-          track={track}
+          track={{
+            ...track,
+            thumbnail: track.thumb ?? track.thumbnail ?? track.thumbnail_url,
+            thumbnail_url: track.thumb ?? track.thumbnail ?? track.thumbnail_url,
+          }}
           showGoToArtist={showGoToArtist}
           showGoToAlbum={showGoToAlbum}
         />

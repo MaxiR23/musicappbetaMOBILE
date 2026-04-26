@@ -1,6 +1,6 @@
 import HorizontalScrollSection from "@/components/shared/HorizontalScrollSection";
 import { getUpgradedThumb } from "@/utils/image-helpers";
-import React from "react";
+import React, { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
 import TrackRow from "../../../shared/TrackRow";
@@ -16,6 +16,12 @@ interface RelatedTabProps {
 }
 
 type SectionType = "songs" | "artists" | "albums" | "unknown";
+
+type ListItem =
+  | { kind: "section_header"; title: string; sectionIdx: number }
+  | { kind: "track"; track: any; sectionIdx: number; trackIdx: number }
+  | { kind: "artists_row"; title: string; items: any[]; sectionIdx: number }
+  | { kind: "albums_row"; title: string; items: any[]; sectionIdx: number };
 
 function getSectionType(section: any): SectionType {
   const title = section?.title?.toLowerCase() || "";
@@ -51,6 +57,144 @@ export const RelatedTab = React.memo(function RelatedTab({
 }: RelatedTabProps) {
   const { t } = useTranslation("player");
 
+  const items = useMemo<ListItem[]>(() => {
+    if (!Array.isArray(relatedData)) return [];
+
+    const out: ListItem[] = [];
+
+    relatedData.forEach((section: any, sIdx: number) => {
+      const contents: any[] = section?.contents || [];
+      if (!Array.isArray(contents) || contents.length === 0) return;
+
+      const sectionType = resolveSectionType(section);
+
+      if (sectionType === "songs") {
+        out.push({
+          kind: "section_header",
+          title: section.title || "",
+          sectionIdx: sIdx,
+        });
+        contents.forEach((track: any, tIdx: number) => {
+          out.push({ kind: "track", track, sectionIdx: sIdx, trackIdx: tIdx });
+        });
+        return;
+      }
+
+      if (sectionType === "artists") {
+        out.push({
+          kind: "artists_row",
+          title: section.title || "",
+          items: contents,
+          sectionIdx: sIdx,
+        });
+        return;
+      }
+
+      if (sectionType === "albums") {
+        out.push({
+          kind: "albums_row",
+          title: section.title || "",
+          items: contents,
+          sectionIdx: sIdx,
+        });
+        return;
+      }
+    });
+
+    return out;
+  }, [relatedData]);
+
+  const keyExtractor = useCallback((item: ListItem) => {
+    switch (item.kind) {
+      case "section_header":
+        return `header-${item.sectionIdx}-${item.title}`;
+      case "track":
+        return `track-${item.sectionIdx}-${item.track.track_id ?? item.track.id ?? item.trackIdx}`;
+      case "artists_row":
+        return `artists-${item.sectionIdx}`;
+      case "albums_row":
+        return `albums-${item.sectionIdx}`;
+    }
+  }, []);
+
+  const renderItem = useCallback(
+    ({ item }: { item: ListItem }) => {
+      if (item.kind === "section_header") {
+        return <Text style={styles.relatedSectionTitle}>{item.title}</Text>;
+      }
+
+      if (item.kind === "track") {
+        const { track, trackIdx } = item;
+        return (
+          <TrackRow
+            trackId={track.track_id}
+            index={trackIdx + 1}
+            title={track.title}
+            artist={track.artists?.map((a: any) => a.name).join(", ")}
+            thumbnail={getUpgradedThumb(track, 512)}
+            showIndex={false}
+            showMoreButton
+            track={track}
+            onPress={() => onRelatedTrackPress?.(track)}
+          />
+        );
+      }
+
+      if (item.kind === "artists_row") {
+        return (
+          <View style={styles.relatedSection}>
+            <HorizontalScrollSection
+              title={item.title}
+              items={item.items}
+              keyExtractor={(a: any, i: number) =>
+                `artist-${item.sectionIdx}-${a.artist_id ?? i}`
+              }
+              imageExtractor={(a: any) => getUpgradedThumb(a, 256)}
+              titleExtractor={(a: any) => a.title || a.name}
+              onItemPress={(a: any) => a.artist_id && onRelatedArtistPress?.(a.artist_id)}
+              circularImage
+              cardWidth={120}
+              imageHeight={120}
+              titleStyle={styles.relatedSectionTitle}
+              contentPaddingHorizontal={12}
+              gap={16}
+              initialNumToRender={4}
+              maxToRenderPerBatch={2}
+              windowSize={3}
+            />
+          </View>
+        );
+      }
+
+      return (
+        <View style={styles.relatedSection}>
+          <HorizontalScrollSection
+            title={item.title}
+            items={item.items}
+            keyExtractor={(al: any, i: number) =>
+              `album-${item.sectionIdx}-${al.album_id ?? i}`
+            }
+            imageExtractor={(al: any) => getUpgradedThumb(al, 512)}
+            titleExtractor={(al: any) => al.title}
+            subtitleExtractor={(al: any) =>
+              al.year || al.artists?.map((a: any) => a.name).join(", ") || ""
+            }
+            onItemPress={(al: any) => al.album_id && onRelatedAlbumPress?.(al.album_id)}
+            cardWidth={140}
+            imageHeight={140}
+            titleStyle={styles.relatedSectionTitle}
+            contentPaddingHorizontal={12}
+            gap={16}
+            initialNumToRender={6}
+            maxToRenderPerBatch={6}
+            windowSize={5}
+          />
+        </View>
+      );
+    },
+    [onRelatedTrackPress, onRelatedArtistPress, onRelatedAlbumPress]
+  );
+
   if (relatedLoading) {
     return (
       <View style={sharedTabStyles.loadingContainer}>
@@ -68,7 +212,7 @@ export const RelatedTab = React.memo(function RelatedTab({
     );
   }
 
-  if (!Array.isArray(relatedData) || relatedData.length === 0) {
+  if (items.length === 0) {
     return (
       <View style={sharedTabStyles.errorContainer}>
         <Text style={sharedTabStyles.placeholderText}>{t("related.noContent")}</Text>
@@ -77,108 +221,26 @@ export const RelatedTab = React.memo(function RelatedTab({
   }
 
   return (
-    <View style={styles.relatedContent}>
-      {relatedData.map((section: any, sIdx: number) => {
-        const sectionKey = `section-${section.title || ""}-${sIdx}`;
-        const sectionType = resolveSectionType(section);
-        const contents: any[] = section?.contents || [];
-
-        if (!Array.isArray(contents) || contents.length === 0) return null;
-
-        if (sectionType === "songs") {
-          return (
-            <View key={sectionKey} style={styles.relatedSection}>
-              <Text style={styles.relatedSectionTitle}>{section.title}</Text>
-              <FlatList
-                data={contents}
-                keyExtractor={(track: any, i: number) =>
-                  `related-song-${sIdx}-${track.track_id || track.id || i}`
-                }
-                renderItem={({ item: track, index: tIdx }) => (
-                  <TrackRow
-                    trackId={track.track_id}
-                    index={tIdx + 1}
-                    title={track.title}
-                    artist={track.artists?.map((a: any) => a.name).join(", ")}
-                    thumbnail={getUpgradedThumb(track, 512)}
-                    showIndex={false}
-                    showMoreButton={true}
-                    track={track}
-                    onPress={() => onRelatedTrackPress?.(track)}
-                  />
-                )}
-                style={styles.trackList}
-                scrollEnabled={false}
-                initialNumToRender={12}
-                maxToRenderPerBatch={12}
-                windowSize={6}
-                updateCellsBatchingPeriod={80}
-                removeClippedSubviews
-                onEndReachedThreshold={0.2}
-              />
-            </View>
-          );
-        }
-
-        if (sectionType === "artists") {
-          return (
-            <View key={sectionKey} style={styles.relatedSection}>
-              <HorizontalScrollSection
-                title={section.title}
-                items={contents}
-                keyExtractor={(a: any, i: number) => `artist-${sIdx}-${a.artist_id ?? i}`}
-                imageExtractor={(a: any) => getUpgradedThumb(a, 256)}
-                titleExtractor={(a: any) => a.title || a.name}
-                onItemPress={(a: any) => a.artist_id && onRelatedArtistPress?.(a.artist_id)}
-                circularImage
-                cardWidth={120}
-                imageHeight={120}
-                titleStyle={styles.relatedSectionTitle}
-                contentPaddingHorizontal={12}
-                gap={16}
-                initialNumToRender={4}
-                maxToRenderPerBatch={2}
-                windowSize={3}
-              />
-            </View>
-          );
-        }
-
-        if (sectionType === "albums") {
-          return (
-            <View key={sectionKey} style={styles.relatedSection}>
-              <HorizontalScrollSection
-                title={section.title}
-                items={contents}
-                keyExtractor={(al: any, i: number) => `album-${sIdx}-${al.album_id ?? i}`}
-                imageExtractor={(al: any) => getUpgradedThumb(al, 512)}
-                titleExtractor={(al: any) => al.title}
-                subtitleExtractor={(al: any) =>
-                  al.year || al.artists?.map((a: any) => a.name).join(", ") || ""
-                }
-                onItemPress={(al: any) => al.album_id && onRelatedAlbumPress?.(al.album_id)}
-                cardWidth={140}
-                imageHeight={140}
-                titleStyle={styles.relatedSectionTitle}
-                contentPaddingHorizontal={12}
-                gap={16}
-                initialNumToRender={6}
-                maxToRenderPerBatch={6}
-                windowSize={5}
-              />
-            </View>
-          );
-        }
-
-        return null;
-      })}
-    </View>
+    <FlatList
+      data={items}
+      keyExtractor={keyExtractor}
+      renderItem={renderItem}
+      contentContainerStyle={styles.listContent}
+      initialNumToRender={10}
+      maxToRenderPerBatch={8}
+      windowSize={7}
+      updateCellsBatchingPeriod={50}
+      removeClippedSubviews
+      showsVerticalScrollIndicator
+    />
   );
 });
 
 const styles = StyleSheet.create({
-  relatedContent: {
+  listContent: {
     paddingTop: 8,
+    paddingBottom: 40,
+    paddingHorizontal: 14,
   },
   relatedSection: {
     marginBottom: 32,
@@ -188,9 +250,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 12,
-    paddingHorizontal: 12,
-  },
-  trackList: {
-    paddingTop: 8,
   },
 });

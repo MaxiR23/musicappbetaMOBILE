@@ -86,20 +86,22 @@ export default function HomeScreen() {
   }, []);
 
   const mapTracksForPlayer = useCallback((arr: any[]) => {
-    return arr.map((t: any) => ({
-      id: String(t.id),
-      title: t.title,
-      artist_name: t.artist ?? "",
-      artist: t.artist ?? "",
-      artist_id: t.artist_id,
-      album_id: t.album_id,
-      album_name: t.album_name ?? t.album,
-      thumbnail: t.thumb ?? t.thumbnail ?? t.thumbnail_url,
-      thumbnail_url: t.thumb ?? t.thumbnail ?? t.thumbnail_url,
-      duration: t.duration ?? null,
-      duration_seconds: typeof t.duration_seconds === "number" ? t.duration_seconds : null,
-      url: "",
-    }));
+    return arr.map((t: any) => {
+      const artists = Array.isArray(t.artists) ? t.artists : [];
+      const primary = artists[0] ?? null;
+      return {
+        id: String(t.id),
+        title: t.title,
+        artist_name: primary?.name ?? "",
+        artist_id: primary?.id ?? null,
+        artists,
+        album_id: t.album_id,
+        album_name: t.album_name ?? t.album,
+        thumbnail: t.thumb ?? t.thumbnail ?? t.thumbnail_url,
+        thumbnail_url: t.thumb ?? t.thumbnail ?? t.thumbnail_url,
+        duration_seconds: typeof t.duration_seconds === "number" ? t.duration_seconds : null,
+      };
+    });
   }, []);
 
   const mappedTopTracks = useMemo(() => mapTracksForPlayer(topTracks), [topTracks, mapTracksForPlayer]);

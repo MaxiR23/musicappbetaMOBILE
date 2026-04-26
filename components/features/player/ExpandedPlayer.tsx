@@ -162,13 +162,27 @@ export const ExpandedPlayer = React.memo(function ExpandedPlayer({
     currentGradientRef.current = gradient;
     gradientFade.setValue(1);
 
-    Animated.timing(gradientFade, {
+    let cancelled = false;
+
+    const animation = Animated.timing(gradientFade, {
       toValue: 0,
       duration: 1200,
       useNativeDriver: true,
-    }).start(() => {
-      setPrevGradient(null);
     });
+
+    animation.start(({ finished }) => {
+      if (!finished || cancelled) return;
+      // requestAnimationFrame difiere el setState fuera de la fase
+      // de commit/insertion, evitando el warning de useInsertionEffect.
+      requestAnimationFrame(() => {
+        if (!cancelled) setPrevGradient(null);
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      animation.stop();
+    };
   }, [gradient]);
 
   const showTabs = activePlayerTab !== null;

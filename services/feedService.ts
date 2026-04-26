@@ -41,40 +41,51 @@ export async function fetchFeed({ kind = "most_played", type = "album", store = 
     throw err;
   }
 
-  const toAlbum = (a: any) => ({
-    kind,
-    type: "album",
-    id: a.id,
-    title: a.title,
-    artist: a.artist,
-    thumb: a.thumb,
-    url: a.url,
-    year: a.year ? Number(a.year) : null,
-    track_count: a.track_count ? Number(a.track_count) : null,
-    release_date: a.release_date || a.releaseDate || null,
-    artist_id: null,
-    album: null,
-    duration: null,
-    duration_seconds: null,
-  });
+  const toAlbum = (a: any) => {
+    const artists = Array.isArray(a.artists) ? a.artists : [];
+    return {
+      kind,
+      type: "album",
+      id: a.id,
+      title: a.title,
+      artists,
+      artist: a.artist ?? artists.map((x: any) => x?.name).filter(Boolean).join(", ") ?? null,
+      artist_name: artists.map((x: any) => x?.name).filter(Boolean).join(", ") || a.artist || null,
+      artist_id: artists[0]?.id ?? null,
+      thumb: a.thumb,
+      url: a.url,
+      year: a.year ? Number(a.year) : null,
+      track_count: a.track_count ? Number(a.track_count) : null,
+      release_date: a.release_date || a.releaseDate || null,
+      album: null,
+      duration: null,
+      duration_seconds: null,
+    };
+  };
 
-  const toTrack = (t: any) => ({
-    kind,
-    type: "track",
-    id: t.id,
-    title: t.title,
-    artist: t.artist,
-    thumb: t.thumb,
-    url: t.url,
-    artist_id: t.artist_id ?? null,
-    album: t.album ?? null,
-    album_id: t.album_id ?? null,
-    duration: t.duration ?? null,
-    duration_seconds: typeof t.duration_seconds === "number" ? t.duration_seconds : null,
-    year: null,
-    track_count: null,
-    release_date: t.release_date || null,
-  });
+  const toTrack = (t: any) => {
+    const artists = Array.isArray(t.artists) ? t.artists : [];
+    return {
+      kind,
+      type: "track",
+      id: t.id,
+      title: t.title,
+      artists,
+      artist_name: artists.map((a: any) => a?.name).filter(Boolean).join(", ") || null,
+      artist_id: artists[0]?.id ?? null,
+      thumb: t.thumb,
+      thumbnail_url: t.thumb ?? null,
+      url: t.url,
+      album: t.album ?? null,
+      album_name: t.album ?? null,
+      album_id: t.album_id ?? null,
+      duration: t.duration ?? null,
+      duration_seconds: typeof t.duration_seconds === "number" ? t.duration_seconds : null,
+      year: null,
+      track_count: null,
+      release_date: t.release_date || null,
+    };
+  };
 
   const albums = Array.isArray(json.albums) ? json.albums.map(toAlbum) : [];
   const tracks = Array.isArray(json.tracks) ? json.tracks.map(toTrack) : [];

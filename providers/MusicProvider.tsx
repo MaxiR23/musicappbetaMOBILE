@@ -222,6 +222,12 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     accumulated: number;
     lastPosition: number;
   } | null>(null);
+
+  // switchingRef: gate global. Mientras esta en true, el listener de
+  // onProgress NO loguea, NO acumula tiempo y NO dispara avance por
+  // fallback de posicion. Asi evitamos que durante una transicion
+  // (resolveUrl + playTrack/switchTrack, cientos de ms) el listener
+  // lea queue/queueIndex stale y duplique logs o dispare advance.
   const switchingRef = useRef(false);
 
   // Guard unico para fin de track: almacena el queueIndex ya procesado.
@@ -234,15 +240,49 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     stateRef.current = state;
   }, [state]);
 
-  // --- ADVANCE FROM END (unico punto de entrada para fin de track) ---
-  // Centraliza la logica de avance automatico. Guarda por queueIndex
-  // para que multiples disparos (evento nativo + fallback posicion)
-  // solo produzcan UNA transicion.
+  // --- WITH SWITCH GATE ---
+  // Envuelve toda transicion (play/next/prev/skipTo/advance/...) con el
+  // gate global. Garantiza que durante la transicion el listener no
+  // observe estado stale y resetea los refs de logueo (listenTime y
+  // lastLogged) para que el track entrante arranque contando desde 0
+  // y se pueda loguear, incluso si tiene el mismo trackId que el saliente
+  // (caso replay del mismo track desde otro contexto).
+  //
+  // Es seguro resetear lastLoggedTrackIdRef aca porque el listener de
+  // onProgress bailea con `if (switchingRef.current) return`. Mientras
+  // el gate esta activo, el listener no puede observar lastLogged === null
+  // con queue stale y duplicar el log del track saliente. Cuando el gate
+  // libera, el queue ya esta actualizado al nuevo track.
+  const withSwitchGate = useCallback(async (fn: () => Promise<void>) => {
+    if (switchingRef.current) return;
+    switchingRef.current = true;
+    listenTimeRef.current = null;
+    lastLoggedTrackIdRef.current = null;
+    handledEndForIndexRef.current = -1;
+    try {
+      await fn();
+    } finally {
+      switchingRef.current = false;
+    }
+  }, []);
+
+  // --- ADVANCE FROM END ---
+  // Centraliza la logica de avance automatico al terminar un track.
+  // Se llama desde onTrackEnd (evento nativo) y desde el fallback de
+  // posicion en onProgress. handledEndForIndexRef garantiza una sola
+  // transicion aunque ambos disparen.
   const advanceFromEnd = useCallback(async () => {
     const { queue, queueIndex } = stateRef.current;
-
     if (handledEndForIndexRef.current === queueIndex) return;
     handledEndForIndexRef.current = queueIndex;
+
+    // Nota: NO usamos withSwitchGate aca para no resetear
+    // handledEndForIndexRef que acabamos de marcar. Manejamos
+    // switchingRef manualmente y replicamos los demas resets.
+    if (switchingRef.current) return;
+    switchingRef.current = true;
+    listenTimeRef.current = null;
+    lastLoggedTrackIdRef.current = null;
 
     try {
       const ni = queueIndex + 1;
@@ -251,14 +291,12 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         const skipped = await PlayerService.skipToPreloaded();
         if (skipped) {
           dispatch({ type: "SET_INDEX", index: ni });
-          lastLoggedTrackIdRef.current = null;
           return;
         }
         const song = queue[ni];
         const url = await resolveUrl(String(song.id));
         await PlayerService.switchTrack(toTrackInput(song, url));
         dispatch({ type: "SET_INDEX", index: ni });
-        lastLoggedTrackIdRef.current = null;
         return;
       }
 
@@ -276,7 +314,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           const url = await resolveUrl(String(nextSong.id));
           await PlayerService.switchTrack(toTrackInput(nextSong, url));
           dispatch({ type: "ADD_AUTOPLAY", song: nextSong });
-          lastLoggedTrackIdRef.current = null;
           return;
         }
       }
@@ -285,156 +322,154 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error("[advanceFromEnd] error:", err);
       handledEndForIndexRef.current = -1;
+    } finally {
+      switchingRef.current = false;
     }
   }, []);
 
   // PLAYBACK
   const playList = useCallback(
-    async (list: Song[], startIndex: number, source?: PlaySource) => {
-      if (switchingRef.current) return;
-      switchingRef.current = true;
-      handledEndForIndexRef.current = -1;
-      playedAutoplayIdsRef.current.clear();
-      lastLoggedTrackIdRef.current = null;
+    (list: Song[], startIndex: number, source?: PlaySource) =>
+      withSwitchGate(async () => {
+        playedAutoplayIdsRef.current.clear();
 
-      try {
-        const song = list[startIndex];
-        const url = await resolveUrl(String(song.id));
-        await PlayerService.playTrack(toTrackInput(song, url));
+        try {
+          const song = list[startIndex];
+          const url = await resolveUrl(String(song.id));
+          await PlayerService.playTrack(toTrackInput(song, url));
 
-        const ctx = resolveContextKey(list, source);
+          const ctx = resolveContextKey(list, source);
 
-        dispatch({
-          type: "PLAY_LIST",
-          queue: list,
-          index: startIndex,
-          source: source
-            ? { ...source, id: ctx?.id ?? source.id ?? "" }
-            : null,
-        });
+          dispatch({
+            type: "PLAY_LIST",
+            queue: list,
+            index: startIndex,
+            source: source
+              ? { ...source, id: ctx?.id ?? source.id ?? "" }
+              : null,
+          });
 
-        if (ctx) {
-          const meta = { name: source?.name ?? null, thumb: source?.thumb ?? null };
-          if (ctx.kind === "album") logPlayAlbum(ctx.id, meta).catch(() => { });
-          else if (ctx.kind === "artist") logPlayArtist(ctx.id, meta).catch(() => { });
-          setTimeout(() => invalidateRecent().catch(() => { }), 2000);
+          if (ctx) {
+            const meta = { name: source?.name ?? null, thumb: source?.thumb ?? null };
+            if (ctx.kind === "album") logPlayAlbum(ctx.id, meta).catch(() => { });
+            else if (ctx.kind === "artist") logPlayArtist(ctx.id, meta).catch(() => { });
+            setTimeout(() => invalidateRecent().catch(() => { }), 2000);
+          }
+        } catch (err) {
+          console.error("[playList] error:", err);
         }
-      } catch (err) {
-        console.error("[playList] error:", err);
-      } finally {
-        switchingRef.current = false;
-      }
-    },
-    [logPlayAlbum, logPlayArtist, invalidateRecent],
+      }),
+    [logPlayAlbum, logPlayArtist, invalidateRecent, withSwitchGate],
   );
 
   const playSingle = useCallback(
-    async (song: Song, source: PlaySource) => {
-      if (switchingRef.current) return;
-      switchingRef.current = true;
-      handledEndForIndexRef.current = -1;
-      playedAutoplayIdsRef.current.clear();
-      lastLoggedTrackIdRef.current = null;
+    (song: Song, source: PlaySource) =>
+      withSwitchGate(async () => {
+        playedAutoplayIdsRef.current.clear();
 
-      try {
-        const url = await resolveUrl(String(song.id));
-        await PlayerService.playTrack(toTrackInput(song, url));
-        dispatch({ type: "PLAY_SINGLE", song, source });
-      } catch (err) {
-        console.error("[playSingle] error:", err);
-      } finally {
-        switchingRef.current = false;
-      }
-    },
-    [],
+        try {
+          const url = await resolveUrl(String(song.id));
+          await PlayerService.playTrack(toTrackInput(song, url));
+          dispatch({ type: "PLAY_SINGLE", song, source });
+        } catch (err) {
+          console.error("[playSingle] error:", err);
+        }
+      }),
+    [withSwitchGate],
   );
 
-  const next = useCallback(async () => {
-    handledEndForIndexRef.current = -1;
-    const { queue, queueIndex } = stateRef.current;
-    const ni = queueIndex + 1;
+  const next = useCallback(
+    () =>
+      withSwitchGate(async () => {
+        const { queue, queueIndex } = stateRef.current;
+        const ni = queueIndex + 1;
 
-    if (ni < queue.length) {
-      const song = queue[ni];
-      const url = await resolveUrl(String(song.id));
-      dispatch({ type: "SET_INDEX", index: ni });
-      lastLoggedTrackIdRef.current = null;
-      await PlayerService.switchTrack(toTrackInput(song, url));
-      return;
-    }
+        if (ni < queue.length) {
+          const song = queue[ni];
+          const url = await resolveUrl(String(song.id));
+          dispatch({ type: "SET_INDEX", index: ni });
+          await PlayerService.switchTrack(toTrackInput(song, url));
+          return;
+        }
 
-    if (autoplayEnabledRef.current?.() && autoplayProviderRef.current) {
-      let nextSong: Song | null = null;
-      let attempts = 0;
-      while (attempts < 10) {
-        nextSong = autoplayProviderRef.current();
-        if (!nextSong || !playedAutoplayIdsRef.current.has(String(nextSong.id))) break;
-        attempts++;
-      }
+        if (autoplayEnabledRef.current?.() && autoplayProviderRef.current) {
+          let nextSong: Song | null = null;
+          let attempts = 0;
+          while (attempts < 10) {
+            nextSong = autoplayProviderRef.current();
+            if (!nextSong || !playedAutoplayIdsRef.current.has(String(nextSong.id))) break;
+            attempts++;
+          }
 
-      if (nextSong && !playedAutoplayIdsRef.current.has(String(nextSong.id))) {
-        playedAutoplayIdsRef.current.add(String(nextSong.id));
-        const url = await resolveUrl(String(nextSong.id));
-        await PlayerService.switchTrack(toTrackInput(nextSong, url));
-        dispatch({ type: "ADD_AUTOPLAY", song: nextSong });
-        lastLoggedTrackIdRef.current = null;
-        return;
-      }
-    }
-  }, []);
+          if (nextSong && !playedAutoplayIdsRef.current.has(String(nextSong.id))) {
+            playedAutoplayIdsRef.current.add(String(nextSong.id));
+            const url = await resolveUrl(String(nextSong.id));
+            await PlayerService.switchTrack(toTrackInput(nextSong, url));
+            dispatch({ type: "ADD_AUTOPLAY", song: nextSong });
+            return;
+          }
+        }
+      }),
+    [withSwitchGate],
+  );
 
-  const prev = useCallback(async () => {
-    handledEndForIndexRef.current = -1;
-    const { queue, queueIndex } = stateRef.current;
+  const prev = useCallback(
+    () =>
+      withSwitchGate(async () => {
+        const { queue, queueIndex } = stateRef.current;
 
-    try {
-      const position = await PlayerService.getPosition();
-      if (position > 3) {
-        await PlayerService.seekTo(0);
-        return;
-      }
-    } catch { }
+        try {
+          const position = await PlayerService.getPosition();
+          if (position > 3) {
+            await PlayerService.seekTo(0);
+            return;
+          }
+        } catch { }
 
-    const ni = queueIndex - 1;
-    if (ni < 0) {
-      await PlayerService.seekTo(0);
-      return;
-    }
+        const ni = queueIndex - 1;
+        if (ni < 0) {
+          await PlayerService.seekTo(0);
+          return;
+        }
 
-    const song = queue[ni];
-    dispatch({ type: "SET_INDEX", index: ni });
-    lastLoggedTrackIdRef.current = null;
+        const song = queue[ni];
+        dispatch({ type: "SET_INDEX", index: ni });
 
-    const url = await resolveUrl(String(song.id));
-    await PlayerService.switchTrack(toTrackInput(song, url));
-  }, []);
+        const url = await resolveUrl(String(song.id));
+        await PlayerService.switchTrack(toTrackInput(song, url));
+      }),
+    [withSwitchGate],
+  );
 
-  const skipTo = useCallback(async (index: number) => {
-    handledEndForIndexRef.current = -1;
-    const { queue } = stateRef.current;
-    if (index < 0 || index >= queue.length) return;
+  const skipTo = useCallback(
+    (index: number) =>
+      withSwitchGate(async () => {
+        const { queue } = stateRef.current;
+        if (index < 0 || index >= queue.length) return;
 
-    const song = queue[index];
+        const song = queue[index];
+        dispatch({ type: "SET_INDEX", index });
 
-    dispatch({ type: "SET_INDEX", index });
-    lastLoggedTrackIdRef.current = null;
+        const url = await resolveUrl(String(song.id));
+        await PlayerService.switchTrack(toTrackInput(song, url));
+      }),
+    [withSwitchGate],
+  );
 
-    const url = await resolveUrl(String(song.id));
-    await PlayerService.switchTrack(toTrackInput(song, url));
-  }, []);
+  const addToQueueAndPlay = useCallback(
+    (song: Song) =>
+      withSwitchGate(async () => {
+        const { queue } = stateRef.current;
+        if (queue.some((s) => String(s.id) === String(song.id))) return;
 
-  const addToQueueAndPlay = useCallback(async (song: Song) => {
-    handledEndForIndexRef.current = -1;
-    const { queue } = stateRef.current;
-    if (queue.some((s) => String(s.id) === String(song.id))) return;
+        playedAutoplayIdsRef.current.add(String(song.id));
+        dispatch({ type: "ADD_AUTOPLAY", song });
 
-    playedAutoplayIdsRef.current.add(String(song.id));
-    dispatch({ type: "ADD_AUTOPLAY", song });
-    lastLoggedTrackIdRef.current = null;
-
-    const url = await resolveUrl(String(song.id));
-    await PlayerService.switchTrack(toTrackInput(song, url));
-  }, []);
+        const url = await resolveUrl(String(song.id));
+        await PlayerService.switchTrack(toTrackInput(song, url));
+      }),
+    [withSwitchGate],
+  );
 
   // SHUFFLE
   const toggleShuffle = useCallback(() => {
@@ -486,6 +521,14 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const subProgress = PlayerService.onProgress(
       async ({ position, duration }) => {
+        // Gate global: durante una transicion el queue puede estar
+        // stale (apuntando al track viejo) y los timestamps reportados
+        // pueden ser del track viejo o del nuevo arrancando. Bailear
+        // evita: (a) duplicar logs del track viejo cuando se re-entra
+        // a este callback antes del dispatch, (b) acumular tiempo
+        // erroneo, (c) disparar advanceFromEnd con queue stale.
+        if (switchingRef.current) return;
+
         const { queue, queueIndex } = stateRef.current;
         const track = queue[queueIndex];
         if (!track) return;
@@ -498,7 +541,9 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        // repeat detection: position salto para atras (loop)
+        // repeat detection: position salto para atras (loop). En este
+        // caso si hace falta resetear lastLoggedTrackIdRef porque el
+        // trackId no cambio pero queremos permitir relog.
         if (position < listenTimeRef.current.lastPosition - 5) {
           listenTimeRef.current = { trackId, accumulated: 0, lastPosition: position };
           lastLoggedTrackIdRef.current = null;
@@ -511,7 +556,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         }
         listenTimeRef.current.lastPosition = position;
 
-        // Log a los 30s
+        // log a los 30s
         if (listenTimeRef.current.accumulated >= 30 && lastLoggedTrackIdRef.current !== trackId) {
           lastLoggedTrackIdRef.current = trackId;
           const offline = await getOfflineTrack(trackId);
@@ -519,18 +564,12 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           const offlineArtists = offline
             ? (() => { try { return JSON.parse(offline.artists); } catch { return []; } })()
             : [];
-          const offlinePrimary = offlineArtists[0] ?? null;
-          const offlineArtistNameJoined = offlineArtists
-            .map((a: any) => a?.name)
-            .filter(Boolean)
-            .join(", ");
 
           const metadata = offline
             ? {
               album_id: offline.album_id || undefined,
               album_name: offline.album || undefined,
-              artist_id: offlinePrimary?.id ?? undefined,
-              artist_name: offlineArtistNameJoined || undefined,
+              artists: offlineArtists,
               track_name: offline.title,
               duration_seconds: offline.duration_seconds,
               thumbnail_url: offline.thumbnail_url,
@@ -538,8 +577,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
             : {
               album_id: track.album_id ?? undefined,
               album_name: track.album_name,
-              artist_id: track.artist_id ?? undefined,
-              artist_name: track.artist_name ?? undefined,
+              artists: Array.isArray(track.artists) ? track.artists : [],
               track_name: track.title,
               duration_seconds: track.duration_seconds,
               thumbnail_url: track.thumbnail,
@@ -548,7 +586,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           logPlayTrack(trackId, metadata).catch(() => { });
         }
 
-        // Preload a 15s del final
+        // preload a 15s del final
         if (duration > 0 && duration - position <= 15) {
           const nextIndex = queueIndex + 1;
           if (nextIndex < queue.length) {

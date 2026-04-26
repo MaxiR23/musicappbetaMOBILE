@@ -26,11 +26,17 @@ const ARTIST_CARD_W = SCREEN_W * 0.58;
 const ARTIST_CARD_H = SCREEN_W * 0.75;
 const ALBUM_CARD_W = SCREEN_W * 0.52;
 
+type Artist = {
+  id: string;
+  name: string;
+};
+
 type StatItem = {
   entity_id: string;
   display_name?: string;
   thumbnail_url?: string;
   play_count: number;
+  artists?: Artist[];
   artist_name?: string;
   artist_id?: string;
   album_id?: string;
@@ -157,13 +163,17 @@ export default function MonthlyStatsScreen() {
     if (!data?.tracks) return [];
     return data.tracks.map((track) => ({
       id: track.entity_id,
+      track_id: track.entity_id,
       title: track.display_name ?? "",
-      artist_name: track.artist_name ?? "",
-      artist_id: track.artist_id,
-      album_id: track.album_id,
+      artists: track.artists ?? [],
+      artist_name: track.artists?.map(a => a.name).join(", ") ?? null,
+      artist_id: track.artists?.[0]?.id ?? null,
+      album: track.album_name,
       album_name: track.album_name,
+      album_id: track.album_id,
       thumbnail: track.thumbnail_url,
       thumbnail_url: track.thumbnail_url,
+      thumb: track.thumbnail_url,
       duration_seconds: track.duration_seconds,
     }));
   }, [data?.tracks]);
@@ -231,15 +241,16 @@ export default function MonthlyStatsScreen() {
                     <View style={{ gap: 8 }}>
                       {chunk.map((item, idx) => {
                         const globalIndex = chunkIndex * 4 + idx;
+                        const mapped = mappedTracks[globalIndex];
                         return (
                           <TrackCard
                             key={item.entity_id}
                             title={item.display_name ?? "—"}
-                            artist={item.artist_name}
+                            artist={item.artists?.map(a => a.name).join(", ") ?? "unknown artist"}
                             thumbnail={item.thumbnail_url}
                             rank={globalIndex + 1}
                             subtitle={t("playCount", { count: item.play_count })}
-                            track={item}
+                            track={mapped}
                             trackId={item.entity_id}
                             onPress={() => playList(mappedTracks, globalIndex, { type: "queue", name: t("queueName") })}
                           />

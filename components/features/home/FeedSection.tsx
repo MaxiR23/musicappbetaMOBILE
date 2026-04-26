@@ -14,6 +14,13 @@ interface Props {
   disablePress?: boolean;
 }
 
+const extractArtists = (item: any): string | undefined => {
+  if (Array.isArray(item.artists) && item.artists.length) {
+    return item.artists.map((a: any) => a?.name).filter(Boolean).join(", ");
+  }
+  return item.artist ?? item.artist_name;
+};
+
 export default function FeedSection({
   title,
   items,
@@ -63,7 +70,7 @@ export default function FeedSection({
                 <TrackCard
                   key={String(item.id)}
                   title={item.title ?? item.name}
-                  artist={item.artist ?? item.artist_name}
+                  artist={extractArtists(item)}
                   thumbnail={extractThumbnail(item)}
                   track={item}
                   onPress={() => onTrackPress?.(globalIndex, title)}
@@ -90,7 +97,7 @@ export default function FeedSection({
       keyExtractor={(item) => String(item.id)}
       imageExtractor={extractThumbnail}
       titleExtractor={(item) => item.title ?? item.name}
-      subtitleExtractor={(item) => item.artist ?? item.artist_name}
+      subtitleExtractor={extractArtists}
       onItemPress={
         disablePress
           ? undefined

@@ -44,7 +44,8 @@ function formatDurationMMSS(seconds: number | null | undefined): string {
 function mapBackendTrackToSong(t: any, idx: number) {
   const artists = Array.isArray(t.artists) ? t.artists : [];
   const primary = artists[0] ?? null;
-
+  const thumbnail = upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined;
+  
   return {
     id: t.track_id,
     internalId: t.id,
@@ -56,7 +57,8 @@ function mapBackendTrackToSong(t: any, idx: number) {
     album_name: t.album ?? null,
     duration: formatDurationMMSS(t.duration_seconds),
     duration_seconds: t.duration_seconds ?? 0,
-    albumCover: upgradeThumbUrl(t.thumbnail_url, 512) || t.thumbnail_url || undefined,
+    albumCover: thumbnail,
+    thumbnail,
     _i: idx + 1,
   };
 }

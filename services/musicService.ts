@@ -408,9 +408,8 @@ export const musicService = {
   logPlayTrack: async (trackId: string, context?: {
     album_id?: string;
     album_name?: string;
-    artist_id?: string;
+    artists?: { id: string | null; name: string }[];
     track_name?: string;
-    artist_name?: string;
     duration_seconds?: number;
     thumbnail_url?: string;
   }) => {
@@ -487,8 +486,7 @@ export const musicService = {
         return (raw || []).map((song) => mapGenericTrack({
           id: song.track_id,
           title: song.track_name,
-          artist_name: song.artist_name,
-          artist_id: song.artist_id,
+          artists: song.artists,
           album_id: song.album_id,
           album_name: song.album_name,
           thumbnail: song.thumbnail_url,

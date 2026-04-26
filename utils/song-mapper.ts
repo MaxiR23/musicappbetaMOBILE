@@ -121,17 +121,26 @@ export function mapArtistTopSongs(
  */
 export function mapPlaylistSongs(playlistSongs: any[]): MappedSong[] {
   if (!Array.isArray(playlistSongs)) return [];
-  return playlistSongs.map((song: any) => ({
-    id: song.id,
-    internalId: song.internalId,
-    title: song.title,
-    artist_name: song.artist,
-    artist_id: song.artist_id ?? null,
-    album_id: song.album_id ?? null,
-    thumbnail: safeUri(song.albumCover),
-    duration: song.duration,
-    duration_seconds: null,
-  }));
+  return playlistSongs.map((song: any) => {
+    const artists = Array.isArray(song.artists) && song.artists.length
+      ? song.artists
+      : (song.artist
+          ? [{ id: song.artist_id ?? null, name: song.artist }]
+          : []);
+    return {
+      id: song.id,
+      internalId: song.internalId,
+      title: song.title,
+      artist_name: song.artist,
+      artist_id: song.artist_id ?? null,
+      artists,
+      album_id: song.album_id ?? null,
+      album_name: song.album_name ?? null,
+      thumbnail: safeUri(song.albumCover),
+      duration: song.duration,
+      duration_seconds: song.duration_seconds ?? null,
+    };
+  });
 }
 
 /**
