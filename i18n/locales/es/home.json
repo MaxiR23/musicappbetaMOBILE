@@ -42,6 +42,9 @@
     },
     "stations": {
       "basedOn": "Basado en"
+    },
+    "stationsForYou": {
+      "title": "Estaciones para vos"
     }
   },
   "labels": {

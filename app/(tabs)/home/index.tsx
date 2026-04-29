@@ -266,7 +266,10 @@ export default function HomeScreen() {
 
             <RecommendedPlaylistsSection playlists={recommendedPlaylists} />
 
-            <HomeStations stations={userStations} />
+            <HomeStations
+              stations={userStations}
+              title={t("sections.stationsForYou.title")}
+            />
 
             {/* <FeedSection
               title={t("sections.newSingles.title")}

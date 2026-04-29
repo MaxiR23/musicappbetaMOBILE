@@ -83,27 +83,32 @@ function StationCard({ station }: { station: StationCardType }) {
 
 type HomeStationsProps = {
   stations: StationCardType[];
+  title?: string;
 };
 
-export default function HomeStations({ stations }: HomeStationsProps) {
+export default function HomeStations({ stations, title }: HomeStationsProps) {
   if (!stations?.length) return null;
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.scroll}
-      style={styles.container}
-    >
-      {stations.map((s) => (
-        <StationCard key={s.artist_id} station={s} />
-      ))}
-    </ScrollView>
+    <View style={styles.section}>
+      {title ? <Text style={styles.sectionTitle}>{title}</Text> : null}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+      >
+        {stations.map((s) => (
+          <StationCard key={s.artist_id} station={s} />
+        ))}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { marginVertical: 12 },
+  section: {
+    marginTop: 12,
+  },
   scroll: { paddingHorizontal: 10, gap: 12 },
   card: {
     width: CARD_WIDTH,
@@ -148,5 +153,12 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
+  },
+  sectionTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "700",
+    paddingHorizontal: 8,
+    marginBottom: 10,
   },
 });
