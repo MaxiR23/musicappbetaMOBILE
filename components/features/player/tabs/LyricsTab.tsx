@@ -23,12 +23,26 @@ import { sharedTabStyles } from "./shared-tab-styles";
 const SCROLL_VIEW_POSITION = 0.4;
 const SCALE_ACTIVE = 1.06;
 const SCALE_ANIMATION_DURATION = 350;
+const MAX_FONT_SCALE = 1.3;
+const MIN_FONT_SCALE = 0.7;
 
 interface LyricsTabProps {
   lyricsText: string | null;
   lyricsLines: LyricLine[] | null;
   lyricsLoading: boolean;
   lyricsError: string | null;
+}
+
+function computeFontSize(width: number, height: number): number {
+  let size: number;
+  if (height < 700) size = 17;
+  else if (height > 844) size = 22;
+  else size = 20;
+
+  if (width < 380) size -= 3;
+  else if (width < 410) size -= 2;
+
+  return size;
 }
 
 export const LyricsTab = memo(function LyricsTab({
@@ -67,7 +81,9 @@ export const LyricsTab = memo(function LyricsTab({
         contentContainerStyle={styles.plainContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.plainText}>{lyricsText}</Text>
+        <Text style={styles.plainText} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+          {lyricsText}
+        </Text>
       </ScrollView>
     );
   }
@@ -80,11 +96,12 @@ export const LyricsTab = memo(function LyricsTab({
 });
 
 const TimedLyrics = memo(function TimedLyrics({ lines }: { lines: LyricLine[] }) {
-  const { height } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const store = useLyricSyncStore();
   useLyricSyncEngine(store, lines);
 
-  const lineHeight = height < 700 ? 48 : 56;
+  const fontSize = computeFontSize(width, height);
+  const lineHeight = Math.max(48, fontSize * 2.5);
   const paddingBottom = height * 0.32;
   const paddingTop = height * 0.08;
 
@@ -146,10 +163,10 @@ const TimedLyrics = memo(function TimedLyrics({ lines }: { lines: LyricLine[] })
         text={item.text}
         store={store}
         lineHeight={lineHeight}
-        height={height}
+        fontSize={fontSize}
       />
     ),
-    [store, lineHeight, height]
+    [store, lineHeight, fontSize]
   );
 
   const handleScrollToIndexFailed = useCallback(
@@ -193,7 +210,7 @@ interface LyricsLineItemProps {
   text: string;
   store: LyricSyncStore;
   lineHeight: number;
-  height: number;
+  fontSize: number;
 }
 
 const LyricsLineItem = memo(
@@ -202,14 +219,12 @@ const LyricsLineItem = memo(
     text,
     store,
     lineHeight,
-    height,
+    fontSize,
   }: LyricsLineItemProps) {
     const isActive = useIsActiveLine(store, index);
 
     const scale = useRef(new Animated.Value(isActive ? SCALE_ACTIVE : 1)).current;
     const opacity = useRef(new Animated.Value(isActive ? 1 : 0.4)).current;
-
-    const fontSize = height < 700 ? 17 : height > 844 ? 22 : 20;
 
     useEffect(() => {
       Animated.parallel([
@@ -231,9 +246,17 @@ const LyricsLineItem = memo(
         <Animated.Text
           style={[
             styles.lineText,
-            { fontSize, lineHeight: fontSize * 1.2, opacity, transform: [{ scale }] },
+            {
+              fontSize,
+              lineHeight: fontSize * 1.2,
+              opacity,
+              transform: [{ scale }],
+            },
           ]}
           numberOfLines={2}
+          adjustsFontSizeToFit
+          minimumFontScale={MIN_FONT_SCALE}
+          maxFontSizeMultiplier={MAX_FONT_SCALE}
         >
           {text}
         </Animated.Text>
@@ -245,7 +268,7 @@ const LyricsLineItem = memo(
     prev.index === next.index &&
     prev.store === next.store &&
     prev.lineHeight === next.lineHeight &&
-    prev.height === next.height
+    prev.fontSize === next.fontSize
 );
 
 const styles = StyleSheet.create({
@@ -275,8 +298,5 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     textAlign: "center",
-  },
-  lineTextActive: {
-    color: "#fff",
   },
 });
