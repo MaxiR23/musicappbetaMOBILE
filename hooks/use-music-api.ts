@@ -133,7 +133,7 @@ export function useMusicApi() {
   // ==================== PLAY LOGS ====================
 
   const logPlayAlbum = useCallback(
-    (album_id: string, source?: { name?: string | null; thumb?: string | null }) =>
+    (album_id: string, source?: { name?: string | null; thumb?: string | null; artist_name?: string | null }) =>
       musicService.logPlayAlbum(album_id, source),
     []
   );

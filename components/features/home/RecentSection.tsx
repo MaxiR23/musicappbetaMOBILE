@@ -12,6 +12,7 @@ type RecentItem = {
   id: string;
   played_at: string;
   name?: string | null;
+  artist_name?: string | null;
   thumbnail_url?: string | null;
 };
 interface Props {
@@ -88,8 +89,13 @@ export default function RecentSection({ items }: Props) {
                 {it.name}
               </Text>
             )}
-            <Text style={{ color: "#aaa", width: SIZE, fontSize: 11 }}>
-              {isArtist ? t("sections.recents.artistLabel") : t("sections.recents.albumLabel")}
+            <Text style={{ color: "#aaa", width: SIZE, fontSize: 11 }} numberOfLines={1}>
+              {isArtist
+                ? t("sections.recents.artistLabel")
+                : it.artist_name
+                  ? `${t("sections.recents.albumLabel")} • ${it.artist_name}`
+                  : t("sections.recents.albumLabel")
+              }
             </Text>
           </TouchableOpacity>
         );

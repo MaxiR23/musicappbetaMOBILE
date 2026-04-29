@@ -351,7 +351,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
           if (ctx) {
             const meta = { name: source?.name ?? null, thumb: source?.thumb ?? null };
-            if (ctx.kind === "album") logPlayAlbum(ctx.id, meta).catch(() => { });
+            if (ctx.kind === "album") logPlayAlbum(ctx.id, {
+              ...meta,
+              artist_name: source?.type === "album" ? source.artist_name ?? null : null,
+            }).catch(() => { });
             else if (ctx.kind === "artist") logPlayArtist(ctx.id, meta).catch(() => { });
             setTimeout(() => invalidateRecent().catch(() => { }), 2000);
           }

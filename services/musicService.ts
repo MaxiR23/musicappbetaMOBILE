@@ -48,11 +48,16 @@ type SourcePayload = {
   thumb?: string | null;
 };
 
+type AlbumSourcePayload = SourcePayload & {
+  artist_name?: string | null;
+};
+
 export type RecentItem = {
   type: "album" | "artist" | "playlist";
   id: string;
   played_at: string;
   name?: string | null;
+  artist_name?: string | null;
   thumbnail_url?: string | null;
 };
 
@@ -385,9 +390,10 @@ export const musicService = {
     return result;
   },
 
-  logPlayAlbum: async (album_id: string, source?: SourcePayload) => {
+  logPlayAlbum: async (album_id: string, source?: AlbumSourcePayload) => {
     const body: any = {};
     if (source?.name) body.display_name = source.name;
+    if (source?.artist_name) body.artist_name = source.artist_name;
     if (source?.thumb) body.thumbnail_url = source.thumb;
     return authFetch(
       `${API_URL}/music/plays/albums/${encodeURIComponent(album_id)}`,

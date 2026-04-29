@@ -8,6 +8,7 @@ type RecentItem = {
   id: string;
   played_at: string;
   name?: string | null;
+  artist_name?: string | null;
   thumbnail_url?: string | null;
 };
 

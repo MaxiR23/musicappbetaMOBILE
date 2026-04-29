@@ -287,6 +287,7 @@ export default function AlbumScreen({ currentTab = 'home' }: AlbumScreenProps) {
                             playList(mappedSongs, 0, {
                                 type: "album",
                                 name: album.info?.title,
+                                artist_name: artist_names, 
                                 thumb: coverUrl,
                             })
                         }
@@ -295,6 +296,7 @@ export default function AlbumScreen({ currentTab = 'home' }: AlbumScreenProps) {
                             playList(mappedSongs, randomIndex, {
                                 type: "album",
                                 name: album.info?.title,
+                                artist_name: artist_names,
                                 thumb: coverUrl,
                             });
                         } : undefined}
@@ -326,6 +328,7 @@ export default function AlbumScreen({ currentTab = 'home' }: AlbumScreenProps) {
                                         playList(mappedSongs, index, {
                                             type: "album",
                                             name: album.info?.title,
+                                            artist_name: artist_names,
                                             thumb: coverUrl,
                                         })
                                     }

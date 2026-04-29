@@ -3,7 +3,7 @@ import { Song } from "./../types/music";
 
 export type PlaySource =
   | { type: "playlist"; id?: string | null; name?: string | null; thumb?: string | null }
-  | { type: "album";    id?: string | null; name?: string | null; thumb?: string | null }
+  | { type: "album"; id?: string | null; name?: string | null; thumb?: string | null; artist_name?: string | null }
   | { type: "artist";   id?: string | null; name?: string | null; thumb?: string | null }
   | { type: "queue";    id?: string | null; name?: string | null; thumb?: string | null }
   | { type: "related";  id: string;         name?: string | null; thumb?: string | null }
