@@ -125,11 +125,10 @@ export default function HomeScreen() {
     try {
       await supabase.auth.signOut();
       setProfileSheetOpen(false);
-      router.replace("/login");
     } catch (err) {
       console.warn("Error al cerrar sesion:", err);
     }
-  }, [router]);
+  }, []);
 
   return (
     <>
