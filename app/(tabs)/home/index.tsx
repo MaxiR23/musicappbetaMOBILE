@@ -31,6 +31,7 @@ import SimilarToHeader from "@/components/shared/SimilarToHeader";
 import { useContentPadding } from "@/hooks/use-content-padding";
 import { useHomeFeed } from "@/hooks/use-home-feed";
 import { useHomeRecent } from "@/hooks/use-home-recent";
+import { useProfile } from "@/hooks/use-profile";
 import { useUserProfile } from "@/hooks/use-user-profile";
 
 export default function HomeScreen() {
@@ -41,6 +42,7 @@ export default function HomeScreen() {
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
 
   const { userName, userEmail, userId, initials, gradient } = useUserProfile();
+  const { hasRole } = useProfile();
   const { recentVisible } = useHomeRecent(userId, currentSong?.id);
   const {
     newReleases,
@@ -320,8 +322,41 @@ export default function HomeScreen() {
             showShare={false}
             extraActions={[
               {
-                key: "logout", label: t("account.signOut", { ns: "common" })
-                , icon: "log-out-outline", onPress: handleSignOut
+                key: "view-profile",
+                label: t("actions.viewProfile", { ns: "profile" }),
+                icon: "person-outline",
+                onPress: () => {
+                  setProfileSheetOpen(false);
+                  router.push("/(tabs)/home/settings/profile");
+                },
+              },
+              ...(hasRole("tester") ? [
+                {
+                  key: "report-bug",
+                  label: t("actions.reportBug", { ns: "bugReport" }),
+                  icon: "bug-outline" as const,
+                  onPress: () => {
+                    setProfileSheetOpen(false);
+                    router.push("/report-bug");
+                  },
+                },
+                {
+                  key: "view-reports",
+                  label: hasRole("developer")
+                    ? t("adminList.title", { ns: "bugReport" })
+                    : t("myReports.title", { ns: "bugReport" }),
+                  icon: "list-outline" as const,
+                  onPress: () => {
+                    setProfileSheetOpen(false);
+                    router.push("/(tabs)/home/settings/bug-reports");
+                  },
+                },
+              ] : []),
+              {
+                key: "logout",
+                label: t("account.signOut", { ns: "common" }),
+                icon: "log-out-outline",
+                onPress: handleSignOut,
               },
             ]}
           />

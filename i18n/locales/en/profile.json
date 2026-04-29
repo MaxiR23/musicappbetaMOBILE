@@ -1,0 +1,36 @@
+{
+  "title": "Profile",
+  "labels": {
+    "username": "Username",
+    "displayName": "Display name",
+    "email": "Email",
+    "role": "Role",
+    "memberSince": "Member since",
+    "noUsername": "No username set",
+    "noDisplayName": "No name set"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "developer": "Developer",
+    "tester": "Tester"
+  },
+  "actions": {
+    "editProfile": "Edit profile",
+    "signOut": "Sign out",
+    "viewProfile": "View profile",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel"
+  },
+  "validation": {
+    "displayNameLength": "Display name must be 1 to 50 characters.",
+    "usernameLength": "Username must be 3 to 30 characters.",
+    "usernameFormat": "Only letters, numbers and underscore are allowed."
+  },
+  "error": {
+    "loadFailed": "Couldn't load profile",
+    "title": "Error",
+    "usernameTaken": "That username is already taken.",
+    "saveFailed": "Couldn't save changes."
+  }
+}

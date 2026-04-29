@@ -1,0 +1,57 @@
+{
+  "title": "Report a problem",
+  "myReports": {
+    "title": "My reports",
+    "empty": "You haven't submitted any reports yet.",
+    "openLabel": "Open",
+    "closedLabel": "Closed"
+  },
+  "form": {
+    "categoryLabel": "Category",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Tell us what happened. The more detail, the better.",
+    "descriptionHint": "Minimum 5 characters."
+  },
+  "categories": {
+    "playback": "Playback",
+    "loading": "Loading",
+    "ui": "Interface",
+    "crash": "Crash / freeze",
+    "other": "Other"
+  },
+  "actions": {
+    "submit": "Submit report",
+    "submitting": "Submitting…",
+    "viewMyReports": "View my reports",
+    "reportBug": "Report a problem",
+    "cancel": "Cancel"
+  },
+  "success": {
+    "title": "Thanks",
+    "message": "Your report was submitted."
+  },
+  "error": {
+    "title": "Error",
+    "submitFailed": "Couldn't submit the report.",
+    "loadFailed": "Couldn't load reports.",
+    "descriptionTooShort": "Description must be at least 5 characters.",
+    "descriptionTooLong": "Description can't exceed 2000 characters.",
+    "categoryRequired": "Choose a category."
+  },
+  "adminList": {
+    "title": "Reports",
+    "filterAll": "All",
+    "filterOpen": "Open",
+    "filterClosed": "Closed",
+    "empty": "No reports to show.",
+    "loading": "Loading reports…",
+    "reporterLabel": "Reported by",
+    "createdAtLabel": "Date",
+    "entityLabel": "Context",
+    "noEntity": "No context",
+    "actions": {
+      "close": "Mark as closed",
+      "reopen": "Reopen"
+    }
+  }
+}

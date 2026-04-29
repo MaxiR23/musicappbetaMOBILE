@@ -1,0 +1,57 @@
+{
+  "title": "Reportar un problema",
+  "myReports": {
+    "title": "Mis reportes",
+    "empty": "Aún no enviaste ningún reporte.",
+    "openLabel": "Abierto",
+    "closedLabel": "Cerrado"
+  },
+  "form": {
+    "categoryLabel": "Categoría",
+    "descriptionLabel": "Descripción",
+    "descriptionPlaceholder": "Contanos qué pasó. Cuanto más detalle, mejor.",
+    "descriptionHint": "Mínimo 5 caracteres."
+  },
+  "categories": {
+    "playback": "Reproducción",
+    "loading": "Carga",
+    "ui": "Interfaz",
+    "crash": "Cierre / cuelgue",
+    "other": "Otro"
+  },
+  "actions": {
+    "submit": "Enviar reporte",
+    "submitting": "Enviando…",
+    "viewMyReports": "Ver mis reportes",
+    "reportBug": "Reportar un problema",
+    "cancel": "Cancelar"
+  },
+  "success": {
+    "title": "Gracias",
+    "message": "Tu reporte fue enviado."
+  },
+  "error": {
+    "title": "Error",
+    "submitFailed": "No se pudo enviar el reporte.",
+    "loadFailed": "No se pudieron cargar los reportes.",
+    "descriptionTooShort": "La descripción debe tener al menos 5 caracteres.",
+    "descriptionTooLong": "La descripción no puede superar los 2000 caracteres.",
+    "categoryRequired": "Elegí una categoría."
+  },
+  "adminList": {
+    "title": "Reportes",
+    "filterAll": "Todos",
+    "filterOpen": "Abiertos",
+    "filterClosed": "Cerrados",
+    "empty": "No hay reportes para mostrar.",
+    "loading": "Cargando reportes…",
+    "reporterLabel": "Reportado por",
+    "createdAtLabel": "Fecha",
+    "entityLabel": "Contexto",
+    "noEntity": "Sin contexto",
+    "actions": {
+      "close": "Marcar como cerrado",
+      "reopen": "Reabrir"
+    }
+  }
+}

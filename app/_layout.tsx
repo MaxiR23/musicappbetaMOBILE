@@ -8,6 +8,9 @@ import { StyleSheet, View } from "react-native";
 import AuthContainer from "@/components/features/auth/AuthContainer";
 import { useAuth } from "@/hooks/use-auth";
 import AuthProvider from "@/providers/AuthProvider";
+
+import ProfileProvider from "@/providers/ProfileProvider";
+
 import CacheVersionsProvider from "@/providers/CacheVersionsProvider";
 
 import MusicPlayer from "@/components/features/player/MusicPlayer";
@@ -54,13 +57,15 @@ function Gate() {
 
 function AuthedApp() {
   return (
-    <LikesProvider>
-      <LibraryViewProvider>
-        <MusicProvider>
-          <InnerLayout />
-        </MusicProvider>
-      </LibraryViewProvider>
-    </LikesProvider>
+    <ProfileProvider>
+      <LikesProvider>
+        <LibraryViewProvider>
+          <MusicProvider>
+            <InnerLayout />
+          </MusicProvider>
+        </LibraryViewProvider>
+      </LikesProvider>
+    </ProfileProvider>
   );
 }
 
@@ -116,6 +121,14 @@ function InnerLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="report-bug"
+          options={{
+            presentation: "modal",
+            headerShown: false,
+            animation: "slide_from_bottom",
+          }}
+        />
       </Stack>
       {currentSong && (
         <MusicPlayer

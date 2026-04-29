@@ -1,0 +1,36 @@
+{
+  "title": "Perfil",
+  "labels": {
+    "username": "Nombre de usuario",
+    "displayName": "Nombre",
+    "email": "Correo electrónico",
+    "role": "Rol",
+    "memberSince": "Miembro desde",
+    "noUsername": "Sin nombre de usuario",
+    "noDisplayName": "Sin nombre"
+  },
+  "roles": {
+    "admin": "Administrador",
+    "developer": "Desarrollador",
+    "tester": "Tester"
+  },
+  "actions": {
+    "editProfile": "Editar perfil",
+    "signOut": "Cerrar sesión",
+    "viewProfile": "Ver perfil",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "cancel": "Cancelar"
+  },
+  "validation": {
+    "displayNameLength": "El nombre debe tener entre 1 y 50 caracteres.",
+    "usernameLength": "El nombre de usuario debe tener entre 3 y 30 caracteres.",
+    "usernameFormat": "Solo se permiten letras, números y guión bajo."
+  },
+  "error": {
+    "loadFailed": "No se pudo cargar el perfil",
+    "title": "Error",
+    "usernameTaken": "Ese nombre de usuario ya está en uso.",
+    "saveFailed": "No se pudieron guardar los cambios."
+  }
+}
