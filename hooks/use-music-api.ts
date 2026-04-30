@@ -225,6 +225,11 @@ export function useMusicApi() {
     []
   );
 
+  const getTrackCredits = useCallback(
+    (trackId: string) => musicService.getTrackCredits(trackId),
+    []
+  );
+
   return {
     searchSongs,
     playSongUrl,
@@ -264,5 +269,6 @@ export function useMusicApi() {
     getTrackLyrics,
     getTrackUpNext,
     getTrackRelated,
+    getTrackCredits
   };
 }

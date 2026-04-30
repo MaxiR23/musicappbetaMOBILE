@@ -48,12 +48,21 @@ type Props = {
     showShare?: boolean;
     showGoToArtist?: boolean;
     showGoToAlbum?: boolean;
+    showViewCredits?: boolean;
 
     onGoToArtist?: (artistId: string) => void;
     onGoToAlbum?: (albumId: string) => void;
 };
 
-type Mode = "root" | "add" | "create";
+type Mode = "root" | "add" | "create" | "credits";
+
+type CreditsData = {
+    performed_by?: { localized_title: string; data: string[] };
+    written_by?: { localized_title: string; data: string[] };
+    produced_by?: { localized_title: string; data: string[] };
+    music_metadata_provided_by?: { localized_title: string; data: string[] };
+    other_sections?: { localized_title: string; data: string[] }[];
+};
 
 export default function TrackActionsSheet({
     open,
@@ -69,13 +78,14 @@ export default function TrackActionsSheet({
     showShare,
     showGoToArtist,
     showGoToAlbum,
+    showViewCredits,
     onGoToArtist,
     onGoToAlbum,
 }: Props) {
     const { t } = useTranslation("common");
     const segments = useSegments();
     const currentTab = (segments[1] as string) || "home";
-    const { addTrackToPlaylist, createPlaylist } = useMusicApi();
+    const { addTrackToPlaylist, createPlaylist, getTrackCredits } = useMusicApi();
     const { ownedPlaylists } = useLibraryView();
 
     const [mode, setMode] = useState<Mode>("root");
@@ -91,6 +101,9 @@ export default function TrackActionsSheet({
     const [addedToId, setAddedToId] = useState<string | null>(null);
     const [alreadyInId, setAlreadyInId] = useState<string | null>(null);
 
+    const [credits, setCredits] = useState<CreditsData | null>(null);
+    const [creditsLoading, setCreditsLoading] = useState(false);
+
     const { download, remove, downloading, progress, isDownloaded } = useOffline();
     const [isTrackOffline, setIsTrackOffline] = useState(false);
     const [offlineAllowed, setOfflineAllowed] = useState(false);
@@ -105,6 +118,13 @@ export default function TrackActionsSheet({
             setAddingToId(null);
             setAddedToId(null);
             setAlreadyInId(null);
+            setCredits(null);
+            setCreditsLoading(false);
+        }
+    }, [open, track]);
+
+    useEffect(() => {
+        if (open && track) {
         }
     }, [open, track]);
 
@@ -112,10 +132,6 @@ export default function TrackActionsSheet({
     useEffect(() => {
         supabase.auth.getSession().then(({ data }) => {
             const uid = data.session?.user?.id;
-            // DBG: {
-            //console.log("[offline] uid:", uid);
-            //console.log("[offline] canOffline:", uid ? canOffline(uid) : "no uid");
-            // DBG }
             if (uid) setOfflineAllowed(canOffline(uid));
         });
     }, []);
@@ -126,12 +142,13 @@ export default function TrackActionsSheet({
     }, [open, track, offlineAllowed]);
     // TODO: TEST offline }
 
-    // ── NAVIGATION ────────────────────────────────────────────────────────────
+    // NAVIGATION
     const artistId = track?.artist_id ?? track?.artists?.[0]?.id ?? null;
     const albumId = track?.album_id ?? track?.go_to?.album_id ?? null;
 
     const allowGoToArtist = showGoToArtist !== false && !!artistId;
     const allowGoToAlbum = showGoToAlbum !== false && !!albumId;
+    const allowViewCredits = showViewCredits !== false && !!track?.id;
 
     function handleGoToArtist() {
         if (!artistId) return;
@@ -153,13 +170,33 @@ export default function TrackActionsSheet({
         }
     }
 
-    // ── ACTIONS ───────────────────────────────────────────────────────────────
+    async function handleViewCredits() {
+        if (!track?.id) return;
+        setMode("credits");
+        setCreditsLoading(true);
+        setErr(null);
+        setCredits(null);
+        try {
+            const res = await getTrackCredits(track.id);
+            if (res?.ok && res.credits) {
+                setCredits(res.credits as CreditsData);
+            } else {
+                setErr(t("trackActions.creditsUnavailable"));
+            }
+        } catch (e: any) {
+            setErr(e?.message || t("trackActions.creditsFailed"));
+        } finally {
+            setCreditsLoading(false);
+        }
+    }
+
+    // ACTIONS
 
     async function handleShare() {
         if (!track) return;
         try {
             await Share.share({
-                message: `${track.title} • ${track.artist_name ?? track.artist ?? ""}`,
+                message: `${track.title} - ${track.artist_name ?? track.artist ?? ""}`,
             });
         } catch (e) { }
     }
@@ -224,7 +261,9 @@ export default function TrackActionsSheet({
             ? t("trackActions.title")
             : mode === "add"
                 ? t("trackActions.addToPlaylist")
-                : t("trackActions.newPlaylist")
+                : mode === "create"
+                    ? t("trackActions.newPlaylist")
+                    : t("trackActions.viewCredits")
     );
 
     if (!open) return null;
@@ -257,11 +296,11 @@ export default function TrackActionsSheet({
                         </TouchableOpacity>
                     </View>
 
-                    {/* LINEA SUBTÍTULO */}
+                    {/* SUBTITLE LINE */}
                     {!!(track?.title || track?.display_name || subtitle) && (
                         <Text style={styles.trackLine} numberOfLines={1}>
                             {(track?.title || track?.display_name)
-                                ? `${track.title || track.display_name} • ${track.artist_name || track.artist || track.artists?.map((a: any) => a.name).join(", ") || ""}`
+                                ? `${track.title || track.display_name} - ${track.artist_name || track.artist || track.artists?.map((a: any) => a.name).join(", ") || ""}`
                                 : subtitle || ""}
                         </Text>
                     )}
@@ -288,6 +327,13 @@ export default function TrackActionsSheet({
                                     icon="disc-outline"
                                     label={t("trackActions.goToAlbum")}
                                     onPress={handleGoToAlbum}
+                                />
+                            )}
+                            {allowViewCredits && (
+                                <ActionRow
+                                    icon="information-circle-outline"
+                                    label={t("trackActions.viewCredits")}
+                                    onPress={handleViewCredits}
                                 />
                             )}
                             {allowRemove && (
@@ -430,6 +476,58 @@ export default function TrackActionsSheet({
                             </View>
                         </View>
                     )}
+
+                    {mode === "credits" && (
+                        <ScrollView
+                            style={{ maxHeight: 420 }}
+                            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 18, paddingTop: 4 }}
+                        >
+                            {creditsLoading && (
+                                <ActivityIndicator color="#bbb" style={{ marginVertical: 28 }} />
+                            )}
+                            {!creditsLoading && credits && (
+                                <View>
+                                    {credits.performed_by && (
+                                        <CreditsSection
+                                            title={credits.performed_by.localized_title}
+                                            items={credits.performed_by.data}
+                                        />
+                                    )}
+                                    {credits.written_by && (
+                                        <CreditsSection
+                                            title={credits.written_by.localized_title}
+                                            items={credits.written_by.data}
+                                        />
+                                    )}
+                                    {credits.produced_by && (
+                                        <CreditsSection
+                                            title={credits.produced_by.localized_title}
+                                            items={credits.produced_by.data}
+                                        />
+                                    )}
+                                    {credits.music_metadata_provided_by && (
+                                        <CreditsSection
+                                            title={credits.music_metadata_provided_by.localized_title}
+                                            items={credits.music_metadata_provided_by.data}
+                                        />
+                                    )}
+                                    {credits.other_sections?.map((s, i) => (
+                                        <CreditsSection
+                                            key={`other-${i}`}
+                                            title={s.localized_title}
+                                            items={s.data}
+                                        />
+                                    ))}
+                                </View>
+                            )}
+                            {!creditsLoading && !credits && !err && (
+                                <Text style={[styles.trackLine, { textAlign: "center", marginTop: 18 }]}>
+                                    {t("trackActions.creditsUnavailable")}
+                                </Text>
+                            )}
+                            {err && <Text style={styles.error}>{err}</Text>}
+                        </ScrollView>
+                    )}
                 </View>
             </KeyboardAvoidingView>
         </Modal>
@@ -453,6 +551,18 @@ function ActionRow({
             <Text style={[styles.rowText, danger ? { color: "#ff6b6b" } : null]}>{label}</Text>
             <Ionicons name="chevron-forward" size={18} color="#666" style={{ marginLeft: "auto" }} />
         </TouchableOpacity>
+    );
+}
+
+function CreditsSection({ title, items }: { title: string; items: string[] }) {
+    if (!items?.length) return null;
+    return (
+        <View style={styles.creditsSection}>
+            <Text style={styles.creditsTitle}>{title}</Text>
+            {items.map((item, i) => (
+                <Text key={`${title}-${i}`} style={styles.creditsItem}>{item}</Text>
+            ))}
+        </View>
     );
 }
 
@@ -483,4 +593,8 @@ const styles = StyleSheet.create({
     btnGhostText: { color: "#fff", fontWeight: "600" },
     btnPrimary: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: "#fff" },
     btnPrimaryText: { color: "#000", fontWeight: "800" },
+
+    creditsSection: { marginBottom: 18 },
+    creditsTitle: { color: "#888", fontSize: 11, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 8, fontWeight: "600" },
+    creditsItem: { color: "#fff", fontSize: 14, marginBottom: 3, lineHeight: 20 },
 });
