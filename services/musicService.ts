@@ -585,4 +585,20 @@ export const musicService = {
       method: "GET",
     });
   },
+
+  getTrackCredits: async (trackId: string): Promise<{
+    ok: boolean;
+    credits?: {
+      performed_by?: { localized_title: string; data: string[] };
+      written_by?: { localized_title: string; data: string[] };
+      produced_by?: { localized_title: string; data: string[] };
+      music_metadata_provided_by?: { localized_title: string; data: string[] };
+      other_sections?: { localized_title: string; data: string[] }[];
+    };
+    reason?: string;
+  }> => {
+    return authFetch(`${API_URL}/music/tracks/${encodeURIComponent(trackId)}/credits`, {
+      method: "GET",
+    });
+  },
 };
